@@ -1,4 +1,3 @@
-
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
 
@@ -359,14 +358,27 @@
 
   <!-- TARGET BANNER (innings 2 only) -->
   {% if target %}
+  {% with balls_bowled=innings.total_balls max_balls=match.tournament.number_of_overs|add:0 %}
+  {% with balls_remaining=max_overs|add:0 %}
   <div class="target-banner">
-    <div>
-      <div class="target-main">🎯 Target: {{ target }}</div>
+    <div style="flex:1;">
+      <div class="target-main">🎯 {{ innings.batting_team }} needs <strong>{{ target }}</strong> runs</div>
       <div class="target-sub" id="target-sub">
-        Need {{ target }} runs &mdash; {{ innings.batting_team }} chasing
+        {% with runs_left=target|add:"-0" %}
+        Need <strong id="runs-needed">{{ target|add:"-0" }}</strong> runs from
+        <strong id="balls-remaining">{{ max_overs }}</strong> overs
+        &mdash; Required RR: <span id="req-rr">—</span>
+        {% endwith %}
+      </div>
+    </div>
+    <div style="text-align:right; flex-shrink:0;">
+      <div style="font-size:11px; color:var(--muted); margin-bottom:2px;">CURRENT SCORE</div>
+      <div style="font-family:'Rajdhani',sans-serif; font-size:20px; font-weight:700; color:#fff;">
+        {{ innings.total_runs }}/{{ innings.total_wickets }}
       </div>
     </div>
   </div>
+  {% endwith %}{% endwith %}
   {% endif %}
 
   <!-- INNINGS COMPLETE BANNER -->
@@ -686,10 +698,26 @@
     // Update target chase info
     if (TARGET !== null) {
       const needed = TARGET - data.total_runs;
-      const sub = document.getElementById('target-sub');
-      if (sub) sub.textContent = needed > 0
-        ? `Need ${needed} more run${needed !== 1 ? 's' : ''}`
-        : '🏆 Target achieved!';
+      const ballsUsed = data.total_balls;
+      const totalBalls = MAX_OVERS * 6;
+      const ballsLeft = totalBalls - ballsUsed;
+      const oversLeft = Math.floor(ballsLeft / 6) + '.' + (ballsLeft % 6);
+
+      const runsEl = document.getElementById('runs-needed');
+      const ballsEl = document.getElementById('balls-remaining');
+      const rrEl = document.getElementById('req-rr');
+
+      if (needed > 0) {
+        if (runsEl) runsEl.textContent = needed;
+        if (ballsEl) ballsEl.textContent = oversLeft + ' ov (' + ballsLeft + ' balls)';
+        if (rrEl) {
+          const realOversLeft = ballsLeft / 6;
+          rrEl.textContent = realOversLeft > 0 ? (needed / realOversLeft).toFixed(2) : '—';
+        }
+      } else {
+        const sub = document.getElementById('target-sub');
+        if (sub) sub.innerHTML = '🏆 <strong>Target achieved!</strong>';
+      }
     }
 
     addBallBadge(data.ball_runs, data.ball_type);
@@ -903,4 +931,3 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
   }
 </script>
-

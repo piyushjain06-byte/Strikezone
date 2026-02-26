@@ -1,18 +1,25 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import JsonResponse
-from firstcricketapp.models import (
-    TournamentDetails, TeamDetails, PlayerDetails,
-    StartTournament, MatchStart, CreateMatch,
-    Innings, Over, Ball, BattingScorecard, BowlingScorecard, KnockoutStage, KnockoutMatch,MatchResult
-)
-from firstcricketapp.forms import MatchForm, TournamentForm, TeamForm, PlayerForm
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from firstcricketapp.services import begin_innings, start_over, record_ball
-import json
 from django.views.decorators.http import require_POST
-from datetime import date
 from django.db import models as django_models
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.urls import reverse
+
+from tournaments.models import TournamentDetails, StartTournament
+from teams.models import TeamDetails, PlayerDetails
+from matches.models import CreateMatch, MatchStart, MatchResult
+from scoring.models import Innings, Over, Ball, BattingScorecard, BowlingScorecard
+from knockout.models import KnockoutStage, KnockoutMatch
+from accounts.models import GuestUser
+
+from strikezone.forms import MatchForm, TournamentForm, TeamForm, PlayerForm
+from strikezone.services import begin_innings, start_over, record_ball
+
+import json
+from datetime import date, datetime
+
 
 # ── ADMIN ONLY DECORATOR ──
 def admin_required(view_func):
@@ -58,18 +65,36 @@ def home(request):
 
             if inn2 and inn2.status == 'COMPLETED':
                 status = 'COMPLETED'
-                if inn2.total_runs > inn1.total_runs:
-                    winner = inn2.batting_team
-                    margin = f"{10 - inn2.total_wickets} wickets"
-                elif inn1.total_runs > inn2.total_runs:
-                    winner = inn1.batting_team
-                    margin = f"{inn1.total_runs - inn2.total_runs} runs"
-                else:
-                    margin = "Tied"
+                # Try to get result from MatchResult table first
+                try:
+                    mr = m.result
+                    winner = mr.winner
+                    margin = mr.result_summary.split(' won by ')[-1] if ' won by ' in mr.result_summary else mr.result_summary
+                except Exception:
+                    # Fallback: calculate from innings
+                    if inn2.total_runs > inn1.total_runs:
+                        winner = inn2.batting_team
+                        margin = f"{10 - inn2.total_wickets} wickets"
+                    elif inn1.total_runs > inn2.total_runs:
+                        winner = inn1.batting_team
+                        margin = f"{inn1.total_runs - inn2.total_runs} runs"
+                    else:
+                        winner = None
+                        margin = "Tied"
             elif (inn1 and inn1.status == 'IN_PROGRESS') or (inn2 and inn2.status == 'IN_PROGRESS'):
                 status = 'LIVE'
-            elif inn1:
+            elif inn1 and inn1.status == 'COMPLETED':
+                # 1st innings done, 2nd not started yet
                 status = 'IN_PROGRESS'
+            elif inn1:
+                status = 'LIVE'
+            else:
+                # No innings at all - check if toss done
+                try:
+                    _ = m.match_start
+                    status = 'TOSS_DONE'
+                except Exception:
+                    status = 'SCHEDULED'
 
             # ── Detect if knockout match ──
             is_knockout = hasattr(m, 'knockout_match')
@@ -80,7 +105,6 @@ def home(request):
                 km = m.knockout_match
                 knockout_label = f"{km.stage.get_stage_display()} · Match {km.match_number}"
             else:
-                # League match number = position among league matches only
                 league_matches_qs = [
                     x for x in all_tournament_matches
                     if not hasattr(x, 'knockout_match')
@@ -116,6 +140,7 @@ def home(request):
             elif status == 'LIVE':
                 live_matches.append(card)
             else:
+                # TOSS_DONE, IN_PROGRESS (between innings), SCHEDULED all go to pending
                 pending_matches.append(card)
 
         all_innings_ids = Innings.objects.filter(
@@ -176,7 +201,6 @@ def teamdetails(request, tournament_id, team_id):
 
 
 def manage_cricket(request):
-    # ── Access control: only Django staff/superusers allowed ──
     is_admin = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
 
     if not is_admin:
@@ -212,10 +236,9 @@ def manage_cricket(request):
                 player_form = PlayerForm()
             active_tab = 'player'
 
-    # Build tournament progress data
-    tournaments = TournamentDetails.objects.all().prefetch_related('teams__players')
+    tournaments_qs = TournamentDetails.objects.all().prefetch_related('teams__players')
     tournament_progress = []
-    for t in tournaments:
+    for t in tournaments_qs:
         teams = list(t.teams.all())
         teams_added = len(teams)
         teams_needed = t.number_of_teams
@@ -240,7 +263,7 @@ def manage_cricket(request):
         'team_form': team_form,
         'player_form': player_form,
         'tournament_progress': tournament_progress,
-        'tournaments': tournaments,
+        'tournaments': tournaments_qs,
         'teams': TeamDetails.objects.select_related('tournament').all(),
         'active_tab': active_tab,
         'team_count_options': [2, 4, 6, 8, 10],
@@ -258,7 +281,6 @@ def create_match(request):
     else:
         form = MatchForm()
 
-    # Build sidebar: all tournaments with their matches
     all_tournaments = TournamentDetails.objects.all()
     all_matches = CreateMatch.objects.select_related(
         'tournament', 'team1', 'team2'
@@ -281,7 +303,7 @@ def load_teams(request):
 
 @admin_required
 def start_tournament(request):
-    tournaments = TournamentDetails.objects.all()
+    tournaments_qs = TournamentDetails.objects.all()
     if request.method == "POST":
         tournament_id = request.POST.get("tournament_id")
         tournament = get_object_or_404(TournamentDetails, id=tournament_id)
@@ -290,12 +312,14 @@ def start_tournament(request):
         start_obj.save()
         messages.success(request, f"{tournament.tournament_name} has been started successfully!")
         return redirect("match_start")
-    return render(request, "start_tournament.html", {"tournaments": tournaments})
+    return render(request, "start_tournament.html", {"tournaments": tournaments_qs})
 
 
 @admin_required
 def match_start(request):
-    matches = CreateMatch.objects.all()
+    # Only show matches that have NOT been started yet (no MatchStart record)
+    started_match_ids = MatchStart.objects.values_list('match_id', flat=True)
+    matches = CreateMatch.objects.exclude(id__in=started_match_ids).select_related('team1', 'team2', 'tournament').order_by('tournament__tournament_name', 'match_date')
     if request.method == "POST":
         match_id = request.POST.get("match_id")
         toss_winner_id = request.POST.get("toss_winner")
@@ -316,7 +340,7 @@ def match_start(request):
             return redirect("start_innings", match_id=match.id)
         except ValidationError as e:
             messages.error(request, e)
-    # Pre-select match if coming from tournament history
+
     preselected_match_id = request.GET.get('match_id')
     try:
         preselected_match_id = int(preselected_match_id) if preselected_match_id else None
@@ -379,7 +403,6 @@ def start_innings_view(request, match_id):
 
         new_innings = begin_innings(match_start, innings_number=next_innings_number)
         new_innings.status = "IN_PROGRESS"
-        # Set target for 2nd innings so Ball.save() can auto-complete the innings on chase
         if next_innings_number == 2:
             innings1 = Innings.objects.filter(match=match, innings_number=1).first()
             if innings1:
@@ -433,14 +456,11 @@ def scoring_view(request, match_id):
     bowling_scorecard = BowlingScorecard.objects.filter(innings=innings)
     bowling_team_players = PlayerDetails.objects.filter(team=innings.bowling_team)
 
-    # Available batsmen = batting team - dismissed players - current not-out batsmen
-    # Dismissed = has a scorecard entry with status OUT (or similar non-NOT_OUT status)
     dismissed_ids = list(
         BattingScorecard.objects.filter(innings=innings)
         .exclude(status='NOT_OUT')
         .values_list('batsman_id', flat=True)
     )
-    # Also exclude the two current batsmen who are still in
     currently_in = [int(striker_id), int(non_striker_id)] if striker_id and non_striker_id else []
     excluded_ids = list(set(dismissed_ids + currently_in))
     available_batsmen = PlayerDetails.objects.filter(team=innings.batting_team).exclude(id__in=excluded_ids)
@@ -523,7 +543,6 @@ def record_ball_view(request, match_id):
         player_dismissed=player_dismissed,
     )
 
-    # Strike rotation on odd runs (legal balls only)
     if ball.is_legal_ball and (runs_off_bat % 2 == 1):
         request.session['striker_id'], request.session['non_striker_id'] = (
             int(non_striker_id), int(striker_id)
@@ -533,8 +552,6 @@ def record_ball_view(request, match_id):
     innings.refresh_from_db()
 
     # ── TARGET CHASE CHECK (2nd innings) ──
-    # The Ball.save() model handles this if innings.target is set,
-    # but we also do an explicit check here as a safety net
     if innings.innings_number == 2 and innings.status != "COMPLETED":
         innings1 = Innings.objects.filter(match=match, innings_number=1).first()
         if innings1 and innings.total_runs > innings1.total_runs:
@@ -551,7 +568,6 @@ def record_ball_view(request, match_id):
     innings_complete = innings.status == "COMPLETED"
 
     if innings_complete and innings.innings_number == 2:
-        from firstcricketapp.models import MatchResult
         if not MatchResult.objects.filter(match=match).exists():
             innings1 = Innings.objects.filter(match=match, innings_number=1).first()
             innings2 = innings
@@ -579,14 +595,13 @@ def record_ball_view(request, match_id):
                 win_margin=win_margin,
                 result_summary=result_summary,
             )
-              # Auto-advance knockout winner if this is a knockout match
+            # Auto-advance knockout winner if this is a knockout match
             auto_advance_knockout(match.id)
 
     legal_balls = over.balls.filter(is_legal_ball=True).count()
     over_complete = over.is_completed
     innings_complete = innings.status == "COMPLETED"
 
-    # End of over: batsmen cross ends
     if over_complete and not innings_complete:
         s = request.session.get('striker_id')
         ns = request.session.get('non_striker_id')
@@ -596,7 +611,6 @@ def record_ball_view(request, match_id):
     current_striker = PlayerDetails.objects.filter(id=request.session.get('striker_id')).first()
     current_non_striker = PlayerDetails.objects.filter(id=request.session.get('non_striker_id')).first()
 
-    # If wicket and innings not over, front end must pick a new batsman
     needs_new_batsman = is_wicket and not innings_complete
 
     return JsonResponse({
@@ -604,6 +618,7 @@ def record_ball_view(request, match_id):
         'total_runs': innings.total_runs,
         'total_wickets': innings.total_wickets,
         'overs': innings.overs_completed,
+        'total_balls': innings.total_balls,
         'ball_runs': ball.total_runs,
         'ball_type': ball_type,
         'legal_ball_count': legal_balls,
@@ -633,8 +648,6 @@ def select_new_batsman(request, match_id):
         return JsonResponse({'error': 'No batsman selected.'}, status=400)
 
     new_batsman = get_object_or_404(PlayerDetails, id=new_batsman_id)
-
-    # New batsman comes in as striker (the one who got out was striker by default)
     request.session['striker_id'] = int(new_batsman_id)
 
     return JsonResponse({
@@ -671,7 +684,6 @@ def next_over_view(request, match_id):
 
     bowler = get_object_or_404(PlayerDetails, id=bowler_id)
 
-    # Block bowler change if the current over has already started (has balls bowled)
     current_incomplete_over = innings.overs.filter(is_completed=False).first()
     if current_incomplete_over:
         balls_bowled = current_incomplete_over.balls.count()
@@ -679,7 +691,6 @@ def next_over_view(request, match_id):
             return JsonResponse({
                 'error': f'Cannot change bowler mid-over. {6 - current_incomplete_over.balls.filter(is_legal_ball=True).count()} legal ball(s) remaining in this over.'
             }, status=400)
-        # Over exists but no balls yet (just created) — allow bowler change
         current_incomplete_over.bowler = bowler
         current_incomplete_over.save()
         request.session['over_id'] = current_incomplete_over.id
@@ -723,7 +734,12 @@ def match_result(request, match_id):
     inn2 = Innings.objects.filter(match=match, innings_number=2).first()
 
     if not inn1 or not inn2 or inn2.status != "COMPLETED":
-        return redirect('scoring', match_id=match_id)
+        try:
+            _ = match.match_start
+            return redirect('scoring', match_id=match_id)
+        except MatchStart.DoesNotExist:
+            messages.error(request, "Match has not been started yet.")
+            return redirect('home')
 
     if inn2.total_runs > inn1.total_runs:
         winner = inn2.batting_team
@@ -743,6 +759,7 @@ def match_result(request, match_id):
         'margin': margin,
     })
 
+
 # ── RESTART MATCH ──
 
 @admin_required
@@ -750,7 +767,6 @@ def match_result(request, match_id):
 def restart_match(request, match_id):
     match = get_object_or_404(CreateMatch, id=match_id)
 
-    # Delete all match data in order (Ball → Over → Scorecard → Innings → MatchStart)
     innings_list = Innings.objects.filter(match=match)
     for innings in innings_list:
         for over in innings.overs.all():
@@ -760,15 +776,15 @@ def restart_match(request, match_id):
         BowlingScorecard.objects.filter(innings=innings).delete()
     innings_list.delete()
 
-    # Delete MatchStart so toss can be redone
     MatchStart.objects.filter(match=match).delete()
 
-    # Clear session
     for key in ('innings_id', 'over_id', 'striker_id', 'non_striker_id'):
         request.session.pop(key, None)
 
-    messages.success(request, f"Match has been reset. You can now restart.")
+    messages.success(request, "Match has been reset. You can now restart.")
     return redirect('match_start')
+
+
 # ── TOURNAMENT HISTORY ──
 
 def tournament_history(request, tournament_id):
@@ -789,15 +805,21 @@ def tournament_history(request, tournament_id):
         inn2 = Innings.objects.filter(match=match, innings_number=2).first()
 
         if inn2 and inn2.status == 'COMPLETED':
-            if inn2.total_runs > inn1.total_runs:
-                winner = inn2.batting_team
-                margin = f"{10 - inn2.total_wickets} wickets"
-            elif inn1.total_runs > inn2.total_runs:
-                winner = inn1.batting_team
-                margin = f"{inn1.total_runs - inn2.total_runs} runs"
-            else:
-                winner = None
-                margin = "Tied"
+            # Try MatchResult first
+            try:
+                mr = match.result
+                winner = mr.winner
+                margin = mr.result_summary.split(' won by ')[-1] if ' won by ' in mr.result_summary else mr.result_summary
+            except Exception:
+                if inn2.total_runs > inn1.total_runs:
+                    winner = inn2.batting_team
+                    margin = f"{10 - inn2.total_wickets} wickets"
+                elif inn1.total_runs > inn2.total_runs:
+                    winner = inn1.batting_team
+                    margin = f"{inn1.total_runs - inn2.total_runs} runs"
+                else:
+                    winner = None
+                    margin = "Tied"
 
             match_data.append({
                 'match': match,
@@ -811,7 +833,11 @@ def tournament_history(request, tournament_id):
             match_data.append({'match': match, 'status': 'LIVE', 'inn1': inn1, 'result': None})
         elif inn2 and inn2.status == 'IN_PROGRESS':
             match_data.append({'match': match, 'status': 'LIVE', 'inn1': inn1, 'inn2': inn2, 'result': None})
+        elif inn1 and inn1.status == 'COMPLETED':
+            # Between innings
+            match_data.append({'match': match, 'status': 'IN_PROGRESS', 'inn1': inn1, 'result': None})
         else:
+            # Toss done, no innings started yet
             match_data.append({'match': match, 'status': 'IN_PROGRESS', 'result': None})
 
     # ── LEADERBOARD WITH NRR ──
@@ -840,20 +866,14 @@ def tournament_history(request, tournament_id):
             if not inn1 or not inn2:
                 continue
 
-            # Figure out which innings this team batted/bowled
             if inn1.batting_team == team:
-                # Team batted in innings 1, bowled in innings 2
                 batting_inn = inn1
                 bowling_inn = inn2
             else:
-                # Team batted in innings 2, bowled in innings 1
                 batting_inn = inn2
                 bowling_inn = inn1
 
-            # Balls to overs (handle partial overs)
             def balls_to_overs(balls, max_o):
-                # If innings ended by wickets/target, count actual balls faced
-                # If innings ended by overs, count full max overs
                 completed = balls // 6
                 partial = balls % 6
                 return completed + (partial / 6)
@@ -861,16 +881,12 @@ def tournament_history(request, tournament_id):
             batting_overs = balls_to_overs(batting_inn.total_balls, max_overs)
             bowling_overs = balls_to_overs(bowling_inn.total_balls, max_overs)
 
-            # If batting team was all out or chased, use actual overs
-            # If bowling team completed all overs, use max_overs
             if batting_inn.status == 'COMPLETED' and batting_inn.total_wickets < 10:
-                # Innings ended by overs or target — use actual balls as overs
                 batting_overs = max_overs if batting_inn.total_balls >= max_overs * 6 else balls_to_overs(batting_inn.total_balls, max_overs)
 
             if bowling_inn.status == 'COMPLETED' and bowling_inn.total_wickets < 10:
                 bowling_overs = max_overs if bowling_inn.total_balls >= max_overs * 6 else balls_to_overs(bowling_inn.total_balls, max_overs)
 
-            # Avoid division by zero
             if batting_overs == 0:
                 batting_overs = max_overs
             if bowling_overs == 0:
@@ -881,13 +897,11 @@ def tournament_history(request, tournament_id):
             total_runs_conceded += bowling_inn.total_runs
             total_overs_bowled  += bowling_overs
 
-            # Win/loss
             if md.get('winner') == team:
                 wins += 1
             elif md.get('winner') is not None:
                 losses += 1
 
-        # Calculate NRR
         if total_overs_faced > 0 and total_overs_bowled > 0:
             nrr = (total_runs_scored / total_overs_faced) - (total_runs_conceded / total_overs_bowled)
             nrr = round(nrr, 3)
@@ -904,7 +918,6 @@ def tournament_history(request, tournament_id):
             'nrr_display': f"+{nrr:.3f}" if nrr >= 0 else f"{nrr:.3f}",
         })
 
-    # ── SORT: Points first, then NRR ──
     leaderboard.sort(key=lambda x: (-x['points'], -x['nrr']))
     for i, entry in enumerate(leaderboard):
         entry['rank'] = i + 1
@@ -938,17 +951,21 @@ def match_scorecard(request, match_id):
     sc1 = get_scorecard(inn1)
     sc2 = get_scorecard(inn2)
 
-    # Result
     winner = margin = None
     if inn2 and inn2.status == 'COMPLETED':
-        if inn2.total_runs > inn1.total_runs:
-            winner = inn2.batting_team
-            margin = f"{10 - inn2.total_wickets} wickets"
-        elif inn1.total_runs > inn2.total_runs:
-            winner = inn1.batting_team
-            margin = f"{inn1.total_runs - inn2.total_runs} runs"
-        else:
-            margin = "Tied"
+        try:
+            mr = match.result
+            winner = mr.winner
+            margin = mr.result_summary.split(' won by ')[-1] if ' won by ' in mr.result_summary else mr.result_summary
+        except Exception:
+            if inn2.total_runs > inn1.total_runs:
+                winner = inn2.batting_team
+                margin = f"{10 - inn2.total_wickets} wickets"
+            elif inn1.total_runs > inn2.total_runs:
+                winner = inn1.batting_team
+                margin = f"{inn1.total_runs - inn2.total_runs} runs"
+            else:
+                margin = "Tied"
 
     return render(request, 'match_scorecard.html', {
         'match': match,
@@ -958,9 +975,8 @@ def match_scorecard(request, match_id):
         'margin': margin,
     })
 
-# ── ADMIN LOGIN / LOGOUT ──
 
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+# ── ADMIN LOGIN / LOGOUT ──
 
 def admin_login(request):
     if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
@@ -998,7 +1014,6 @@ def player_login(request):
         mobile = request.POST.get('mobile', '').strip()
         password = request.POST.get('password', '').strip()
 
-        # Simple password — you can change this or make it per-player later
         PLAYER_PASSWORD = "cricket123"
 
         if password != PLAYER_PASSWORD:
@@ -1010,14 +1025,12 @@ def player_login(request):
                 request.session['player_name'] = player.player_name
                 return redirect('player_stats')
             else:
-                # Mobile doesn't match any player — still log them in as guest
                 request.session['player_id'] = 'guest'
                 request.session['player_name'] = 'Guest'
                 request.session['player_mobile'] = mobile
                 return redirect('player_stats')
 
     return render(request, 'player_login.html', {'error': error})
-
 
 
 def player_register(request):
@@ -1028,7 +1041,6 @@ def player_register(request):
     success = None
 
     if request.method == 'POST':
-        from firstcricketapp.models import GuestUser
         mobile   = request.POST.get('mobile', '').strip()
         password = request.POST.get('password', '').strip()
         confirm  = request.POST.get('confirm_password', '').strip()
@@ -1065,7 +1077,6 @@ def player_stats(request):
     if not player_id:
         return redirect('player_login')
 
-    # Guest — covers both 'guest' and 'guest_1', 'guest_2', etc.
     if str(player_id).startswith('guest') or not str(player_id).isdigit():
         return render(request, 'player_stats.html', {
             'player': None,
@@ -1075,47 +1086,45 @@ def player_stats(request):
 
     player = get_object_or_404(PlayerDetails, id=int(player_id))
 
-    # ── Batting stats across all innings ──
     batting_entries = BattingScorecard.objects.filter(batsman=player).select_related('innings__match__tournament')
 
-    total_matches   = batting_entries.values('innings__match').distinct().count()
-    total_innings_b = batting_entries.exclude(status='DNB').count()
-    total_runs      = sum(b.runs for b in batting_entries)
+    total_matches     = batting_entries.values('innings__match').distinct().count()
+    total_innings_b   = batting_entries.exclude(status='DNB').count()
+    total_runs        = sum(b.runs for b in batting_entries)
     total_balls_faced = sum(b.balls_faced for b in batting_entries)
-    total_fours     = sum(b.fours for b in batting_entries)
-    total_sixes     = sum(b.sixes for b in batting_entries)
-    not_outs        = batting_entries.filter(status='NOT_OUT').count()
-    dismissals      = total_innings_b - not_outs
-    highest_score   = batting_entries.order_by('-runs').first()
-    fifties         = batting_entries.filter(runs__gte=50, runs__lt=100).count()
-    hundreds        = batting_entries.filter(runs__gte=100).count()
-    batting_avg     = round(total_runs / dismissals, 2) if dismissals > 0 else total_runs
-    batting_sr      = round((total_runs / total_balls_faced) * 100, 2) if total_balls_faced > 0 else 0
+    total_fours       = sum(b.fours for b in batting_entries)
+    total_sixes       = sum(b.sixes for b in batting_entries)
+    not_outs          = batting_entries.filter(status='NOT_OUT').count()
+    dismissals        = total_innings_b - not_outs
+    highest_score     = batting_entries.order_by('-runs').first()
+    fifties           = batting_entries.filter(runs__gte=50, runs__lt=100).count()
+    hundreds          = batting_entries.filter(runs__gte=100).count()
+    batting_avg       = round(total_runs / dismissals, 2) if dismissals > 0 else total_runs
+    batting_sr        = round((total_runs / total_balls_faced) * 100, 2) if total_balls_faced > 0 else 0
 
-    # ── Bowling stats ──
     bowling_entries = BowlingScorecard.objects.filter(bowler=player).select_related('innings__match__tournament')
 
-    total_wickets   = sum(b.wickets for b in bowling_entries)
-    total_runs_given= sum(b.runs_given for b in bowling_entries)
-    total_wides     = sum(b.wides for b in bowling_entries)
-    total_no_balls  = sum(b.no_balls for b in bowling_entries)
-    best_bowling    = bowling_entries.order_by('-wickets', 'runs_given').first()
+    total_wickets       = sum(b.wickets for b in bowling_entries)
+    total_runs_given    = sum(b.runs_given for b in bowling_entries)
+    total_wides         = sum(b.wides for b in bowling_entries)
+    total_no_balls      = sum(b.no_balls for b in bowling_entries)
+    best_bowling        = bowling_entries.order_by('-wickets', 'runs_given').first()
+    def overs_to_balls(overs_val):
+        o = float(overs_val)
+        full = int(o)
+        extra = round((o - full) * 10)
+        return full * 6 + extra
+    total_balls_bowled  = sum(overs_to_balls(b.overs_bowled) for b in bowling_entries)
+    total_real_overs    = total_balls_bowled / 6
+    bowling_economy     = round(total_runs_given / total_real_overs, 2) if total_real_overs > 0 else 0
+    bowling_avg         = round(total_runs_given / total_wickets, 2) if total_wickets > 0 else 0
 
-    # Economy: total runs given / total overs bowled
-    total_overs_decimal = sum(float(b.overs_bowled) for b in bowling_entries)
-    bowling_economy = round(total_runs_given / total_overs_decimal, 2) if total_overs_decimal > 0 else 0
-    bowling_avg     = round(total_runs_given / total_wickets, 2) if total_wickets > 0 else 0
-
-    # ── Recent innings (last 5) ──
     recent_innings = batting_entries.order_by('-innings__match__match_date')[:5]
-
-    # ── Recent bowling (last 5) ──
     recent_bowling = bowling_entries.order_by('-innings__match__match_date')[:5]
 
     return render(request, 'player_stats.html', {
         'player': player,
         'is_guest': False,
-        # batting
         'total_matches': total_matches,
         'total_innings_b': total_innings_b,
         'total_runs': total_runs,
@@ -1128,7 +1137,6 @@ def player_stats(request):
         'hundreds': hundreds,
         'batting_avg': batting_avg,
         'batting_sr': batting_sr,
-        # bowling
         'total_wickets': total_wickets,
         'total_runs_given': total_runs_given,
         'total_wides': total_wides,
@@ -1136,7 +1144,6 @@ def player_stats(request):
         'best_bowling': best_bowling,
         'bowling_economy': bowling_economy,
         'bowling_avg': bowling_avg,
-        # recent
         'recent_innings': recent_innings,
         'recent_bowling': recent_bowling,
     })
@@ -1147,7 +1154,7 @@ def player_stats(request):
 def player_stats_api(request, player_id):
     player = get_object_or_404(PlayerDetails, id=player_id)
 
-    batting_entries = BattingScorecard.objects.filter(batsman=player).select_related('innings__match')
+    batting_entries   = BattingScorecard.objects.filter(batsman=player).select_related('innings__match')
     total_runs        = sum(b.runs for b in batting_entries)
     total_balls_faced = sum(b.balls_faced for b in batting_entries)
     total_fours       = sum(b.fours for b in batting_entries)
@@ -1177,7 +1184,10 @@ def player_stats_api(request, player_id):
     total_wides      = sum(b.wides for b in bowling_entries)
     total_no_balls   = sum(b.no_balls for b in bowling_entries)
     total_overs_dec  = sum(float(b.overs_bowled) for b in bowling_entries)
-    bowling_economy  = round(total_runs_given / total_overs_dec, 2) if total_overs_dec > 0 else 0
+    def _o2b(o):
+        f = int(o); return f*6 + round((o-f)*10)
+    total_balls_api  = sum(_o2b(float(b.overs_bowled)) for b in bowling_entries)
+    bowling_economy  = round(total_runs_given / (total_balls_api/6), 2) if total_balls_api > 0 else 0
     bowling_avg      = round(total_runs_given / total_wickets, 2) if total_wickets > 0 else 0
     best_entry       = bowling_entries.order_by('-wickets', 'runs_given').first()
     best_bowling     = f"{best_entry.wickets}/{best_entry.runs_given}" if best_entry else '—'
@@ -1211,13 +1221,12 @@ def player_stats_api(request, player_id):
         'recent_bowling': recent_bowling,
     })
 
+
 # ══════════════════════════════════════════════
 # KNOCKOUT BRACKET VIEWS
 # ══════════════════════════════════════════════
 
-# ── Helper: get leaderboard for a tournament ──
 def get_tournament_leaderboard(tournament):
-    """Returns ranked list of teams with NRR for a tournament."""
     max_overs = tournament.number_of_overs
     teams = TeamDetails.objects.filter(tournament=tournament)
     leaderboard = []
@@ -1240,7 +1249,6 @@ def get_tournament_leaderboard(tournament):
             if not inn1 or not inn2 or inn2.status != 'COMPLETED':
                 continue
 
-            # Skip knockout matches from league leaderboard
             if hasattr(match, 'knockout_match'):
                 continue
 
@@ -1293,10 +1301,8 @@ def get_tournament_leaderboard(tournament):
     return leaderboard
 
 
-# ── Helper: check if all league matches are done ──
 def all_league_matches_completed(tournament):
     matches = CreateMatch.objects.filter(tournament=tournament)
-    # Exclude knockout matches
     league_matches = [m for m in matches if not hasattr(m, 'knockout_match')]
     if not league_matches:
         return False
@@ -1307,28 +1313,22 @@ def all_league_matches_completed(tournament):
     return True
 
 
-# ── STAGE ORDER MAP ──
 STAGE_ORDER = {'PQF': 1, 'QF': 2, 'SF': 3, 'F': 4}
 NEXT_STAGE  = {'PQF': 'QF', 'QF': 'SF', 'SF': 'F', 'F': None}
 
 
-# ════════════════════════════════
-# VIEW 1: Knockout Bracket Page
-# ════════════════════════════════
 @admin_required
 def knockout_bracket(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
     leaderboard = get_tournament_leaderboard(tournament)
     league_done = all_league_matches_completed(tournament)
 
-    # Get existing stages and matches
     stages = KnockoutStage.objects.filter(
         tournament=tournament
     ).prefetch_related('matches__team1', 'matches__team2', 'matches__winner')
 
     bracket_exists = stages.exists()
 
-    # Count incomplete league matches for warning
     all_matches = CreateMatch.objects.filter(tournament=tournament)
     league_matches = [m for m in all_matches if not hasattr(m, 'knockout_match')]
     pending_league = []
@@ -1347,34 +1347,24 @@ def knockout_bracket(request, tournament_id):
     })
 
 
-# ════════════════════════════════
-# VIEW 2: Setup Knockout Stage
-# (Admin picks pairings for a stage)
-# ════════════════════════════════
 @admin_required
 def setup_knockout_stage(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
     leaderboard = get_tournament_leaderboard(tournament)
 
-    # Determine which stage to set up next
     existing_stages = KnockoutStage.objects.filter(tournament=tournament).order_by('stage_order')
-    
+
     if not existing_stages.exists():
-        # First stage — admin picks which stage to start with
         next_stage_code = None
     else:
         last_stage = existing_stages.last()
         next_stage_code = NEXT_STAGE.get(last_stage.stage)
 
-    # Get available teams:
-    # - For first stage: top N teams from leaderboard
-    # - For subsequent stages: winners of previous stage matches
     if not existing_stages.exists():
         available_teams = [entry['team'] for entry in leaderboard]
         available_labels = [f"TOP {entry['rank']} - {entry['team'].team_name}" for entry in leaderboard]
     else:
         last_stage = existing_stages.last()
-        # Winners from last stage
         last_stage_matches = KnockoutMatch.objects.filter(stage=last_stage).order_by('match_number')
         available_teams = []
         available_labels = []
@@ -1392,19 +1382,16 @@ def setup_knockout_stage(request, tournament_id):
         stage_code = request.POST.get('stage_code')
         num_matches = int(request.POST.get('num_matches', 1))
 
-        # Validate stage
         if KnockoutStage.objects.filter(tournament=tournament, stage=stage_code).exists():
             messages.error(request, f"{stage_code} stage already exists for this tournament.")
             return redirect('knockout_bracket', tournament_id=tournament_id)
 
-        # Create the stage
         stage = KnockoutStage.objects.create(
             tournament=tournament,
             stage=stage_code,
             stage_order=STAGE_ORDER[stage_code],
         )
 
-        # Create matches based on admin pairings
         for i in range(1, num_matches + 1):
             team1_id = request.POST.get(f'match_{i}_team1')
             team2_id = request.POST.get(f'match_{i}_team2')
@@ -1419,7 +1406,6 @@ def setup_knockout_stage(request, tournament_id):
             match_date_val = None
             if match_date_str:
                 try:
-                    from datetime import datetime
                     match_date_val = datetime.strptime(match_date_str, '%Y-%m-%d').date()
                 except ValueError:
                     pass
@@ -1438,14 +1424,12 @@ def setup_knockout_stage(request, tournament_id):
         messages.success(request, f"{stage.get_stage_display()} matches created successfully!")
         return redirect('knockout_bracket', tournament_id=tournament_id)
 
-    # GET — show setup form
     stage_choices = [
         ('PQF', 'Pre Quarter Final'),
         ('QF',  'Quarter Final'),
         ('SF',  'Semi Final'),
         ('F',   'Final'),
     ]
-    # Filter out already existing stages
     existing_stage_codes = list(existing_stages.values_list('stage', flat=True))
     stage_choices = [(code, label) for code, label in stage_choices if code not in existing_stage_codes]
 
@@ -1459,10 +1443,6 @@ def setup_knockout_stage(request, tournament_id):
     })
 
 
-# ════════════════════════════════
-# VIEW 3: Start a Knockout Match
-# (Creates a real CreateMatch and links it)
-# ════════════════════════════════
 @admin_required
 def start_knockout_match(request, knockout_match_id):
     km = get_object_or_404(KnockoutMatch, id=knockout_match_id)
@@ -1476,7 +1456,6 @@ def start_knockout_match(request, knockout_match_id):
         messages.error(request, "Both teams must be confirmed before starting this match.")
         return redirect('knockout_bracket', tournament_id=tournament.id)
 
-    # Create a real CreateMatch if not already linked
     if not km.match:
         real_match = CreateMatch.objects.create(
             tournament=tournament,
@@ -1488,27 +1467,20 @@ def start_knockout_match(request, knockout_match_id):
         km.match = real_match
         km.save()
 
-    # Redirect to match_start for toss
-    from django.urls import reverse
-    return redirect(f"{reverse('match_start')}?match_id={km.match.id}")
+    # If match already has a toss/start, go directly to innings
+    try:
+        _ = km.match.match_start
+        return redirect('start_innings', match_id=km.match.id)
+    except MatchStart.DoesNotExist:
+        return redirect(f"{reverse('match_start')}?match_id={km.match.id}")
 
 
-# ════════════════════════════════
-# VIEW 4: Auto-advance winner to next stage
-# (Called after a knockout match completes)
-# ════════════════════════════════
 def auto_advance_knockout(match_id):
-    """
-    Call this after a knockout match completes.
-    Finds the KnockoutMatch, sets the winner,
-    and feeds winner into the next stage match.
-    """
     try:
         km = KnockoutMatch.objects.get(match_id=match_id)
     except KnockoutMatch.DoesNotExist:
         return
 
-    # Get result
     result = MatchResult.objects.filter(match_id=match_id).first()
     if not result or not result.winner:
         return
@@ -1517,17 +1489,14 @@ def auto_advance_knockout(match_id):
     km.is_completed = True
     km.save()
 
-    # Check if whole stage is done
     stage = km.stage
     all_stage_matches = stage.matches.all()
     if all(m.is_completed for m in all_stage_matches):
         stage.is_completed = True
         stage.save()
 
-    # Auto-feed winner into next stage match if next_match is set
     if km.next_match:
         next_km = km.next_match
-        # Fill team1 first, then team2
         if not next_km.team1:
             next_km.team1 = result.winner
             next_km.team1_label = f"{stage.get_stage_display()} M{km.match_number} Winner"
@@ -1537,16 +1506,11 @@ def auto_advance_knockout(match_id):
         next_km.save()
 
 
-# ════════════════════════════════
-# VIEW 5: Set next_match links
-# (Admin links PQF winners → QF matches etc.)
-# ════════════════════════════════
 @admin_required
 def link_knockout_matches(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
 
     if request.method == 'POST':
-        # For each knockout match, set its next_match
         for key, value in request.POST.items():
             if key.startswith('next_match_'):
                 km_id = int(key.replace('next_match_', ''))
@@ -1569,9 +1533,6 @@ def link_knockout_matches(request, tournament_id):
     })
 
 
-# ════════════════════════════════
-# VIEW 6: Public Knockout Bracket
-# ════════════════════════════════
 def public_knockout_bracket(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
     stages = KnockoutStage.objects.filter(

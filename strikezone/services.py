@@ -11,13 +11,9 @@ Usage flow:
     5. begin_innings_2(match_start, innings1)   → creates Innings 2 with target
     6. compute_result(match)                    → saves MatchResult
 """
-
 from django.db import transaction
-from firstcricketapp.models import (
-    Innings, Over, Ball,
-    BattingScorecard, BowlingScorecard, MatchResult
-)
-
+from scoring.models import Innings, Over, Ball, BattingScorecard, BowlingScorecard
+from matches.models import MatchResult
 
 # ─────────────────────────────────────────────
 # 1. Begin Innings

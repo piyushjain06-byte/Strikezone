@@ -37,8 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'firstcricketapp',
+    'accounts',
+    'tournaments',
+    'teams',
+    'matches',
     'scoring',
+    'knockout',
+    
 ]
 
 MIDDLEWARE = [
@@ -63,7 +68,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'firstcricketapp.context_processors.get_categories' ,
+             #  'firstcricketapp.context_processors.get_categories' ,
+                'tournaments.context_processors.get_categories'
             ],
         },
     },

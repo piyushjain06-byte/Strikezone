@@ -1,4 +1,3 @@
-
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap');
 
@@ -108,15 +107,20 @@
         <label class="form-label">Select Match</label>
         <select name="match_id" id="match-select" class="form-select" required onchange="updateToss()">
           <option value="">— Choose Match —</option>
-          {% for match in matches %}
-            <option value="{{ match.id }}"
-                    data-team1-id="{{ match.team1.id }}"
-                    data-team1-name="{{ match.team1.team_name }}"
-                    data-team2-id="{{ match.team2.id }}"
-                    data-team2-name="{{ match.team2.team_name }}"
-                    {% if match.id == preselected_match_id %}selected{% endif %}>
-              {{ match }}
-            </option>
+          {% regroup matches by tournament as tournament_groups %}
+          {% for tgroup in tournament_groups %}
+            <optgroup label="🏆 {{ tgroup.grouper }}">
+            {% for match in tgroup.list %}
+              <option value="{{ match.id }}"
+                      data-team1-id="{{ match.team1.id }}"
+                      data-team1-name="{{ match.team1.team_name }}"
+                      data-team2-id="{{ match.team2.id }}"
+                      data-team2-name="{{ match.team2.team_name }}"
+                      {% if match.id == preselected_match_id %}selected{% endif %}>
+                {{ match.team1.team_name }} vs {{ match.team2.team_name }} · {{ match.match_date }}
+              </option>
+            {% endfor %}
+            </optgroup>
           {% endfor %}
         </select>
       </div>
@@ -180,4 +184,3 @@
     if (sel.value) updateToss();
   });
 </script>
-

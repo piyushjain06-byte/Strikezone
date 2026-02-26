@@ -185,7 +185,6 @@
     {% empty %}
       <span style="font-size:13px;color:var(--muted);">No tournaments yet</span>
     {% endfor %}
-    <a href="{% url 'manage_cricket' %}" class="t-btn-new">＋ New Tournament</a>
   </div>
 </div>
 
@@ -195,9 +194,8 @@
 {% if not all_tournaments %}
   <div class="empty-state" style="margin-top:8px;">
     <span class="empty-icon">🏏</span>
-    <div class="empty-title">Welcome to Cricket Manager!</div>
-    <div class="empty-sub">Create a tournament, add teams and players, then start scoring.</div>
-    <a href="{% url 'manage_cricket' %}" class="btn-primary">🏆 Create First Tournament</a>
+    <div class="empty-title">No Tournaments Yet</div>
+    <div class="empty-sub">Check back soon for live matches and scores.</div>
   </div>
 
 {% elif not selected_tournament %}
@@ -211,9 +209,7 @@
   <div class="empty-state" style="margin-top:8px;">
     <span class="empty-icon">📋</span>
     <div class="empty-title">No Matches in {{ selected_tournament.tournament_name }}</div>
-    <div class="empty-sub">Create a match and start scoring!</div>
-    <a href="{% url 'create_match' %}" class="btn-primary">🆕 Create Match</a>
-    <a href="{% url 'match_start' %}" class="btn-secondary">▶ Start Toss</a>
+    <div class="empty-sub">No matches scheduled yet. Check back soon!</div>
   </div>
 
 {% else %}
@@ -534,7 +530,8 @@
         </div>
         <div class="mc-meta">📍 {{ mc.match.venue }} · 📅 {{ mc.match.match_date }}</div>
       </div>
-      {% if mc.status == 'IN_PROGRESS' %}<span class="badge badge-prog">⏳ In Progress</span>
+      {% if mc.status == 'TOSS_DONE' %}<span class="badge badge-prog">🪙 Toss Done</span>
+      {% elif mc.status == 'IN_PROGRESS' %}<span class="badge badge-prog">⏳ Between Innings</span>
       {% else %}<span class="badge badge-sched">Scheduled</span>{% endif %}
     </div>
     {% if mc.inn1 %}
@@ -556,8 +553,13 @@
     </div>
     {% else %}
     <div class="mc-pending">
-      <span>Match not started yet</span>
-      <a href="{% url 'match_start' %}">▶ Start Toss →</a>
+      {% if mc.status == 'TOSS_DONE' %}
+      <span>🪙 Toss done · Starting soon</span>
+      {% elif mc.status == 'IN_PROGRESS' %}
+      <span>⏳ 2nd innings starting soon</span>
+      {% else %}
+      <span>📅 Match scheduled</span>
+      {% endif %}
     </div>
     {% endif %}
   </div>
@@ -586,7 +588,8 @@
         </div>
         <div class="mc-meta">📍 {{ mc.match.venue }} · 📅 {{ mc.match.match_date }}</div>
       </div>
-      {% if mc.status == 'IN_PROGRESS' %}<span class="badge badge-prog">⏳ In Progress</span>
+      {% if mc.status == 'TOSS_DONE' %}<span class="badge badge-prog">🪙 Toss Done</span>
+      {% elif mc.status == 'IN_PROGRESS' %}<span class="badge badge-prog">⏳ Between Innings</span>
       {% else %}<span class="badge badge-sched">Scheduled</span>{% endif %}
     </div>
     {% if mc.inn1 %}
@@ -608,8 +611,13 @@
     </div>
     {% else %}
     <div class="mc-pending">
-      <span>Match not started yet</span>
-      <a href="{% url 'match_start' %}">▶ Start Toss →</a>
+      {% if mc.status == 'TOSS_DONE' %}
+      <span>🪙 Toss done · Starting soon</span>
+      {% elif mc.status == 'IN_PROGRESS' %}
+      <span>⏳ 2nd innings starting soon</span>
+      {% else %}
+      <span>📅 Match scheduled</span>
+      {% endif %}
     </div>
     {% endif %}
   </div>
@@ -659,15 +667,7 @@
     {% else %}<div class="no-data">No bowling data yet</div>{% endif %}
   </div>
 
-  <div class="sidebar-section">
-    <h3 class="sb-title">⚡ Quick Actions</h3>
-    <div class="qa-list">
-      <a href="{% url 'manage_cricket' %}" class="qa-btn amber">⚙ Manage Tournaments &amp; Teams</a>
-      <a href="{% url 'create_match' %}" class="qa-btn blue">🆕 Create New Match</a>
-      <a href="{% url 'match_start' %}" class="qa-btn green">▶ Start a Match / Toss</a>
-      <a href="{% url 'tournaments' %}" class="qa-btn grey">📋 All Tournaments</a>
-    </div>
-  </div>
+
 
   {% if selected_tournament %}
   <div class="sidebar-section">

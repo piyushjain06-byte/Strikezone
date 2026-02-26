@@ -9,27 +9,105 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('firstcricketapp', '0013_alter_playermatchstatus_unique_together_and_more'),
-    ]
+    ('matches', '0001_initial'),
+    ('teams', '0001_initial'),
+]
 
     operations = [
         migrations.CreateModel(
             name='Innings',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('total_runs', models.IntegerField(default=0)),
-                ('total_wickets', models.IntegerField(default=0)),
-                ('total_overs', models.FloatField(default=0)),
+                ('innings_number', models.PositiveIntegerField(choices=[(1, '1st Innings'), (2, '2nd Innings')])),
+                ('total_runs', models.PositiveIntegerField(default=0)),
+                ('total_wickets', models.PositiveIntegerField(default=0)),
+                ('total_balls', models.PositiveIntegerField(default=0)),
+                ('extras', models.PositiveIntegerField(default=0)),
+                ('status', models.CharField(choices=[('NOT_STARTED', 'Not Started'), ('IN_PROGRESS', 'In Progress'), ('COMPLETED', 'Completed')], default='NOT_STARTED', max_length=20)),
+                ('target', models.PositiveIntegerField(blank=True, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('batting_team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='innings_batting', to='firstcricketapp.teamdetails')),
-                ('bowler', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='innings_bowler', to='firstcricketapp.playerdetails')),
-                ('bowling_team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='innings_bowling', to='firstcricketapp.teamdetails')),
-                ('match_start', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='innings', to='firstcricketapp.matchstart')),
-                ('non_striker', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='innings_non_striker', to='firstcricketapp.playerdetails')),
-                ('striker', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='innings_striker', to='firstcricketapp.playerdetails')),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('match', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='innings', to='matches.creatematch')),
+                ('batting_team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='batting_innings', to='teams.teamdetails')),
+                ('bowling_team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bowling_innings', to='teams.teamdetails')),
             ],
             options={
                 'verbose_name_plural': 'Innings',
+                'unique_together': {('match', 'innings_number')},
+            },
+        ),
+        migrations.CreateModel(
+            name='Over',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('over_number', models.PositiveIntegerField()),
+                ('is_completed', models.BooleanField(default=False)),
+                ('runs_in_over', models.PositiveIntegerField(default=0)),
+                ('wickets_in_over', models.PositiveIntegerField(default=0)),
+                ('innings', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='overs', to='scoring.innings')),
+                ('bowler', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bowled_overs', to='teams.playerdetails')),
+            ],
+            options={
+                'unique_together': {('innings', 'over_number')},
+            },
+        ),
+        migrations.CreateModel(
+            name='Ball',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('ball_number', models.PositiveIntegerField()),
+                ('runs_off_bat', models.PositiveIntegerField(default=0)),
+                ('extra_runs', models.PositiveIntegerField(default=0)),
+                ('total_runs', models.PositiveIntegerField(default=0)),
+                ('ball_type', models.CharField(choices=[('NORMAL', 'Normal'), ('WIDE', 'Wide'), ('NO_BALL', 'No Ball'), ('BYE', 'Bye'), ('LEG_BYE', 'Leg Bye')], default='NORMAL', max_length=10)),
+                ('is_wicket', models.BooleanField(default=False)),
+                ('wicket_type', models.CharField(choices=[('NONE', 'None'), ('BOWLED', 'Bowled'), ('CAUGHT', 'Caught'), ('LBW', 'LBW'), ('RUN_OUT', 'Run Out'), ('STUMPED', 'Stumped'), ('HIT_WICKET', 'Hit Wicket'), ('CAUGHT_AND_BOWLED', 'Caught and Bowled')], default='NONE', max_length=20)),
+                ('is_legal_ball', models.BooleanField(default=True)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('over', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='balls', to='scoring.over')),
+                ('batsman', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='faced_balls', to='teams.playerdetails')),
+                ('bowler', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bowled_balls', to='teams.playerdetails')),
+                ('player_dismissed', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='dismissals', to='teams.playerdetails')),
+                ('fielder', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fielding_dismissals', to='teams.playerdetails')),
+            ],
+            options={
+                'ordering': ['over__over_number', 'ball_number'],
+                'unique_together': {('over', 'ball_number')},
+            },
+        ),
+        migrations.CreateModel(
+            name='BattingScorecard',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('runs', models.PositiveIntegerField(default=0)),
+                ('balls_faced', models.PositiveIntegerField(default=0)),
+                ('fours', models.PositiveIntegerField(default=0)),
+                ('sixes', models.PositiveIntegerField(default=0)),
+                ('status', models.CharField(choices=[('NOT_OUT', 'Not Out'), ('OUT', 'Out'), ('DNB', 'Did Not Bat')], default='NOT_OUT', max_length=10)),
+                ('dismissal_info', models.CharField(blank=True, max_length=200, null=True)),
+                ('batting_position', models.PositiveIntegerField()),
+                ('innings', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='batting_scorecard', to='scoring.innings')),
+                ('batsman', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='batting_scores', to='teams.playerdetails')),
+            ],
+            options={
+                'ordering': ['batting_position'],
+                'unique_together': {('innings', 'batsman')},
+            },
+        ),
+        migrations.CreateModel(
+            name='BowlingScorecard',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('overs_bowled', models.DecimalField(decimal_places=1, default=0.0, max_digits=4)),
+                ('runs_given', models.PositiveIntegerField(default=0)),
+                ('wickets', models.PositiveIntegerField(default=0)),
+                ('wides', models.PositiveIntegerField(default=0)),
+                ('no_balls', models.PositiveIntegerField(default=0)),
+                ('innings', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bowling_scorecard', to='scoring.innings')),
+                ('bowler', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bowling_scores', to='teams.playerdetails')),
+            ],
+            options={
+                'unique_together': {('innings', 'bowler')},
             },
         ),
     ]

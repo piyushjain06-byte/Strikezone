@@ -1,35 +1,31 @@
 from django.contrib import admin
+from .models import Innings, Over, Ball, BattingScorecard, BowlingScorecard
 
 
-from django.contrib import admin
-from .models import Innings
-from firstcricketapp.models import TeamDetails
-
-
+@admin.register(Innings)
 class InningsAdmin(admin.ModelAdmin):
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-
-        if db_field.name in ["batting_team", "bowling_team"]:
-
-            match_start_id = request.GET.get("match_start")
-
-            if match_start_id:
-                from firstcricketapp.models import MatchStart
-                match_start = MatchStart.objects.get(id=match_start_id)
-                match = match_start.match
-
-                # Only show the 2 teams of this match
-                kwargs["queryset"] = TeamDetails.objects.filter(
-                    id__in=[match.team1.id, match.team2.id]
-                )
-
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-    readonly_fields = ("batting_team", "bowling_team", "total_runs", "total_wickets", "total_overs")
-
-    def has_delete_permission(self, request, obj=None):
-        return False
+    list_display = ('__str__', 'innings_number', 'batting_team', 'bowling_team', 'total_runs', 'total_wickets', 'overs_completed', 'status')
+    list_filter = ('status', 'innings_number')
 
 
-admin.site.register(Innings, InningsAdmin)
+@admin.register(Over)
+class OverAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'over_number', 'bowler', 'runs_in_over', 'wickets_in_over', 'is_completed')
+    list_filter = ('is_completed',)
 
 
+@admin.register(Ball)
+class BallAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'ball_number', 'batsman', 'bowler', 'runs_off_bat', 'extra_runs', 'total_runs', 'ball_type', 'is_wicket', 'wicket_type')
+    list_filter = ('ball_type', 'is_wicket', 'wicket_type')
+
+
+@admin.register(BattingScorecard)
+class BattingScorecardAdmin(admin.ModelAdmin):
+    list_display = ('batsman', 'innings', 'runs', 'balls_faced', 'fours', 'sixes', 'strike_rate', 'status')
+    list_filter = ('status',)
+
+
+@admin.register(BowlingScorecard)
+class BowlingScorecardAdmin(admin.ModelAdmin):
+    list_display = ('bowler', 'innings', 'overs_bowled', 'runs_given', 'wickets', 'wides', 'no_balls', 'economy')

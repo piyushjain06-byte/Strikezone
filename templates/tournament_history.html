@@ -336,7 +336,7 @@
           <a href="{% url 'scoring' md.match.id %}" class="btn-live">Go to Match →</a>
         {% elif md.status == 'IN_PROGRESS' %}
           <span class="badge badge-in-progress">In Progress</span>
-          <a href="{% url 'match_start' %}?match_id={{ md.match.id }}" class="btn-start">Continue →</a>
+          <a href="{% url 'start_innings' md.match.id %}" class="btn-start">Continue →</a>
         {% else %}
           <span class="badge badge-pending">Pending</span>
           <a href="{% url 'match_start' %}?match_id={{ md.match.id }}" class="btn-start">Start Match →</a>
