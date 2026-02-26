@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0f1e; --surface: #111827; --surface2: #1a2235;
+    --border: #1e2d45; --accent: #f59e0b; --success: #10b981;
+    --text: #e2e8f0; --muted: #64748b; --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+  .result-wrap { max-width: 480px; margin: 0 auto; padding: 24px 14px 60px; }
+
+  /* ── TROPHY CARD ── */
+  .trophy-card {
+    background: linear-gradient(135deg, #1a2a0a, #0f2a1a);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 18px;
+    padding: 32px 24px;
+    text-align: center;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .trophy-card::before {
+    content: '';
+    position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
+  }
+  .trophy-emoji { font-size: 56px; line-height: 1; margin-bottom: 12px; }
+  .trophy-label { font-size: 12px; color: var(--success); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+  .winner-name  { font-family: 'Rajdhani', sans-serif; font-size: 36px; font-weight: 700; color: #fff; line-height: 1.1; }
+  .win-margin   { font-size: 15px; color: var(--success); margin-top: 8px; font-weight: 600; }
+
+  /* ── TIED CARD ── */
+  .tied-card {
+    background: linear-gradient(135deg, #1a1a0a, #2a2a0a);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 18px;
+    padding: 32px 24px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .tied-card .trophy-emoji { font-size: 50px; }
+  .tied-card .winner-name  { color: var(--accent); font-size: 30px; }
+
+  /* ── SCORECARD ── */
+  .innings-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+  .inn-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+  }
+  .inn-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+  .inn-team  { font-size: 15px; font-weight: 600; color: #fff; }
+  .inn-score {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 32px; font-weight: 700; color: var(--accent); line-height: 1;
+  }
+  .inn-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── BUTTONS ── */
+  .btn-scorecard {
+    display: block; width: 100%;
+    background: linear-gradient(135deg, #0e4a6a, #3b82f6);
+    border: 1.5px solid #1e4d82;
+    border-radius: 12px; color: #fff;
+    font-size: 14px; font-weight: 600; padding: 13px;
+    text-align: center; text-decoration: none;
+    transition: all 0.15s; margin-top: 6px;
+  }
+  .btn-scorecard:hover { opacity: 0.85; }
+  .btn-home {
+    display: block; width: 100%;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 12px; color: var(--text);
+    font-size: 14px; font-weight: 600; padding: 13px;
+    text-align: center; text-decoration: none;
+    transition: all 0.15s; margin-top: 6px;
+  }
+  .btn-home:hover { background: #273450; border-color: #3b4f6e; }
+</style>
+
+
+<div class="result-wrap">
+
+  <!-- MATCH INFO -->
+  <div style="text-align:center; margin-bottom:20px;">
+    <div style="font-size:11px; color:var(--muted); letter-spacing:1px; text-transform:uppercase;">{{ match.tournament }}</div>
+    <div style="font-size:18px; font-weight:700; color:#fff; margin-top:4px;">{{ match.team1 }} vs {{ match.team2 }}</div>
+  </div>
+
+  <!-- RESULT -->
+  {% if winner %}
+  <div class="trophy-card">
+    <div class="trophy-emoji">🏆</div>
+    <div class="trophy-label">Winner</div>
+    <div class="winner-name">{{ winner }}</div>
+    <div class="win-margin">Won by {{ margin }}</div>
+  </div>
+  {% else %}
+  <div class="tied-card">
+    <div class="trophy-emoji">🤝</div>
+    <div class="trophy-label">Result</div>
+    <div class="winner-name">Match Tied!</div>
+  </div>
+  {% endif %}
+
+  <!-- INNINGS 1 -->
+  <div class="innings-card">
+    <div class="inn-header">
+      <div>
+        <div class="inn-label">1st Innings</div>
+        <div class="inn-team">{{ inn1.batting_team }}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="inn-score">{{ inn1.total_runs }}/{{ inn1.total_wickets }}</div>
+        <div class="inn-meta">{{ inn1.overs_completed }} overs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INNINGS 2 -->
+  <div class="innings-card">
+    <div class="inn-header">
+      <div>
+        <div class="inn-label">2nd Innings</div>
+        <div class="inn-team">{{ inn2.batting_team }}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="inn-score">{{ inn2.total_runs }}/{{ inn2.total_wickets }}</div>
+        <div class="inn-meta">{{ inn2.overs_completed }} overs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION BUTTONS -->
+  <a href="/match/{{ match.id }}/scorecard/" class="btn-scorecard">📋 View Full Scorecard</a>
+  <a href="/" class="btn-home">← Back to Home</a>
+
+</div>
+
+{% endblock %}

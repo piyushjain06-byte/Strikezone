@@ -1,0 +1,119 @@
+
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #07090f; --surface: #0e1117; --surface2: #161b26;
+    --border: #1e2a3a; --accent: #f59e0b; --danger: #ef4444;
+    --text: #e2e8f0; --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif;
+         min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+
+  .wrap { width: 100%; max-width: 400px; }
+
+  .logo { text-align: center; margin-bottom: 28px; }
+  .logo .icon { font-size: 44px; margin-bottom: 8px; }
+  .logo h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px; color: #fff; letter-spacing: 1px;
+  }
+  .logo p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  .admin-badge {
+    display: inline-block; font-size: 10px; font-weight: 800;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 20px; color: var(--accent); padding: 3px 12px;
+    margin-bottom: 10px;
+  }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 28px 24px;
+  }
+
+  .alert-error {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 8px; color: #fca5a5;
+    font-size: 13px; font-weight: 500; padding: 10px 14px; margin-bottom: 16px;
+  }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 7px;
+  }
+  .form-input {
+    width: 100%; background: var(--surface2);
+    border: 1.5px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 15px;
+    font-family: 'DM Sans', sans-serif; padding: 12px 14px;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { outline: none; border-color: var(--accent); }
+  .form-input::placeholder { color: var(--muted); }
+
+  .btn-submit {
+    width: 100%;
+    background: linear-gradient(135deg, #b45309, #f59e0b);
+    border: none; border-radius: 10px; color: #000;
+    font-size: 15px; font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    padding: 13px; cursor: pointer; transition: opacity 0.15s; margin-top: 4px;
+  }
+  .btn-submit:hover { opacity: 0.88; }
+
+  .bottom-link {
+    text-align: center; font-size: 13px; color: var(--muted); margin-top: 16px;
+  }
+  .bottom-link a { color: #60a5fa; text-decoration: none; font-weight: 600; }
+
+  .divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 20px 0; color: var(--muted); font-size: 12px;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+</style>
+
+<div class="wrap">
+  <div class="logo">
+    <div class="icon">⚙️</div>
+    <div class="admin-badge">Admin Access</div>
+    <h1>Admin Login</h1>
+    <p>Login with your Django admin credentials</p>
+  </div>
+
+  <div class="card">
+    {% if error %}
+      <div class="alert-error">⚠ {{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-input"
+               placeholder="Admin username" required autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-input"
+               placeholder="Admin password" required>
+      </div>
+      <button type="submit" class="btn-submit">Login as Admin →</button>
+    </form>
+
+    <div class="divider">or</div>
+
+    <div class="bottom-link">
+      Player? <a href="{% url 'player_login' %}">Login with mobile →</a>
+    </div>
+  </div>
+</div>
+

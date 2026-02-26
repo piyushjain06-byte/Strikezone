@@ -1,0 +1,508 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0f1e; --surface: #111827; --surface2: #1a2235;
+    --border: #1e2d45; --accent: #f59e0b; --success: #10b981;
+    --info: #3b82f6; --danger: #ef4444;
+    --text: #e2e8f0; --muted: #64748b; --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+  .mc-wrap { max-width: 720px; margin: 0 auto; padding: 24px 14px 60px; }
+
+  /* ── PAGE HEADER ── */
+  .mc-header {
+    background: linear-gradient(135deg, #1a2a4a 0%, #0f1f38 100%);
+    border: 1px solid #1e3a5f; border-radius: var(--radius);
+    padding: 24px 20px; margin-bottom: 20px;
+    position: relative; overflow: hidden;
+  }
+  .mc-header::before {
+    content: ''; position: absolute; top: -50px; right: -50px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
+  }
+  .mc-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 20px; padding: 3px 12px;
+    display: inline-block; margin-bottom: 10px;
+  }
+  .mc-title { font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700; color: #fff; }
+  .mc-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* ── ALERTS ── */
+  .alert {
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 13px; font-weight: 500; margin-bottom: 14px;
+  }
+  .alert-success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+  .alert-error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 9px 18px; border-radius: 10px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    color: var(--muted); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+  }
+  .tab-btn.active { background: rgba(245,158,11,0.12); border-color: var(--accent); color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── FORM CARD ── */
+  .form-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 20px; margin-bottom: 16px;
+  }
+  .form-card h3 {
+    font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 18px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border);
+  }
+  .form-card p { margin-bottom: 14px; }
+  .form-card label {
+    display: block; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .form-card input[type="text"],
+  .form-card input[type="number"],
+  .form-card input[type="date"],
+  .form-card input[type="tel"],
+  .form-card select {
+    width: 100%; background: var(--surface2);
+    border: 1.5px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 14px; padding: 11px 14px;
+    outline: none; transition: border-color 0.15s;
+    font-family: 'Inter', sans-serif; appearance: none;
+  }
+  .form-card input:focus, .form-card select:focus { border-color: var(--accent); }
+  .form-card select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+    background-color: var(--surface2);
+  }
+  .form-card input[type="checkbox"] {
+    width: 16px; height: 16px; accent-color: var(--accent);
+    margin-right: 8px; cursor: pointer;
+  }
+  .form-card ul { list-style: none; }
+  .form-card ul li { display: flex; align-items: center; margin-bottom: 6px; color: var(--text); font-size: 14px; }
+
+  /* ── TEAM COUNT SELECTOR ── */
+  .team-count-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 4px;
+  }
+  .team-count-option { display: none; }
+  .team-count-label {
+    display: flex; align-items: center; justify-content: center;
+    height: 44px; border-radius: 10px;
+    background: var(--surface2); border: 2px solid var(--border);
+    color: var(--muted); font-size: 18px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .team-count-option:checked + .team-count-label {
+    background: rgba(245,158,11,0.12); border-color: var(--accent); color: var(--accent);
+  }
+
+  .btn-submit {
+    background: linear-gradient(135deg, #b45309, #f59e0b);
+    border: none; border-radius: 10px; color: #000;
+    font-size: 14px; font-weight: 700; padding: 12px 24px;
+    cursor: pointer; transition: opacity 0.15s; margin-top: 6px;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-submit:hover { opacity: 0.88; }
+  .btn-submit-green {
+    background: linear-gradient(135deg, #065f46, #10b981);
+    border: none; border-radius: 10px; color: #000;
+    font-size: 14px; font-weight: 700; padding: 12px 24px;
+    cursor: pointer; transition: opacity 0.15s; margin-top: 6px;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-submit-green:hover { opacity: 0.88; }
+  .btn-submit-blue {
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    border: none; border-radius: 10px; color: #fff;
+    font-size: 14px; font-weight: 700; padding: 12px 24px;
+    cursor: pointer; transition: opacity 0.15s; margin-top: 6px;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-submit-blue:hover { opacity: 0.88; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 12px; margin-top: 28px;
+  }
+
+  /* ── TOURNAMENT PROGRESS CARDS ── */
+  .t-progress-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 14px; overflow: hidden;
+  }
+  .t-progress-header {
+    padding: 16px 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .t-progress-header:hover { background: rgba(255,255,255,0.02); }
+  .t-progress-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+  .t-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .t-name { font-size: 15px; font-weight: 700; color: #fff; }
+  .t-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* Progress bar */
+  .progress-wrap { min-width: 100px; }
+  .progress-label {
+    font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 5px;
+    display: flex; justify-content: space-between;
+  }
+  .progress-bar-bg {
+    height: 6px; background: var(--surface2); border-radius: 10px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 10px;
+    background: linear-gradient(90deg, #b45309, #f59e0b);
+    transition: width 0.4s ease;
+  }
+  .progress-bar-fill.complete { background: linear-gradient(90deg, #065f46, #10b981); }
+
+  .chevron {
+    color: var(--muted); font-size: 14px; transition: transform 0.2s; flex-shrink: 0;
+  }
+  .t-progress-card.open .chevron { transform: rotate(180deg); }
+
+  /* Expanded body */
+  .t-progress-body { display: none; border-top: 1px solid var(--border); }
+  .t-progress-card.open .t-progress-body { display: block; }
+
+  /* Team rows inside expanded */
+  .team-row {
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.04); gap: 10px;
+  }
+  .team-row:last-child { border-bottom: none; }
+  .team-row-left { display: flex; align-items: center; gap: 10px; }
+  .team-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--success); flex-shrink: 0;
+  }
+  .team-row-name { font-size: 14px; font-weight: 600; color: #fff; }
+  .player-count-badge {
+    font-size: 11px; color: var(--muted);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 2px 8px;
+  }
+
+  /* Player pills */
+  .player-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .player-pill {
+    font-size: 11px; color: #94a3b8;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 2px 8px;
+  }
+  .player-pill.captain { border-color: rgba(245,158,11,0.4); color: var(--accent); }
+
+  /* Slot placeholders */
+  .team-slot {
+    padding: 12px 18px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--muted); font-size: 13px;
+  }
+  .team-slot:last-child { border-bottom: none; }
+  .slot-circle {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 1.5px dashed var(--border); flex-shrink: 0;
+  }
+
+  .btn-add-team {
+    display: inline-block; margin: 12px 18px;
+    background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 8px; color: var(--info);
+    font-size: 12px; font-weight: 700; padding: 6px 14px;
+    cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+  }
+  .btn-add-team:hover { background: rgba(59,130,246,0.18); }
+
+  .complete-badge {
+    font-size: 10px; font-weight: 800; letter-spacing: 1px;
+    text-transform: uppercase; border-radius: 20px;
+    padding: 3px 10px; white-space: nowrap;
+    background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: var(--success);
+  }
+  .incomplete-badge {
+    font-size: 10px; font-weight: 800; letter-spacing: 1px;
+    text-transform: uppercase; border-radius: 20px;
+    padding: 3px 10px; white-space: nowrap;
+    background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: var(--accent);
+  }
+
+  .empty-state {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 32px;
+    text-align: center; color: var(--muted); font-size: 14px;
+  }
+  .hint-text { font-size: 12px; color: var(--muted); margin-top: 8px; font-style: italic; }
+</style>
+
+<div class="mc-wrap">
+
+  <!-- HEADER -->
+  <div class="mc-header">
+    <div class="mc-tag">⚙️ Admin Panel</div>
+    <div class="mc-title">Cricket Management</div>
+    <div class="mc-sub">Create and manage tournaments, teams and players</div>
+  </div>
+
+  <!-- MESSAGES -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert {% if 'success' in message.tags %}alert-success{% else %}alert-error{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- ── TABS + FORMS ── -->
+  <div class="tabs">
+    <button class="tab-btn {% if active_tab == 'tournament' %}active{% endif %}" onclick="switchTab('tournament', this)">🏆 Tournament</button>
+    <button class="tab-btn {% if active_tab == 'team' %}active{% endif %}"       onclick="switchTab('team', this)">👕 Team</button>
+    <button class="tab-btn {% if active_tab == 'player' %}active{% endif %}"     onclick="switchTab('player', this)">🏏 Player</button>
+  </div>
+
+  <div class="tab-panel {% if active_tab == 'tournament' %}active{% endif %}" id="tab-tournament">
+    <div class="form-card">
+      <h3>🏆 Create Tournament</h3>
+      <form method="POST">
+        {% csrf_token %}
+        {% for field in tournament_form %}
+          {% if field.name == 'number_of_teams' %}
+            <div style="margin-bottom:14px;">
+              <label>Number of Teams</label>
+              <div class="team-count-grid">
+                {% for val in team_count_options %}
+                  <input type="radio" name="number_of_teams" id="tc{{ val }}"
+                         value="{{ val }}" class="team-count-option"
+                         {% if val == 2 %}checked{% endif %}>
+                  <label for="tc{{ val }}" class="team-count-label">{{ val }}</label>
+                {% endfor %}
+              </div>
+              <p class="hint-text">How many teams will participate</p>
+            </div>
+          {% else %}
+            <div style="margin-bottom:14px;">
+              <label>{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}<p style="color:#f87171;font-size:12px;margin-top:4px;">{{ field.errors.0 }}</p>{% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+        <button type="submit" name="tournament_submit" class="btn-submit">Create Tournament →</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="tab-panel {% if active_tab == 'team' %}active{% endif %}" id="tab-team">
+    <div class="form-card">
+      <h3>👕 Add Team</h3>
+      <form method="POST">
+        {% csrf_token %}
+        {% for field in team_form %}
+          <div style="margin-bottom:14px;">
+            <label>{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p style="color:#f87171;font-size:12px;margin-top:4px;">{{ field.errors.0 }}</p>{% endif %}
+          </div>
+        {% endfor %}
+        <button type="submit" name="team_submit" class="btn-submit-green">Add Team →</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="tab-panel {% if active_tab == 'player' %}active{% endif %}" id="tab-player">
+    <div class="form-card">
+      <h3>🏏 Add Player</h3>
+      <form method="POST">
+        {% csrf_token %}
+        {% for field in player_form %}
+          <div style="margin-bottom:14px;">
+            <label>{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p style="color:#f87171;font-size:12px;margin-top:4px;">{{ field.errors.0 }}</p>{% endif %}
+          </div>
+        {% endfor %}
+        <button type="submit" name="player_submit" class="btn-submit-blue">Add Player →</button>
+      </form>
+    </div>
+  </div>
+
+
+
+  <!-- ── TOURNAMENT PROGRESS ── -->
+  <div class="section-title">Tournament Setup Progress</div>
+
+  {% if tournament_progress %}
+    {% for tp in tournament_progress %}
+    <div class="t-progress-card" id="tcard-{{ tp.tournament.id }}">
+
+      <!-- Header (click to expand) -->
+      <div class="t-progress-header" onclick="toggleCard('tcard-{{ tp.tournament.id }}')">
+        <div class="t-progress-left">
+          <div class="t-icon">🏆</div>
+          <div>
+            <div class="t-name">{{ tp.tournament.tournament_name }}</div>
+            <div class="t-meta">
+              {{ tp.tournament.get_tournament_type_display }}
+              &nbsp;·&nbsp; {{ tp.tournament.number_of_overs }} overs
+              &nbsp;·&nbsp; {{ tp.tournament.number_of_teams }} teams
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;">
+          {% if tp.is_complete %}
+            <span class="complete-badge">✓ Ready</span>
+          {% else %}
+            <span class="incomplete-badge">{{ tp.teams_remaining }} team{{ tp.teams_remaining|pluralize }} left</span>
+          {% endif %}
+
+          <div class="progress-wrap" style="min-width:80px;">
+            <div class="progress-label">
+              <span>{{ tp.teams_added }}/{{ tp.teams_needed }}</span>
+            </div>
+            <div class="progress-bar-bg">
+              {% with pct=tp.teams_added|floatformat:0 %}
+              <div class="progress-bar-fill {% if tp.is_complete %}complete{% endif %}"
+                   style="width: {% widthratio tp.teams_added tp.teams_needed 100 %}%"></div>
+              {% endwith %}
+            </div>
+          </div>
+
+          <span class="chevron">▼</span>
+        </div>
+      </div>
+
+      <!-- Expandable body -->
+      <div class="t-progress-body">
+
+        <!-- Existing teams -->
+        {% for td in tp.team_data %}
+        <div class="team-row">
+          <div style="flex:1;">
+            <div class="team-row-left">
+              <div class="team-dot"></div>
+              <div class="team-row-name">{{ td.team.team_name }}</div>
+              <span class="player-count-badge">{{ td.player_count }} player{{ td.player_count|pluralize }}</span>
+            </div>
+            {% if td.players %}
+            <div class="player-pills" style="margin-left:18px; margin-top:6px;">
+              {% for p in td.players %}
+                <span class="player-pill {% if p.is_captain %}captain{% endif %}">
+                  {% if p.is_captain %}👑 {% endif %}{{ p.player_name }}
+                </span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          <button class="btn-add-team"
+                  onclick="quickAddPlayer('{{ td.team.id }}', '{{ td.team.team_name }}')">
+            + Player
+          </button>
+        </div>
+        {% endfor %}
+
+        <!-- Empty slots for remaining teams -->
+        {% for i in tp.slots_range %}
+        <div class="team-slot">
+          <div class="slot-circle"></div>
+          Team slot {{ tp.teams_added|add:forloop.counter }} — not added yet
+        </div>
+        {% endfor %}
+
+        <!-- Add team button -->
+        {% if not tp.is_complete %}
+        <button class="btn-add-team"
+                onclick="quickAddTeam('{{ tp.tournament.id }}', '{{ tp.tournament.tournament_name }}')">
+          + Add Team to {{ tp.tournament.tournament_name }}
+        </button>
+        {% endif %}
+        {% if tp.is_complete %}
+        <div style="padding:12px 18px;">
+          <a href="{% url 'create_match' %}" style="display:inline-block;
+            background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
+            border-radius:8px;color:var(--success);font-size:12px;font-weight:700;
+            padding:7px 14px;text-decoration:none;">
+            🏏 Create Match for this Tournament →
+          </a>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+    <div class="empty-state">
+      No tournaments yet. Create your first tournament above ↑
+    </div>
+  {% endif %}
+
+</div>
+
+<script>
+  // Tab switching
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // Expand/collapse tournament card
+  function toggleCard(id) {
+    document.getElementById(id).classList.toggle('open');
+  }
+
+  // Quick add team — switch to team tab and pre-select tournament
+  function quickAddTeam(tournamentId, tournamentName) {
+    switchTab('team', document.querySelectorAll('.tab-btn')[1]);
+    const sel = document.querySelector('#tab-team select[name="tournament"]');
+    if (sel) sel.value = tournamentId;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Quick add player — switch to player tab and pre-select team
+  function quickAddPlayer(teamId, teamName) {
+    switchTab('player', document.querySelectorAll('.tab-btn')[2]);
+    const sel = document.querySelector('#tab-player select[name="team"]');
+    if (sel) sel.value = teamId;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Auto-open cards that are incomplete
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.t-progress-card').forEach(card => {
+      const badge = card.querySelector('.incomplete-badge');
+      if (badge) card.classList.add('open');
+    });
+  });
+</script>
+
+{% endblock %}

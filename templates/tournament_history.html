@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #07090f;
+    --surface: #0e1117;
+    --surface2: #161b26;
+    --border: #1e2a3a;
+    --accent: #22c55e;
+    --accent2: #3b82f6;
+    --gold: #f59e0b;
+    --danger: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  /* ── HEADER ── */
+  .page-header {
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .page-header-left .label {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 6px;
+  }
+  .page-header-left h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px; color: #fff; letter-spacing: 1px; line-height: 1;
+  }
+  .page-header-left .meta { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .btn-back {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--muted); font-size: 13px; font-weight: 600;
+    padding: 8px 16px; text-decoration: none; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-back:hover { color: #fff; border-color: #475569; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 1px; color: #fff;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title span { color: var(--accent); }
+
+  /* ── LEADERBOARD ── */
+  .leaderboard-table {
+    width: 100%; border-collapse: collapse;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 32px;
+  }
+  .leaderboard-table thead th {
+    background: var(--surface2);
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted);
+    padding: 12px 16px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .leaderboard-table thead th:not(:first-child) { text-align: center; }
+  .leaderboard-table thead th.nrr-header {
+    position: relative; cursor: default;
+  }
+  .nrr-tooltip {
+    display: none;
+    position: absolute; top: 110%; left: 50%; transform: translateX(-50%);
+    background: #1e293b; border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    font-size: 11px; color: var(--text); font-weight: 400;
+    white-space: nowrap; z-index: 10; letter-spacing: 0;
+    text-transform: none; line-height: 1.5;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .nrr-header:hover .nrr-tooltip { display: block; }
+
+  .leaderboard-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+  .leaderboard-table tbody tr:last-child { border-bottom: none; }
+  .leaderboard-table tbody tr:hover { background: var(--surface2); }
+  .leaderboard-table td { padding: 14px 16px; font-size: 14px; }
+  .leaderboard-table td:not(:first-child) { text-align: center; }
+
+  /* Top 3 row highlights */
+  .leaderboard-table tbody tr.rank-1 { background: rgba(245,158,11,0.04); }
+  .leaderboard-table tbody tr.rank-2 { background: rgba(148,163,184,0.03); }
+  .leaderboard-table tbody tr.rank-3 { background: rgba(180,83,9,0.03); }
+
+  .rank-cell { display: flex; align-items: center; gap: 12px; }
+  .rank-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; color: var(--muted); min-width: 24px;
+  }
+  .rank-1 .rank-num { color: var(--gold); }
+  .rank-2 .rank-num { color: #94a3b8; }
+  .rank-3 .rank-num { color: #b45309; }
+  .team-name-lb { font-weight: 600; color: #fff; font-size: 15px; }
+  .points-badge {
+    background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 20px; color: var(--accent);
+    font-size: 13px; font-weight: 700; padding: 2px 10px; display: inline-block;
+  }
+  .stat-win  { color: var(--accent); font-weight: 700; }
+  .stat-loss { color: var(--danger); }
+
+  /* NRR cell */
+  .nrr-positive {
+    color: var(--accent); font-weight: 700; font-size: 13px;
+    font-family: 'DM Sans', monospace;
+  }
+  .nrr-negative {
+    color: var(--danger); font-weight: 700; font-size: 13px;
+    font-family: 'DM Sans', monospace;
+  }
+  .nrr-zero {
+    color: var(--muted); font-weight: 600; font-size: 13px;
+    font-family: 'DM Sans', monospace;
+  }
+
+  /* NRR tiebreaker indicator */
+  .tiebreaker-note {
+    font-size: 11px; color: var(--muted);
+    margin-bottom: 10px; margin-top: -8px;
+    padding: 6px 10px; background: rgba(59,130,246,0.08);
+    border: 1px solid rgba(59,130,246,0.15); border-radius: 6px;
+    display: inline-block;
+  }
+
+  /* ── MATCH CARDS ── */
+  .matches-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .match-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+    transition: border-color 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .match-card:hover { border-color: #2a3a50; }
+  .match-card.completed { border-left: 3px solid var(--accent); }
+  .match-card.live     { border-left: 3px solid var(--danger); }
+  .match-card.pending  { border-left: 3px solid var(--border); }
+  .match-card.in_progress { border-left: 3px solid var(--gold); }
+
+  .match-left { flex: 1; min-width: 180px; }
+  .match-teams-row {
+    font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;
+  }
+  .match-meta { font-size: 12px; color: var(--muted); }
+  .match-meta span { margin-right: 10px; }
+
+  .match-center { text-align: center; flex: 1; min-width: 120px; }
+  .match-scores {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; color: #fff; letter-spacing: 0.5px;
+  }
+  .match-scores .vs { color: var(--muted); font-size: 14px; margin: 0 6px; }
+  .match-result-text { font-size: 12px; color: var(--accent); font-weight: 600; margin-top: 3px; }
+
+  .match-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+  /* Status badges */
+  .badge {
+    font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+    text-transform: uppercase; border-radius: 20px; padding: 3px 10px;
+    display: inline-block;
+  }
+  .badge-completed { background: rgba(34,197,94,0.12); color: var(--accent); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-live      { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3);
+                     animation: pulse 2s infinite; }
+  .badge-pending   { background: rgba(100,116,139,0.12); color: var(--muted); border: 1px solid rgba(100,116,139,0.2); }
+  .badge-in-progress { background: rgba(245,158,11,0.12); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  .btn-scorecard {
+    background: linear-gradient(135deg, #14532d, #22c55e);
+    border: none; border-radius: 8px;
+    color: #000; font-size: 12px; font-weight: 700;
+    padding: 7px 14px; cursor: pointer; text-decoration: none;
+    transition: opacity 0.15s; white-space: nowrap;
+  }
+  .btn-scorecard:hover { opacity: 0.85; }
+  .btn-live {
+    background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 8px; color: #f87171;
+    font-size: 12px; font-weight: 700; padding: 7px 14px;
+    text-decoration: none; white-space: nowrap;
+  }
+  .btn-start {
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    border: none; border-radius: 8px; color: #fff;
+    font-size: 12px; font-weight: 700; padding: 7px 14px;
+    text-decoration: none; white-space: nowrap; transition: opacity 0.15s;
+  }
+  .btn-start:hover { opacity: 0.85; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+</style>
+
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="label">Tournament History</div>
+      <h1>{{ tournament.tournament_name }}</h1>
+      <div class="meta">
+        {{ tournament.get_tournament_type_display }}
+        &nbsp;·&nbsp; {{ tournament.number_of_overs }} overs
+        {% if tournament.start_date %}&nbsp;·&nbsp; {{ tournament.start_date }}{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="{% url 'knockout_bracket' tournament.id %}" class="btn-back">🏆 Knockout Bracket</a>
+      <a href="{% url 'tournaments' %}" class="btn-back">← Tournaments</a>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="section-title">🏆 <span>Leaderboard</span></div>
+
+  <div class="tiebreaker-note">
+    ℹ️ Teams ranked by Points · Tiebreaker: Net Run Rate (NRR)
+  </div>
+
+  <table class="leaderboard-table">
+    <thead>
+      <tr>
+        <th>Team</th>
+        <th>P</th>
+        <th>W</th>
+        <th>L</th>
+        <th class="nrr-header">
+          NRR ⓘ
+          <div class="nrr-tooltip">
+            Net Run Rate = (Runs Scored ÷ Overs Faced) − (Runs Conceded ÷ Overs Bowled)<br>
+            Used as tiebreaker when points are equal.
+          </div>
+        </th>
+        <th>Pts</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in leaderboard %}
+      <tr class="rank-{{ entry.rank }}">
+        <td>
+          <div class="rank-cell">
+            <div class="rank-num">{{ entry.rank }}</div>
+            <div class="team-name-lb">
+              {{ entry.team.team_name }}
+              {% if entry.rank == 1 and entry.wins > 0 %}&nbsp;👑{% endif %}
+            </div>
+          </div>
+        </td>
+        <td>{{ entry.played }}</td>
+        <td class="stat-win">{{ entry.wins }}</td>
+        <td class="stat-loss">{{ entry.losses }}</td>
+        <td>
+          {% if entry.nrr > 0 %}
+            <span class="nrr-positive">{{ entry.nrr_display }}</span>
+          {% elif entry.nrr < 0 %}
+            <span class="nrr-negative">{{ entry.nrr_display }}</span>
+          {% else %}
+            <span class="nrr-zero">0.000</span>
+          {% endif %}
+        </td>
+        <td><span class="points-badge">{{ entry.points }}</span></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="empty">No teams found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- MATCHES -->
+  <div class="section-title">🏏 <span>Matches</span></div>
+  <div class="matches-list">
+    {% for md in match_data %}
+    <div class="match-card {{ md.status|lower }}">
+
+      <div class="match-left">
+        <div class="match-teams-row">{{ md.match.team1 }} vs {{ md.match.team2 }}</div>
+        <div class="match-meta">
+          <span>📅 {{ md.match.match_date }}</span>
+          <span>📍 {{ md.match.venue }}</span>
+        </div>
+      </div>
+
+      <div class="match-center">
+        {% if md.status == 'COMPLETED' %}
+          <div class="match-scores">
+            {{ md.inn1.total_runs }}/{{ md.inn1.total_wickets }}
+            <span class="vs">vs</span>
+            {{ md.inn2.total_runs }}/{{ md.inn2.total_wickets }}
+          </div>
+          <div class="match-result-text">
+            {% if md.winner %}{{ md.winner }} won by {{ md.margin }}
+            {% else %}Match Tied{% endif %}
+          </div>
+        {% elif md.status == 'LIVE' %}
+          <div class="match-scores" style="color:#f87171;">In Progress</div>
+          {% if md.inn1 %}
+          <div class="match-result-text" style="color:var(--muted);">
+            {{ md.inn1.batting_team }}: {{ md.inn1.total_runs }}/{{ md.inn1.total_wickets }}
+          </div>
+          {% endif %}
+        {% elif md.status == 'IN_PROGRESS' %}
+          <div style="color:var(--gold); font-size:13px; font-weight:600;">Toss done · Not started</div>
+        {% else %}
+          <div style="color:var(--muted); font-size:13px;">Not started yet</div>
+        {% endif %}
+      </div>
+
+      <div class="match-right">
+        {% if md.status == 'COMPLETED' %}
+          <span class="badge badge-completed">Completed</span>
+          <a href="{% url 'match_scorecard' md.match.id %}" class="btn-scorecard">View Scorecard →</a>
+        {% elif md.status == 'LIVE' %}
+          <span class="badge badge-live">● Live</span>
+          <a href="{% url 'scoring' md.match.id %}" class="btn-live">Go to Match →</a>
+        {% elif md.status == 'IN_PROGRESS' %}
+          <span class="badge badge-in-progress">In Progress</span>
+          <a href="{% url 'match_start' %}?match_id={{ md.match.id }}" class="btn-start">Continue →</a>
+        {% else %}
+          <span class="badge badge-pending">Pending</span>
+          <a href="{% url 'match_start' %}?match_id={{ md.match.id }}" class="btn-start">Start Match →</a>
+        {% endif %}
+      </div>
+
+    </div>
+    {% empty %}
+    <div class="empty">No matches created for this tournament yet.</div>
+    {% endfor %}
+  </div>
+
+</div>
+
+{% endblock %}

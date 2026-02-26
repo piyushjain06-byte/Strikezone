@@ -1,0 +1,173 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #07090f; --surface: #0e1117; --surface2: #161b26;
+    --border: #1e2a3a; --accent: #22c55e; --gold: #f59e0b;
+    --info: #3b82f6; --danger: #ef4444;
+    --text: #e2e8f0; --muted: #64748b; --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'DM Sans', sans-serif; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center; padding: 24px 16px;
+  }
+
+  .wrap { width: 100%; max-width: 500px; }
+
+  /* ── HEADER ── */
+  .page-header { text-align: center; margin-bottom: 24px; }
+  .page-header .icon { font-size: 42px; margin-bottom: 8px; }
+  .page-header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px; color: #fff; letter-spacing: 1px; line-height: 1;
+  }
+  .page-header .match-meta {
+    font-size: 13px; color: var(--muted); margin-top: 6px;
+  }
+  .page-header .match-meta b { color: #94a3b8; }
+
+  /* ── INNINGS BADGE ── */
+  .innings-badge {
+    display: inline-block;
+    font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+    text-transform: uppercase; border-radius: 20px;
+    padding: 3px 12px; margin-bottom: 20px;
+  }
+  .innings-1 { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: var(--accent); }
+  .innings-2 { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 24px 22px; margin-bottom: 12px;
+  }
+
+  .section-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-label .team-name { color: #fff; font-size: 14px; letter-spacing: 0; text-transform: none; }
+
+  /* ── MESSAGES ── */
+  .alert {
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 13px; font-weight: 500; margin-bottom: 14px;
+  }
+  .alert-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    display: block; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 7px;
+  }
+  .form-select {
+    width: 100%; background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    font-size: 14px; font-family: 'DM Sans', sans-serif;
+    padding: 12px 14px; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+    transition: border-color 0.2s; cursor: pointer;
+  }
+  .form-select:focus { outline: none; border-color: var(--accent); }
+  .form-select option { background: #0e1117; }
+
+  /* ── SUBMIT ── */
+  .btn-submit {
+    width: 100%;
+    background: linear-gradient(135deg, #b45309, #f59e0b);
+    border: none; border-radius: 10px;
+    color: #000; font-size: 15px; font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    padding: 14px; cursor: pointer; transition: opacity 0.15s;
+    margin-top: 4px; letter-spacing: 0.3px;
+  }
+  .btn-submit:hover { opacity: 0.88; }
+</style>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="icon">🏏</div>
+    <h1>Start Innings</h1>
+    <div class="match-meta">
+      <b>{{ match.team1 }}</b> vs <b>{{ match.team2 }}</b>
+      &nbsp;·&nbsp; {{ match.tournament }}
+    </div>
+  </div>
+
+  <!-- INNINGS BADGE -->
+  <div style="text-align:center;">
+    <span class="innings-badge innings-{{ innings_number|default:1 }}">
+      {% if innings_number == 2 %}2nd Innings{% else %}1st Innings{% endif %}
+    </span>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-error">⚠ {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="POST">
+    {% csrf_token %}
+
+    <!-- BATTING SECTION -->
+    <div class="card">
+      <div class="section-label">
+        🏏 Batting &nbsp; <span class="team-name">{{ batting_team }}</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">⭐ Striker — On Strike</label>
+        <select name="striker" class="form-select" required>
+          <option value="">— Select Striker —</option>
+          {% for p in batsmen %}
+            <option value="{{ p.id }}">{{ p.player_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Non-Striker</label>
+        <select name="non_striker" class="form-select" required>
+          <option value="">— Select Non-Striker —</option>
+          {% for p in batsmen %}
+            <option value="{{ p.id }}">{{ p.player_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- BOWLING SECTION -->
+    <div class="card">
+      <div class="section-label">
+        🎳 Bowling &nbsp; <span class="team-name">{{ bowling_team }}</span>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Opening Bowler</label>
+        <select name="bowler" class="form-select" required>
+          <option value="">— Select Bowler —</option>
+          {% for p in bowlers %}
+            <option value="{{ p.id }}">{{ p.player_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit">Start Innings →</button>
+  </form>
+
+</div>
+

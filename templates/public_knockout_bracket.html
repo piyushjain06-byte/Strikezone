@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #07090f; --surface: #0e1117; --surface2: #161b26;
+    --border: #1e2a3a; --accent: #22c55e; --gold: #f59e0b;
+    --danger: #ef4444; --blue: #3b82f6; --text: #e2e8f0;
+    --muted: #64748b; --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  .page-header { margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .page-header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 38px; color: #fff; letter-spacing: 1px; line-height: 1; }
+  .page-header .meta { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .btn-back { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 13px; font-weight: 600; padding: 8px 16px; text-decoration: none; }
+  .btn-back:hover { color: #fff; }
+
+  /* BRACKET LAYOUT */
+  .bracket-scroll { overflow-x: auto; padding-bottom: 16px; }
+  .bracket-grid { display: flex; gap: 0; align-items: flex-start; min-width: max-content; }
+
+  /* STAGE COLUMN */
+  .stage-col { display: flex; flex-direction: column; min-width: 220px; }
+  .stage-col-header { text-align: center; padding: 12px 16px; margin-bottom: 16px; }
+  .stage-col-header .stage-name { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #fff; letter-spacing: 1px; }
+  .stage-col-header .stage-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* CONNECTOR COLUMN */
+  .connector-col { display: flex; flex-direction: column; justify-content: space-around; width: 40px; align-self: stretch; margin-top: 56px; }
+  .connector-line { flex: 1; border-right: 2px solid var(--border); margin: 8px 0; border-radius: 0 4px 4px 0; }
+
+  /* MATCH CARD */
+  .bracket-match { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin: 8px 12px; overflow: hidden; transition: border-color 0.2s; position: relative; }
+  .bracket-match:hover { border-color: #2a3a50; }
+  .bracket-match.completed { border-left: 3px solid var(--accent); }
+  .bracket-match.live { border-left: 3px solid var(--danger); }
+  .bracket-match.pending { border-left: 3px solid var(--border); }
+
+  .bm-num { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 8px 12px 4px; }
+
+  .bm-team { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; gap: 8px; }
+  .bm-team:first-of-type { border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .bm-team-name { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+  .bm-team-name.winner-team { color: var(--accent); }
+  .bm-team-name.tbd { color: var(--muted); font-style: italic; }
+  .bm-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+  .bm-score { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: #fff; }
+  .win-crown { font-size: 11px; margin-left: 4px; }
+
+  .bm-footer { padding: 6px 12px 8px; display: flex; align-items: center; justify-content: space-between; }
+  .bm-date { font-size: 11px; color: var(--muted); }
+  .bm-link { font-size: 11px; font-weight: 700; color: var(--accent); text-decoration: none; }
+  .bm-link:hover { text-decoration: underline; }
+
+  /* STATUS BADGES */
+  .bm-status { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; border-radius: 20px; padding: 2px 8px; }
+  .bm-status.done { background: rgba(34,197,94,0.12); color: var(--accent); border: 1px solid rgba(34,197,94,0.3); }
+  .bm-status.live { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); animation: pulse 2s infinite; }
+  .bm-status.pending { background: rgba(100,116,139,0.1); color: var(--muted); border: 1px solid rgba(100,116,139,0.2); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  /* FINAL TROPHY */
+  .final-winner-box { text-align: center; margin-top: 32px; padding: 28px; background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.3); border-radius: var(--radius); }
+  .final-winner-box .trophy { font-size: 48px; margin-bottom: 10px; }
+  .final-winner-box h2 { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--gold); letter-spacing: 2px; }
+  .final-winner-box p { font-size: 18px; color: #fff; font-weight: 700; margin-top: 6px; }
+
+  /* EMPTY */
+  .empty-bracket { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-bracket .icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-bracket h3 { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #fff; margin-bottom: 8px; }
+  .empty-bracket p { font-size: 14px; }
+</style>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <div class="label">Knockout Bracket</div>
+      <h1>{{ tournament.tournament_name }}</h1>
+      <div class="meta">{{ tournament.get_tournament_type_display }} · {{ tournament.number_of_overs }} overs</div>
+    </div>
+    <a href="{% url 'tournament_history' tournament.id %}" class="btn-back">← History</a>
+  </div>
+
+  {% if stages %}
+
+  <!-- BRACKET -->
+  <div class="bracket-scroll">
+    <div class="bracket-grid">
+      {% for stage in stages %}
+
+      <!-- STAGE COLUMN -->
+      <div class="stage-col">
+        <div class="stage-col-header">
+          <div class="stage-name">{{ stage.get_stage_display }}</div>
+          <div class="stage-sub">
+            {% if stage.is_completed %}✅ Completed{% else %}In Progress{% endif %}
+          </div>
+        </div>
+
+        {% for km in stage.matches.all %}
+        {% if km.match %}
+          {% with inn1=km.match.innings.filter|first %}
+          {% endwith %}
+        {% endif %}
+
+        <div class="bracket-match {% if km.is_completed %}completed{% elif km.match %}live{% else %}pending{% endif %}">
+          <div class="bm-num">
+            {{ stage.get_stage_display|upper }} · M{{ km.match_number }}
+          </div>
+
+          <!-- TEAM 1 -->
+          <div class="bm-team">
+            <div>
+              <div class="bm-label">{{ km.team1_label|default:"Team 1" }}</div>
+              <div class="bm-team-name {% if km.winner == km.team1 %}winner-team{% endif %} {% if not km.team1 %}tbd{% endif %}">
+                {{ km.team1.team_name|default:"TBD" }}
+                {% if km.winner == km.team1 %}🏆{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- TEAM 2 -->
+          <div class="bm-team">
+            <div>
+              <div class="bm-label">{{ km.team2_label|default:"Team 2" }}</div>
+              <div class="bm-team-name {% if km.winner == km.team2 %}winner-team{% endif %} {% if not km.team2 %}tbd{% endif %}">
+                {{ km.team2.team_name|default:"TBD" }}
+                {% if km.winner == km.team2 %}🏆{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- FOOTER -->
+          <div class="bm-footer">
+            <div class="bm-date">
+              {% if km.match_date %}📅 {{ km.match_date }}{% else %}Date TBD{% endif %}
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              {% if km.is_completed %}
+                <span class="bm-status done">Done</span>
+                {% if km.match %}
+                <a href="{% url 'match_scorecard' km.match.id %}" class="bm-link">Scorecard →</a>
+                {% endif %}
+              {% elif km.match %}
+                <span class="bm-status live">● Live</span>
+                <a href="{% url 'scoring' km.match.id %}" class="bm-link">Watch →</a>
+              {% else %}
+                <span class="bm-status pending">Pending</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- CONNECTOR (not after last stage) -->
+      {% if not forloop.last %}
+      <div class="connector-col">
+        {% for km in stage.matches.all %}
+        <div class="connector-line"></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- FINAL WINNER -->
+  {% for stage in stages %}
+    {% if stage.stage == 'F' and stage.is_completed %}
+      {% for km in stage.matches.all %}
+        {% if km.winner %}
+        <div class="final-winner-box">
+          <div class="trophy">🏆</div>
+          <h2>Tournament Champion</h2>
+          <p>{{ km.winner.team_name }}</p>
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+
+  {% else %}
+
+  <!-- EMPTY STATE -->
+  <div class="empty-bracket">
+    <div class="icon">🏏</div>
+    <h3>No Knockout Bracket Yet</h3>
+    <p>The knockout bracket will appear here once the admin sets it up.</p>
+  </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,2514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRAVAS - Killing the Guesswork</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Righteous&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Dark Color Palette */
+            --primary: #FF6B35;
+            --primary-dark: #E85A2A;
+            --secondary: #00D9FF;
+            --accent: #FFD23F;
+            --dark: #0A0E27;
+            --dark-light: #141B3D;
+            --dark-card: #1A2347;
+            --dark-border: #2A3558;
+            --text-dark: #0F3460;
+            --text-light: #B4C7E7;
+            --text-white: #E8F1FF;
+            --bg-dark: #0D1226;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            
+            /* Spacing */
+            --spacing-xs: 0.5rem;
+            --spacing-sm: 1rem;
+            --spacing-md: 1.5rem;
+            --spacing-lg: 2rem;
+            --spacing-xl: 3rem;
+            --spacing-2xl: 4rem;
+            
+            /* Border Radius */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            
+            /* Shadows */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+            --shadow-glow: 0 0 20px rgba(255, 107, 53, 0.3);
+            
+            /* Transitions */
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-white);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Transport Map Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(90deg, var(--dark-border) 1px, transparent 1px),
+                linear-gradient(var(--dark-border) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.1;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Animated Metro Lines Background */
+        .metro-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .metro-line {
+            position: absolute;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            opacity: 0.15;
+            animation: moveLine 20s linear infinite;
+        }
+
+        .metro-line:nth-child(1) {
+            top: 10%;
+            width: 100%;
+            animation-delay: 0s;
+        }
+
+        .metro-line:nth-child(2) {
+            top: 30%;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+            animation-delay: 5s;
+        }
+
+        .metro-line:nth-child(3) {
+            top: 50%;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            animation-delay: 10s;
+        }
+
+        .metro-line:nth-child(4) {
+            top: 70%;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, var(--success), transparent);
+            animation-delay: 15s;
+        }
+
+        @keyframes moveLine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-lg);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid var(--dark-border);
+            z-index: 1000;
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .nav-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-family: 'Righteous', sans-serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: var(--spacing-lg);
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: 500;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: var(--transition);
+            transform: translateX(-50%);
+        }
+
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            width: 80%;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--primary);
+        }
+
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .menu-toggle span {
+            width: 25px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 2px;
+            transition: var(--transition);
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: var(--spacing-2xl) var(--spacing-lg);
+            margin-top: 70px;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, rgba(255, 107, 53, 0.1) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            max-width: 900px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-title {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .title-main {
+            font-family: 'Righteous', sans-serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            color: var(--text-white);
+            letter-spacing: 2px;
+            text-shadow: 0 0 30px rgba(255, 107, 53, 0.3);
+        }
+
+        .title-accent {
+            font-family: 'Righteous', sans-serif;
+            font-size: clamp(3rem, 10vw, 6rem);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 20px rgba(255, 107, 53, 0.5));
+            animation: gradientShift 3s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 107, 53, 0.5)); }
+            50% { filter: drop-shadow(0 0 30px rgba(0, 217, 255, 0.5)); }
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto var(--spacing-xl);
+            line-height: 1.8;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: var(--spacing-md) var(--spacing-xl);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Poppins', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-large {
+            width: 100%;
+            padding: var(--spacing-md) var(--spacing-lg);
+            font-size: 1.1rem;
+        }
+
+        .hero-stats {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-2xl);
+            animation: fadeInUp 0.8s ease-out 0.3s backwards;
+        }
+
+        .stat-card {
+            background: rgba(26, 35, 71, 0.8);
+            backdrop-filter: blur(10px);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            min-width: 140px;
+            transition: var(--transition);
+            border: 1px solid var(--dark-border);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-glow);
+            border-color: var(--primary);
+        }
+
+        .stat-number {
+            font-family: 'Righteous', sans-serif;
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: var(--spacing-xs);
+            text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        /* Section Styling */
+        section {
+            padding: var(--spacing-2xl) 0;
+            position: relative;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: var(--spacing-2xl);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .title-label {
+            font-size: 0.9rem;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .section-title .title-main {
+            font-family: 'Righteous', sans-serif;
+            font-size: clamp(2rem, 5vw, 3rem);
+            color: var(--text-white);
+            text-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+        }
+
+        /* Features Section */
+        .features {
+            background: var(--dark);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .feature-card {
+            background: var(--dark-card);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--dark-border);
+            transition: var(--transition);
+            animation: fadeInUp 0.6s ease-out backwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 107, 53, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .feature-card:hover::before {
+            left: 100%;
+        }
+
+        .feature-card[data-delay="0"] { animation-delay: 0s; }
+        .feature-card[data-delay="1"] { animation-delay: 0.1s; }
+        .feature-card[data-delay="2"] { animation-delay: 0.2s; }
+        .feature-card[data-delay="3"] { animation-delay: 0.3s; }
+        .feature-card[data-delay="4"] { animation-delay: 0.4s; }
+        .feature-card[data-delay="5"] { animation-delay: 0.5s; }
+
+        .feature-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-md);
+            filter: drop-shadow(0 0 10px rgba(255, 107, 53, 0.3));
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            color: var(--text-white);
+            margin-bottom: var(--spacing-sm);
+            font-weight: 700;
+        }
+
+        .feature-desc {
+            color: var(--text-light);
+            margin-bottom: var(--spacing-md);
+            line-height: 1.7;
+        }
+
+        .feature-details {
+            margin-top: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--dark-border);
+        }
+
+        .feature-detail-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xs);
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .feature-detail-item::before {
+            content: '▹';
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .crowd-indicators {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        .indicator {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid;
+        }
+
+        .indicator.low {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        .indicator.medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border-color: var(--warning);
+        }
+
+        .indicator.high {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .alert-demo {
+            background: rgba(245, 158, 11, 0.15);
+            padding: var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--warning);
+            margin-top: var(--spacing-md);
+        }
+
+        .alert-item {
+            color: var(--warning);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .feature-btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: var(--spacing-md);
+        }
+
+        .feature-btn:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .offline-badge {
+            display: inline-block;
+            padding: var(--spacing-xs) var(--spacing-md);
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: white;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: var(--spacing-md);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Live Status Section */
+        .live-status {
+            background: var(--dark-light);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .status-card {
+            background: var(--dark-card);
+            backdrop-filter: blur(10px);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--dark-border);
+            transition: var(--transition);
+        }
+
+        .status-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .route-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-white);
+        }
+
+        .status-badge {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-badge.on-time {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-badge.delayed {
+            background: var(--danger);
+            color: white;
+        }
+
+        .crowd-level {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .crowd-label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            display: block;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .crowd-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(42, 53, 88, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .crowd-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--warning), var(--danger));
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+        }
+
+        .next-arrival {
+            font-size: 0.95rem;
+            color: var(--text-light);
+        }
+
+        .status-extra-info {
+            margin-top: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--dark-border);
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-sm);
+        }
+
+        .extra-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .extra-info-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+        }
+
+        .extra-info-value {
+            font-size: 1rem;
+            color: var(--text-white);
+            font-weight: 600;
+        }
+
+        /* Route Planner Section */
+        .route-planner {
+            background: var(--dark);
+        }
+
+        .planner-container {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: var(--spacing-xl);
+        }
+
+        .planner-form {
+            background: var(--dark-card);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--dark-border);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 600;
+            color: var(--text-white);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: var(--spacing-sm);
+            font-size: 1.2rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) 2.5rem;
+            border: 1px solid var(--dark-border);
+            background: var(--dark-light);
+            color: var(--text-white);
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .form-group select,
+        .form-group input[type="date"],
+        .form-group input[type="time"] {
+            padding-left: var(--spacing-sm);
+        }
+
+        .swap-btn {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--primary);
+            cursor: pointer;
+            margin: var(--spacing-sm) 0;
+            transition: var(--transition);
+        }
+
+        .swap-btn:hover {
+            transform: rotate(180deg);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .preferences {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .route-results {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .result-card {
+            background: var(--dark-card);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--dark-border);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .result-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .result-card.recommended {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, rgba(255, 107, 53, 0.05) 100%);
+        }
+
+        .result-badge {
+            position: absolute;
+            top: -12px;
+            right: var(--spacing-lg);
+            background: var(--primary);
+            color: white;
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .result-header h4 {
+            font-size: 1.3rem;
+            color: var(--text-white);
+        }
+
+        .result-time {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .result-steps {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .step {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            background: var(--dark-light);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--dark-border);
+        }
+
+        .step-icon {
+            font-size: 1.5rem;
+        }
+
+        .step-text {
+            color: var(--text-light);
+        }
+
+        .step-duration {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .result-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--dark-border);
+        }
+
+        .crowd-tag {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid;
+        }
+
+        .crowd-tag.low {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        .crowd-tag.medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border-color: var(--warning);
+        }
+
+        .cost {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Weather Section */
+        .weather-section {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+        }
+
+        .weather-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: var(--spacing-xl);
+        }
+
+        .current-weather {
+            background: var(--dark-card);
+            backdrop-filter: blur(10px);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            border: 1px solid var(--dark-border);
+        }
+
+        .weather-icon {
+            font-size: 5rem;
+            margin-bottom: var(--spacing-md);
+            filter: drop-shadow(0 0 20px rgba(255, 217, 63, 0.5));
+        }
+
+        .weather-temp {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-xs);
+            color: var(--text-white);
+        }
+
+        .weather-desc {
+            font-size: 1.2rem;
+            margin-bottom: var(--spacing-md);
+            color: var(--text-light);
+        }
+
+        .weather-location {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-md);
+        }
+
+        .weather-detail {
+            background: var(--dark-card);
+            backdrop-filter: blur(10px);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-xs);
+            border: 1px solid var(--dark-border);
+            transition: var(--transition);
+        }
+
+        .weather-detail:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .detail-icon {
+            font-size: 2rem;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .detail-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-white);
+        }
+
+        .weather-forecast {
+            grid-column: 1 / -1;
+            background: var(--dark-card);
+            backdrop-filter: blur(10px);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--dark-border);
+        }
+
+        .weather-forecast h3 {
+            margin-bottom: var(--spacing-md);
+            font-size: 1.3rem;
+            color: var(--text-white);
+        }
+
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-md);
+        }
+
+        .forecast-item {
+            text-align: center;
+            padding: var(--spacing-md);
+            background: var(--dark-light);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--dark-border);
+            transition: var(--transition);
+        }
+
+        .forecast-item:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .forecast-time {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .forecast-icon {
+            font-size: 2rem;
+            margin: var(--spacing-xs) 0;
+        }
+
+        .forecast-temp {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-white);
+        }
+
+        .weather-alert {
+            grid-column: 1 / -1;
+            background: rgba(245, 158, 11, 0.2);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--warning);
+            margin-top: var(--spacing-md);
+            color: var(--text-white);
+        }
+
+        /* Report Section */
+        .report-section {
+            background: var(--dark-light);
+        }
+
+        .report-container {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: var(--spacing-xl);
+        }
+
+        .report-form {
+            background: var(--dark-card);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--dark-border);
+        }
+
+        .crowd-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-sm);
+        }
+
+        .crowd-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-md);
+            background: var(--dark-light);
+            border: 2px solid var(--dark-border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-light);
+        }
+
+        .crowd-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .crowd-btn.low:hover,
+        .crowd-btn.low.selected {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .crowd-btn.medium:hover,
+        .crowd-btn.medium.selected {
+            border-color: var(--warning);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .crowd-btn.high:hover,
+        .crowd-btn.high.selected {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .crowd-icon {
+            font-size: 2rem;
+        }
+
+        .report-note {
+            margin-top: var(--spacing-md);
+            font-size: 0.9rem;
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .report-stats {
+            background: var(--dark-card);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--dark-border);
+        }
+
+        .report-stats h3 {
+            margin-bottom: var(--spacing-md);
+            font-size: 1.5rem;
+            color: var(--text-white);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: var(--spacing-md);
+            background: var(--dark-light);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--dark-border);
+        }
+
+        .stat-num {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .recent-reports {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .report-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            background: var(--dark-light);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--dark-border);
+            transition: var(--transition);
+        }
+
+        .report-item:hover {
+            border-color: var(--primary);
+        }
+
+        .report-badge {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .report-badge.delay {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .report-badge.crowd {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .report-badge.service {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3B82F6;
+            border: 1px solid #3B82F6;
+        }
+
+        .report-text {
+            flex: 1;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .report-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Chatbot */
+        .chatbot-container {
+            position: fixed;
+            bottom: 100px;
+            right: var(--spacing-lg);
+            width: 380px;
+            max-height: 600px;
+            background: var(--dark-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            display: none;
+            flex-direction: column;
+            z-index: 1000;
+            animation: slideUp 0.3s ease-out;
+            border: 1px solid var(--dark-border);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chatbot-container.active {
+            display: flex;
+        }
+
+        .chatbot-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: var(--spacing-md);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chatbot-title {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-weight: 600;
+        }
+
+        .bot-icon {
+            font-size: 1.5rem;
+        }
+
+        .chatbot-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .chatbot-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            padding: var(--spacing-md);
+            overflow-y: auto;
+            max-height: 450px;
+            background: var(--dark-light);
+        }
+
+        .bot-message,
+        .user-message {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            font-size: 1.5rem;
+            min-width: 40px;
+        }
+
+        .message-content {
+            background: var(--dark-card);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            max-width: 75%;
+            line-height: 1.6;
+            color: var(--text-light);
+            border: 1px solid var(--dark-border);
+        }
+
+        .user-message .message-content {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+        }
+
+        .chatbot-input {
+            display: flex;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            border-top: 1px solid var(--dark-border);
+            background: var(--dark-card);
+        }
+
+        .chatbot-input input {
+            flex: 1;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--dark-border);
+            background: var(--dark-light);
+            color: var(--text-white);
+            border-radius: var(--radius-sm);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .chatbot-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .chatbot-input button {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .chatbot-input button:hover {
+            box-shadow: var(--shadow-glow);
+        }
+
+        .chatbot-toggle {
+            position: fixed;
+            bottom: var(--spacing-lg);
+            right: var(--spacing-lg);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: 50px;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            z-index: 999;
+            transition: var(--transition);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: var(--shadow-lg); }
+            50% { transform: scale(1.05); box-shadow: var(--shadow-glow); }
+        }
+
+        .chatbot-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .toggle-icon {
+            font-size: 1.3rem;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--dark);
+            color: var(--text-light);
+            padding: var(--spacing-2xl) 0 var(--spacing-lg);
+            border-top: 1px solid var(--dark-border);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .footer-section h3,
+        .footer-section h4 {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .footer-title {
+            font-family: 'Righteous', sans-serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(255, 107, 53, 0.3);
+        }
+
+        .footer-desc {
+            color: var(--text-light);
+            line-height: 1.7;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .footer-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+            padding-left: 5px;
+        }
+
+        .social-links {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .social-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .social-links a:hover {
+            color: var(--primary);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--dark-border);
+            color: var(--text-light);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .planner-container,
+            .weather-container,
+            .report-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            
+            .nav-menu.active {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--dark-card);
+                box-shadow: var(--shadow-lg);
+                padding: var(--spacing-md);
+                animation: slideDown 0.3s ease-out;
+                border-bottom: 1px solid var(--dark-border);
+            }
+            
+            .menu-toggle {
+                display: flex;
+            }
+            
+            .menu-toggle.active span:nth-child(1) {
+                transform: rotate(45deg) translate(5px, 5px);
+            }
+            
+            .menu-toggle.active span:nth-child(2) {
+                opacity: 0;
+            }
+            
+            .menu-toggle.active span:nth-child(3) {
+                transform: rotate(-45deg) translate(7px, -6px);
+            }
+            
+            .hero-stats {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .features-grid,
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .forecast-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chatbot-container {
+                right: var(--spacing-sm);
+                left: var(--spacing-sm);
+                width: auto;
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-cta {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .crowd-selector {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dark-light);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--dark-border);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Metro Lines Background -->
+    <div class="metro-lines">
+        <div class="metro-line"></div>
+        <div class="metro-line"></div>
+        <div class="metro-line"></div>
+        <div class="metro-line"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">🚇</span>
+                <span class="logo-text">PRAVAS</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link active">Home</a></li>
+                <li><a href="#features" class="nav-link">Features</a></li>
+                <li><a href="#report" class="nav-link">Report</a></li>
+                <li><a href="#planner" class="nav-link">Plan Route</a></li>
+                <li><a href="#weather" class="nav-link">Weather</a></li>
+            </ul>
+            <button class="menu-toggle" id="menuToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="title-main">KILLING THE</span>
+                <span class="title-accent">GUESSWORK</span>
+            </h1>
+            <p class="hero-subtitle">Navigate your city with confidence. Real-time updates, smart routing, and crowd insights—all in one app. PRAVAS transforms daily commutes by combining system data with user reports to reflect real-world transport conditions.</p>
+            <div class="hero-cta">
+                <button class="btn btn-primary" onclick="scrollToSection('planner')">Plan Your Journey</button>
+                <button class="btn btn-secondary" onclick="scrollToSection('features')">Explore Features</button>
+            </div>
+        </div>
+        <div class="hero-stats">
+            <div class="stat-card">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Live Updates</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Offline Access</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">AI</div>
+                <div class="stat-label">Smart Assistant</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="title-label">What We Offer</span>
+                <span class="title-main">Powerful Features</span>
+            </h2>
+            
+            <div class="features-grid">
+                <!-- Smart Reporting -->
+                <div class="feature-card" data-delay="0">
+                    <div class="feature-icon">📊</div>
+                    <h3 class="feature-title">Smart Reporting System</h3>
+                    <p class="feature-desc">Real-time delay and crowd reporting with intuitive color-coded indicators. Commuters can instantly report conditions, creating a live network of information.</p>
+                    <div class="crowd-indicators">
+                        <span class="indicator low">Low</span>
+                        <span class="indicator medium">Medium</span>
+                        <span class="indicator high">High</span>
+                    </div>
+                    <div class="feature-details">
+                        <div class="feature-detail-item">Color-coded visual feedback system</div>
+                        <div class="feature-detail-item">User-generated live reports</div>
+                        <div class="feature-detail-item">Real-time crowd density tracking</div>
+                        <div class="feature-detail-item">Verified community updates</div>
+                    </div>
+                </div>
+
+                <!-- Live Updates -->
+                <div class="feature-card" data-delay="1">
+                    <div class="feature-icon">🔔</div>
+                    <h3 class="feature-title">Live Alerts & Notifications</h3>
+                    <p class="feature-desc">Early warning system for government transport delays. Get instant push notifications before delays impact your journey, allowing you to adjust routes in advance.</p>
+                    <div class="alert-demo">
+                        <div class="alert-item">⚠️ Metro Line 2: Delay +15 mins</div>
+                    </div>
+                    <div class="feature-details">
+                        <div class="feature-detail-item">Push notifications for delays</div>
+                        <div class="feature-detail-item">Service disruption alerts</div>
+                        <div class="feature-detail-item">Route change suggestions</div>
+                        <div class="feature-detail-item">Customizable alert preferences</div>
+                    </div>
+                </div>
+
+                <!-- AI Chatbot -->
+                <div class="feature-card" data-delay="2">
+                    <div class="feature-icon">🤖</div>
+                    <h3 class="feature-title">AI-Powered Assistant</h3>
+                    <p class="feature-desc">Intelligent chatbot designed to solve commuter queries instantly. Especially helpful for new commuters navigating unfamiliar routes and services.</p>
+                    <button class="feature-btn" onclick="openChatbot()">Ask AI Assistant</button>
+                    <div class="feature-details">
+                        <div class="feature-detail-item">24/7 instant query resolution</div>
+                        <div class="feature-detail-item">Route recommendations</div>
+                        <div class="feature-detail-item">Real-time status updates</div>
+                        <div class="feature-detail-item">Multi-language support</div>
+                    </div>
+                </div>
+
+                <!-- Route Planning -->
+                <div class="feature-card" data-delay="3">
+                    <div class="feature-icon">🗺️</div>
+                    <h3 class="feature-title">Smart Route Planner</h3>
+                    <p class="feature-desc">Personalized travel planning with fastest route suggestions. Set daily routines, get optimal paths, and discover nearby facilities like hotels and restaurants.</p>
+                    <button class="feature-btn" onclick="scrollToSection('planner')">Plan Route Now</button>
+                    <div class="feature-details">
+                        <div class="feature-detail-item">Multiple route alternatives</div>
+                        <div class="feature-detail-item">Time and cost optimization</div>
+                        <div class="feature-detail-item">Nearby amenities locator</div>
+                        <div class="feature-detail-item">Save favorite routes</div>
+                    </div>
+                </div>
+
+                <!-- Weather Update -->
+                <div class="feature-card" data-delay="4">
+                    <div class="feature-icon">🌤️</div>
+                    <h3 class="feature-title">Weather Integration</h3>
+                    <p class="feature-desc">Real-time weather updates integrated directly into your travel planning. Avoid delays caused by sudden weather changes with advance warnings.</p>
+                    <button class="feature-btn" onclick="scrollToSection('weather')">Check Weather</button>
+                    <div class="feature-details">
+                        <div class="feature-detail-item">Hourly weather forecasts</div>
+                        <div class="feature-detail-item">Severe weather alerts</div>
+                        <div class="feature-detail-item">Impact on travel times</div>
+                        <div class="feature-detail-item">Rain/storm predictions</div>
+                    </div>
+                </div>
+
+                <!-- Offline Access -->
+                <div class="feature-card" data-delay="5">
+                    <div class="feature-icon">📱</div>
+                    <h3 class="feature-title">Offline Accessibility</h3>
+                    <p class="feature-desc">Essential features work without internet connection. Access saved routes, schedules, and maps even in areas with poor network connectivity.</p>
+                    <div class="offline-badge">Works Offline ✓</div>
+                    <div class="feature-details">
+                        <div class="feature-detail-item">Cached route data</div>
+                        <div class="feature-detail-item">Offline map access</div>
+                        <div class="feature-detail-item">Saved schedules</div>
+                        <div class="feature-detail-item">Auto-sync when online</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Status Section -->
+    <section class="live-status">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="title-label">Right Now</span>
+                <span class="title-main">Live Transport Status</span>
+            </h2>
+            
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-header">
+                        <span class="route-name">Metro Line 1 - Blue</span>
+                        <span class="status-badge on-time">On Time</span>
+                    </div>
+                    <div class="status-info">
+                        <div class="crowd-level low-crowd">
+                            <span class="crowd-label">Current Crowd Level</span>
+                            <div class="crowd-bar">
+                                <div class="crowd-fill" style="width: 30%"></div>
+                            </div>
+                        </div>
+                        <div class="next-arrival">Next Train: 3 mins</div>
+                    </div>
+                    <div class="status-extra-info">
+                        <div class="extra-info-item">
+                            <span class="extra-info-label">Frequency</span>
+                            <span class="extra-info-value">5 mins</span>
+                        </div>
+                        <div class="extra-info-item">
+                            <span class="extra-info-label">Last Updated</span>
+                            <span class="extra-info-value">1m ago</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="status-card">
+                    <div class="status-header">
+                        <span class="route-name">Bus 45A - Express</span>
+                        <span class="status-badge delayed">Delayed</span>
+                    </div>
+                    <div class="status-info">
+                        <div class="crowd-level high-crowd">
+                            <span class="crowd-label">Current Crowd Level</span>
+                            <div class="crowd-bar">
+                                <div class="crowd-fill" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div class="next-arrival">Expected Delay: +12 mins</div>
+                    </div>
+                    <div class="status-extra-info">
+                        <div class="extra-info-item">
+                            <span class="extra-info-label">Reason</span>
+                            <span class="extra-info-value">Heavy Traffic</span>
+                        </div>
+                        <div class="extra-info-item">
+                            <span class="extra-info-label">Reports</span>
+                            <span class="extra-info-value">23 users</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="status-card">
+                    <div class="status-header">
+                        <span class="route-name">Metro Line 3 - Green</span>
+                        <span class="status-badge on-time">On Time</span>
+                    </div>
+                    <div class="status-info">
+                        <div class="crowd-level medium-crowd">
+                            <span class="crowd-label">Current Crowd Level</span>
+                            <div class="crowd-bar">
+                                <div class="crowd-fill" style="width: 55%"></div>
+                            </div>
+                        </div>
+                        <div class="next-arrival">Next Train: 5 mins</div>
+                    </div>
+                    <div class="status-extra-info">
+                        <div class="extra-info-item">
+                            <span class="extra-info-label">Frequency</span>
+                            <span class="extra-info-value">6 mins</span>
+                        </div>
+                        <div class="extra-info-item">
+                            <span class="extra-info-label">AC Available</span>
+                            <span class="extra-info-value">Yes ✓</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Route Planner Section -->
+    <section id="planner" class="route-planner">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="title-label">Plan Ahead</span>
+                <span class="title-main">Intelligent Route Planner</span>
+            </h2>
+            
+            <div class="planner-container">
+                <div class="planner-form">
+                    <div class="form-group">
+                        <label for="from">Starting Point</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">📍</span>
+                            <input type="text" id="from" placeholder="Enter your current location">
+                        </div>
+                    </div>
+                    
+                    <div class="swap-btn" title="Swap locations">⇅</div>
+                    
+                    <div class="form-group">
+                        <label for="to">Destination</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🎯</span>
+                            <input type="text" id="to" placeholder="Where do you want to go?">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="date">Travel Date</label>
+                            <input type="date" id="date">
+                        </div>
+                        <div class="form-group">
+                            <label for="time">Departure Time</label>
+                            <input type="time" id="time">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Travel Preferences</label>
+                        <div class="preferences">
+                            <label class="checkbox-label">
+                                <input type="checkbox" checked>
+                                <span>Fastest Route</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox">
+                                <span>Avoid Crowds</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox">
+                                <span>Wheelchair Accessible</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox">
+                                <span>Minimum Transfers</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary btn-large" onclick="findRoute()">🔍 Find Best Routes</button>
+                </div>
+                
+                <div class="route-results">
+                    <div class="result-card recommended">
+                        <div class="result-badge">⭐ Recommended</div>
+                        <div class="result-header">
+                            <h4>Fastest Route</h4>
+                            <span class="result-time">32 min</span>
+                        </div>
+                        <div class="result-steps">
+                            <div class="step">
+                                <span class="step-icon">🚇</span>
+                                <span class="step-text">Metro Line 1 (Blue) → Central Station</span>
+                                <span class="step-duration">15 min</span>
+                            </div>
+                            <div class="step">
+                                <span class="step-icon">🚶</span>
+                                <span class="step-text">Walk to Platform 3</span>
+                                <span class="step-duration">3 min</span>
+                            </div>
+                            <div class="step">
+                                <span class="step-icon">🚌</span>
+                                <span class="step-text">Bus 45A (Express) → Destination</span>
+                                <span class="step-duration">14 min</span>
+                            </div>
+                        </div>
+                        <div class="result-footer">
+                            <span class="crowd-tag low">Low Crowd Expected</span>
+                            <span class="cost">₹25</span>
+                        </div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <div class="result-header">
+                            <h4>Budget-Friendly Route</h4>
+                            <span class="result-time">38 min</span>
+                        </div>
+                        <div class="result-steps">
+                            <div class="step">
+                                <span class="step-icon">🚌</span>
+                                <span class="step-text">Bus 12 (Local) → Main Square</span>
+                                <span class="step-duration">22 min</span>
+                            </div>
+                            <div class="step">
+                                <span class="step-icon">🚶</span>
+                                <span class="step-text">Transfer walk</span>
+                                <span class="step-duration">4 min</span>
+                            </div>
+                            <div class="step">
+                                <span class="step-icon">🚇</span>
+                                <span class="step-text">Metro Line 2 (Red) → Destination</span>
+                                <span class="step-duration">12 min</span>
+                            </div>
+                        </div>
+                        <div class="result-footer">
+                            <span class="crowd-tag medium">Medium Crowd</span>
+                            <span class="cost">₹20</span>
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="result-header">
+                            <h4>Comfortable Route</h4>
+                            <span class="result-time">35 min</span>
+                        </div>
+                        <div class="result-steps">
+                            <div class="step">
+                                <span class="step-icon">🚇</span>
+                                <span class="step-text">Metro Line 3 (Green) → Junction</span>
+                                <span class="step-duration">18 min</span>
+                            </div>
+                            <div class="step">
+                                <span class="step-icon">🚇</span>
+                                <span class="step-text">Metro Line 1 (Blue) → Destination</span>
+                                <span class="step-duration">17 min</span>
+                            </div>
+                        </div>
+                        <div class="result-footer">
+                            <span class="crowd-tag low">AC Available • Low Crowd</span>
+                            <span class="cost">₹30</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Weather Section -->
+    <section id="weather" class="weather-section">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="title-label">Current Conditions</span>
+                <span class="title-main">Weather & Travel Impact</span>
+            </h2>
+            
+            <div class="weather-container">
+                <div class="current-weather">
+                    <div class="weather-icon">☀️</div>
+                    <div class="weather-temp">28°C</div>
+                    <div class="weather-desc">Partly Cloudy</div>
+                    <div class="weather-location">📍 Mumbai, Maharashtra</div>
+                </div>
+                
+                <div class="weather-details">
+                    <div class="weather-detail">
+                        <span class="detail-icon">💧</span>
+                        <span class="detail-label">Humidity</span>
+                        <span class="detail-value">65%</span>
+                    </div>
+                    <div class="weather-detail">
+                        <span class="detail-icon">💨</span>
+                        <span class="detail-label">Wind Speed</span>
+                        <span class="detail-value">12 km/h</span>
+                    </div>
+                    <div class="weather-detail">
+                        <span class="detail-icon">👁️</span>
+                        <span class="detail-label">Visibility</span>
+                        <span class="detail-value">10 km</span>
+                    </div>
+                    <div class="weather-detail">
+                        <span class="detail-icon">🌧️</span>
+                        <span class="detail-label">Rain Chance</span>
+                        <span class="detail-value">20%</span>
+                    </div>
+                </div>
+                
+                <div class="weather-forecast">
+                    <h3>⏰ Hourly Forecast</h3>
+                    <div class="forecast-grid">
+                        <div class="forecast-item">
+                            <div class="forecast-time">12 PM</div>
+                            <div class="forecast-icon">☀️</div>
+                            <div class="forecast-temp">30°C</div>
+                        </div>
+                        <div class="forecast-item">
+                            <div class="forecast-time">3 PM</div>
+                            <div class="forecast-icon">⛅</div>
+                            <div class="forecast-temp">31°C</div>
+                        </div>
+                        <div class="forecast-item">
+                            <div class="forecast-time">6 PM</div>
+                            <div class="forecast-icon">🌤️</div>
+                            <div class="forecast-temp">27°C</div>
+                        </div>
+                        <div class="forecast-item">
+                            <div class="forecast-time">9 PM</div>
+                            <div class="forecast-icon">🌙</div>
+                            <div class="forecast-temp">24°C</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="weather-alert">
+                    ⚠️ Weather Advisory: Moderate humidity may cause slight discomfort during peak hours. Evening rush hour (5-7 PM) may experience increased commuter flow due to pleasant weather conditions.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Report Section -->
+    <section id="report" class="report-section">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="title-label">Help Us Improve</span>
+                <span class="title-main">Report Transport Issues</span>
+            </h2>
+            
+            <div class="report-container">
+                <div class="report-form">
+                    <div class="form-group">
+                        <label for="report-type">Type of Issue</label>
+                        <select id="report-type">
+                            <option>Select issue category</option>
+                            <option>🚫 Service Delay</option>
+                            <option>👥 Overcrowding</option>
+                            <option>⚠️ Service Disruption</option>
+                            <option>🛡️ Safety Concern</option>
+                            <option>🧹 Cleanliness Issue</option>
+                            <option>❄️ AC/Heating Problem</option>
+                            <option>📱 Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="report-route">Route/Service Number</label>
+                        <input type="text" id="report-route" placeholder="e.g., Metro Line 1, Bus 45A, Route 23B">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="report-location">Station/Stop Name</label>
+                        <input type="text" id="report-location" placeholder="Exact station or stop location">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="report-crowd">Current Crowd Level</label>
+                        <div class="crowd-selector">
+                            <button class="crowd-btn low" onclick="selectCrowd('low')">
+                                <span class="crowd-icon">😊</span>
+                                <span>Low</span>
+                            </button>
+                            <button class="crowd-btn medium" onclick="selectCrowd('medium')">
+                                <span class="crowd-icon">😐</span>
+                                <span>Medium</span>
+                            </button>
+                            <button class="crowd-btn high" onclick="selectCrowd('high')">
+                                <span class="crowd-icon">😰</span>
+                                <span>High</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="report-details">Detailed Description</label>
+                        <textarea id="report-details" rows="4" placeholder="Please provide specific details about the issue. The more information you provide, the better we can address the problem."></textarea>
+                    </div>
+                    
+                    <button class="btn btn-primary btn-large" onclick="submitReport()">📤 Submit Report</button>
+                    
+                    <p class="report-note">
+                        📊 Your reports contribute to monthly transparency reports that are shared with government transport authorities to drive improvements in public transport services.
+                    </p>
+                </div>
+                
+                <div class="report-stats">
+                    <h3>📈 Community Impact</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-num">1,247</div>
+                            <div class="stat-label">Reports This Month</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-num">89%</div>
+                            <div class="stat-label">Response Rate</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-num">3.2 hrs</div>
+                            <div class="stat-label">Avg Resolution Time</div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin-top: 2rem; margin-bottom: 1rem;">🔔 Recent Activity</h3>
+                    <div class="recent-reports">
+                        <div class="report-item">
+                            <span class="report-badge delay">Delay</span>
+                            <span class="report-text">Metro Line 2 - 15 min delay at Central</span>
+                            <span class="report-time">5m ago</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-badge crowd">Crowd</span>
+                            <span class="report-text">Bus 45A - High crowd at Junction</span>
+                            <span class="report-time">12m ago</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-badge service">Service</span>
+                            <span class="report-text">Central Station - AC malfunction</span>
+                            <span class="report-time">23m ago</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-badge delay">Delay</span>
+                            <span class="report-text">Bus 12 - Signal failure delay</span>
+                            <span class="report-time">35m ago</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-badge service">Service</span>
+                            <span class="report-text">Line 3 - Escalator not working</span>
+                            <span class="report-time">41m ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chatbot -->
+    <div class="chatbot-container" id="chatbot">
+        <div class="chatbot-header">
+            <div class="chatbot-title">
+                <span class="bot-icon">🤖</span>
+                <span>PRAVAS AI Assistant</span>
+            </div>
+            <button class="chatbot-close" onclick="closeChatbot()">×</button>
+        </div>
+        <div class="chatbot-messages" id="chatMessages">
+            <div class="bot-message">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    Hello! I'm your PRAVAS AI assistant. I can help you with:
+                    <br>• Finding the best routes and alternatives
+                    <br>• Checking real-time transport status
+                    <br>• Understanding crowd levels
+                    <br>• Weather updates and impact
+                    <br>• Reporting and tracking issues
+                    <br><br>How can I assist you today?
+                </div>
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatInput" placeholder="Ask me anything about your journey...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <!-- Chatbot Toggle Button -->
+    <button class="chatbot-toggle" onclick="toggleChatbot()">
+        <span class="toggle-icon">💬</span>
+        <span class="toggle-text">Chat with AI</span>
+    </button>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3 class="footer-title">PRAVAS</h3>
+                    <p class="footer-desc">Killing the guesswork in daily commute. Making public transport transparent, reliable, and accessible for everyone. We combine technology with community reporting to create the most accurate real-time transport information system.</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#planner">Route Planner</a></li>
+                        <li><a href="#weather">Weather</a></li>
+                        <li><a href="#report">Report Issue</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Monthly Reports</a></li>
+                        <li><a href="#">API Documentation</a></li>
+                        <li><a href="#">Developer Portal</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <div class="social-links">
+                        <a href="#">🐦 Twitter</a>
+                        <a href="#">📘 Facebook</a>
+                        <a href="#">📸 Instagram</a>
+                        <a href="#">💼 LinkedIn</a>
+                        <a href="#">📧 Contact Us</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 PRAVAS. All rights reserved. Built with ❤️ for commuters everywhere.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth Scrolling
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Navigation Active State
+        const navLinks = document.querySelectorAll('.nav-link');
+        const sections = document.querySelectorAll('section');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').slice(1) === current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Mobile Menu Toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const navMenu = document.querySelector('.nav-menu');
+
+        menuToggle?.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            menuToggle.classList.toggle('active');
+        });
+
+        // Chatbot Functionality
+        const chatbot = document.getElementById('chatbot');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+
+        function toggleChatbot() {
+            chatbot.classList.toggle('active');
+        }
+
+        function openChatbot() {
+            chatbot.classList.add('active');
+        }
+
+        function closeChatbot() {
+            chatbot.classList.remove('active');
+        }
+
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user');
+            chatInput.value = '';
+
+            setTimeout(() => {
+                const response = getBotResponse(message);
+                addMessage(response, 'bot');
+            }, 500);
+        }
+
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = sender === 'bot' ? 'bot-message' : 'user-message';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = sender === 'bot' ? '🤖' : '👤';
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.innerHTML = text;
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            chatMessages.appendChild(messageDiv);
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function getBotResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            if (lowerMessage.includes('route') || lowerMessage.includes('plan')) {
+                return "I can help you plan your route! Please use our Route Planner section above. Tell me your starting point and destination, and I'll suggest the fastest route with real-time crowd information and cost estimates.";
+            } else if (lowerMessage.includes('delay') || lowerMessage.includes('late')) {
+                return "Current delays:<br>• <strong>Bus 45A</strong>: 12-minute delay due to heavy traffic<br>• <strong>Metro Lines 1 & 3</strong>: Running on schedule<br><br>Would you like alternative route suggestions?";
+            } else if (lowerMessage.includes('crowd') || lowerMessage.includes('busy')) {
+                return "Live crowd levels:<br>• <strong>Metro Line 1</strong>: Low (30%)<br>• <strong>Bus 45A</strong>: High (85%)<br>• <strong>Metro Line 3</strong>: Medium (55%)<br><br>I recommend taking Metro Line 1 or 3 for a more comfortable journey.";
+            } else if (lowerMessage.includes('weather')) {
+                return "Current weather in Mumbai:<br>• <strong>Temperature</strong>: 28°C<br>• <strong>Conditions</strong>: Partly Cloudy<br>• <strong>Humidity</strong>: 65%<br>• <strong>Rain chance</strong>: 20%<br><br>Weather conditions are favorable for travel today!";
+            } else if (lowerMessage.includes('report') || lowerMessage.includes('issue')) {
+                return "To report an issue, please use the <strong>Report Issues</strong> section. You can report delays, overcrowding, service disruptions, safety concerns, and cleanliness issues. Your reports are compiled into monthly transparency reports sent to government authorities!";
+            } else if (lowerMessage.includes('offline')) {
+                return "Yes! PRAVAS works offline for essential features:<br>• View saved routes<br>• Access cached schedules<br>• Use offline maps<br>• Check travel history<br><br>Data syncs automatically when you're back online!";
+            } else if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
+                return "Hello! 👋 Welcome to PRAVAS. I'm here to help you navigate the city efficiently. Ask me about routes, delays, crowd levels, or weather conditions!";
+            } else if (lowerMessage.includes('thank')) {
+                return "You're welcome! Safe travels! 🚇 If you need anything else, I'm always here to help.";
+            } else if (lowerMessage.includes('how') || lowerMessage.includes('what')) {
+                return "I can assist you with:<br>• <strong>Route Planning</strong>: Find fastest routes<br>• <strong>Live Status</strong>: Check delays and schedules<br>• <strong>Crowd Info</strong>: Avoid crowded services<br>• <strong>Weather</strong>: Travel impact updates<br>• <strong>Reporting</strong>: Submit issues<br><br>What would you like to know?";
+            } else {
+                return "I can help you with route planning, checking delays, crowd levels, weather updates, and reporting issues. Could you please be more specific about what you'd like to know?";
+            }
+        }
+
+        chatInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Route Planning
+        function findRoute() {
+            const from = document.getElementById('from').value;
+            const to = document.getElementById('to').value;
+            
+            if (!from || !to) {
+                alert('⚠️ Please enter both starting point and destination');
+                return;
+            }
+            
+            alert(`🔍 Finding best routes from ${from} to ${to}...\n\n✓ Analyzing real-time traffic\n✓ Checking crowd levels\n✓ Calculating optimal paths`);
+            
+            const resultCards = document.querySelectorAll('.result-card');
+            resultCards.forEach((card, index) => {
+                card.style.animation = 'none';
+                setTimeout(() => {
+                    card.style.animation = `fadeInUp 0.6s ease-out ${index * 0.1}s backwards`;
+                }, 10);
+            });
+        }
+
+        // Report Submission
+        let selectedCrowdLevel = '';
+
+        function selectCrowd(level) {
+            selectedCrowdLevel = level;
+            
+            document.querySelectorAll('.crowd-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            const selectedBtn = document.querySelector(`.crowd-btn.${level}`);
+            if (selectedBtn

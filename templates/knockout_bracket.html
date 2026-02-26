@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #07090f;
+    --surface: #0e1117;
+    --surface2: #161b26;
+    --border: #1e2a3a;
+    --accent: #22c55e;
+    --gold: #f59e0b;
+    --danger: #ef4444;
+    --blue: #3b82f6;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  /* HEADER */
+  .page-header {
+    margin-bottom: 28px; padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .page-header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 38px; color: #fff; letter-spacing: 1px; line-height: 1; }
+  .page-header .meta { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .btn-back { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 13px; font-weight: 600; padding: 8px 16px; text-decoration: none; }
+  .btn-back:hover { color: #fff; }
+
+  /* ALERTS */
+  .alert { border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; font-size: 14px; font-weight: 500; }
+  .alert-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: var(--gold); }
+  .alert-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: var(--accent); }
+  .alert-info    { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: var(--blue); }
+
+  /* SECTION TITLE */
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; color: #fff; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title span { color: var(--accent); }
+
+  /* LEADERBOARD MINI */
+  .lb-mini { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 28px; }
+  .lb-mini table { width: 100%; border-collapse: collapse; }
+  .lb-mini th { background: var(--surface2); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  .lb-mini th:not(:first-child) { text-align: center; }
+  .lb-mini td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .lb-mini td:not(:first-child) { text-align: center; }
+  .lb-mini tr:last-child td { border-bottom: none; }
+  .rank-badge { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--muted); margin-right: 10px; }
+  .rank-1 .rank-badge { color: var(--gold); }
+  .rank-2 .rank-badge { color: #94a3b8; }
+  .rank-3 .rank-badge { color: #b45309; }
+  .team-lb { font-weight: 600; color: #fff; }
+  .pts-badge { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); border-radius: 20px; color: var(--accent); font-size: 12px; font-weight: 700; padding: 2px 9px; }
+  .nrr-pos { color: var(--accent); font-weight: 700; font-size: 12px; }
+  .nrr-neg { color: var(--danger); font-weight: 700; font-size: 12px; }
+
+  /* STAGE CARDS */
+  .stages-grid { display: flex; flex-direction: column; gap: 20px; margin-bottom: 32px; }
+  .stage-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .stage-header { background: var(--surface2); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .stage-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #fff; letter-spacing: 1px; }
+  .stage-badge { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-radius: 20px; padding: 3px 10px; }
+  .badge-done { background: rgba(34,197,94,0.12); color: var(--accent); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-pending { background: rgba(100,116,139,0.12); color: var(--muted); border: 1px solid rgba(100,116,139,0.2); }
+
+  /* MATCH ROWS */
+  .match-rows { padding: 0; }
+  .km-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .km-row:last-child { border-bottom: none; }
+  .km-number { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--muted); min-width: 32px; }
+  .km-teams { flex: 1; }
+  .km-teams-row { font-size: 15px; font-weight: 700; color: #fff; }
+  .km-teams-row .vs { color: var(--muted); font-size: 12px; margin: 0 6px; }
+  .km-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .km-winner { font-size: 12px; font-weight: 700; color: var(--accent); margin-top: 3px; }
+  .km-winner::before { content: '🏆 Winner: '; }
+  .km-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* BUTTONS */
+  .btn { display: inline-block; border-radius: 8px; font-size: 13px; font-weight: 700; padding: 8px 16px; text-decoration: none; border: none; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
+  .btn:hover { opacity: 0.85; }
+  .btn-green { background: linear-gradient(135deg, #14532d, #22c55e); color: #000; }
+  .btn-blue  { background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: #fff; }
+  .btn-gold  { background: linear-gradient(135deg, #78350f, #f59e0b); color: #000; }
+  .btn-muted { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+  .btn-sm { font-size: 11px; padding: 6px 12px; }
+
+  /* ADD STAGE SECTION */
+  .add-stage-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 28px; }
+  .add-stage-box h3 { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #fff; margin-bottom: 16px; }
+
+  /* LINK SECTION */
+  .link-box { background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .link-box p { font-size: 14px; color: var(--text); }
+  .link-box p span { color: var(--blue); font-weight: 600; }
+</style>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <div class="label">Admin · Knockout Management</div>
+      <h1>{{ tournament.tournament_name }}</h1>
+      <div class="meta">Knockout Bracket Setup</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="{% url 'public_knockout_bracket' tournament.id %}" class="btn btn-muted">View Public Bracket →</a>
+      <a href="{% url 'tournament_history' tournament.id %}" class="btn-back">← History</a>
+    </div>
+  </div>
+
+  <!-- MESSAGES -->
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+
+  <!-- LEAGUE STATUS -->
+  {% if not league_done %}
+  <div class="alert alert-warning">
+    ⚠️ <strong>{{ pending_league_count }} league match(es) still pending.</strong>
+    You can still set up knockout stages, but results will be based on current standings.
+  </div>
+  {% else %}
+  <div class="alert alert-success">
+    ✅ All league matches completed! Knockout bracket is ready to be set up.
+  </div>
+  {% endif %}
+
+  <!-- LEADERBOARD MINI -->
+  <div class="section-title">📊 <span>Current Standings</span></div>
+  <div class="lb-mini">
+    <table>
+      <thead>
+        <tr>
+          <th>Team</th>
+          <th>P</th><th>W</th><th>L</th>
+          <th>NRR</th><th>Pts</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in leaderboard %}
+        <tr class="rank-{{ entry.rank }}">
+          <td>
+            <span class="rank-badge">{{ entry.rank }}</span>
+            <span class="team-lb">{{ entry.team.team_name }}</span>
+          </td>
+          <td>{{ entry.played }}</td>
+          <td style="color:#22c55e;font-weight:700;">{{ entry.wins }}</td>
+          <td style="color:#ef4444;">{{ entry.losses }}</td>
+          <td>
+            {% if entry.nrr >= 0 %}<span class="nrr-pos">+{{ entry.nrr|floatformat:3 }}</span>
+            {% else %}<span class="nrr-neg">{{ entry.nrr|floatformat:3 }}</span>{% endif %}
+          </td>
+          <td><span class="pts-badge">{{ entry.points }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- EXISTING STAGES -->
+  {% if stages %}
+  <div class="section-title">🏆 <span>Knockout Stages</span></div>
+
+  <!-- LINK MATCHES BOX -->
+  <div class="link-box">
+    <p>🔗 <span>Link knockout matches</span> so winners auto-advance to the next round.</p>
+    <a href="{% url 'link_knockout_matches' tournament.id %}" class="btn btn-blue btn-sm">Set Match Links →</a>
+  </div>
+
+  <div class="stages-grid">
+    {% for stage in stages %}
+    <div class="stage-card">
+      <div class="stage-header">
+        <div class="stage-title">{{ stage.get_stage_display }}</div>
+        {% if stage.is_completed %}
+          <span class="stage-badge badge-done">Completed</span>
+        {% else %}
+          <span class="stage-badge badge-pending">In Progress</span>
+        {% endif %}
+      </div>
+      <div class="match-rows">
+        {% for km in stage.matches.all %}
+        <div class="km-row">
+          <div class="km-number">M{{ km.match_number }}</div>
+          <div class="km-teams">
+            <div class="km-teams-row">
+              {{ km.team1_label|default:km.team1.team_name|default:"TBD" }}
+              <span class="vs">VS</span>
+              {{ km.team2_label|default:km.team2.team_name|default:"TBD" }}
+            </div>
+            <div class="km-meta">
+              {% if km.match_date %}📅 {{ km.match_date }}{% endif %}
+              {% if km.venue %} · 📍 {{ km.venue }}{% endif %}
+            </div>
+            {% if km.winner %}
+            <div class="km-winner">{{ km.winner.team_name }}</div>
+            {% endif %}
+          </div>
+          <div class="km-actions">
+            {% if km.is_completed %}
+              {% if km.match %}
+              <a href="{% url 'match_scorecard' km.match.id %}" class="btn btn-muted btn-sm">Scorecard</a>
+              {% endif %}
+              <span style="font-size:12px;color:var(--accent);font-weight:700;">✅ Done</span>
+            {% elif km.team1 and km.team2 %}
+              {% if km.match %}
+                <a href="{% url 'scoring' km.match.id %}" class="btn btn-gold btn-sm">● Live</a>
+              {% else %}
+                <a href="{% url 'start_knockout_match' km.id %}" class="btn btn-green btn-sm">Start Match →</a>
+              {% endif %}
+            {% else %}
+              <span style="font-size:12px;color:var(--muted);">Waiting for teams</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ADD NEW STAGE -->
+  <div class="section-title">➕ <span>Add Knockout Stage</span></div>
+  <div class="add-stage-box">
+    <h3>Setup New Stage</h3>
+    <a href="{% url 'setup_knockout_stage' tournament.id %}" class="btn btn-blue">
+      + Setup Next Knockout Stage
+    </a>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,712 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  :root {
+    --bg: #0a0f1e; --surface: #111827; --surface2: #1a2235;
+    --border: #1e2d45; --accent: #f59e0b; --success: #10b981;
+    --danger: #ef4444; --info: #3b82f6; --text: #e2e8f0; --muted: #64748b;
+    --radius: 14px;
+  }
+
+  /* ── TOURNAMENT SELECTOR ── */
+  .t-selector-wrap { max-width: 1360px; margin: 0 auto; padding: 20px 16px 0; }
+  .t-selector { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .t-selector-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .t-btn { padding: 8px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: var(--surface); color: var(--muted); text-decoration: none; transition: all 0.15s; white-space: nowrap; }
+  .t-btn:hover { color: var(--accent); border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.06); }
+  .t-btn.active { color: #000; background: linear-gradient(135deg, #b45309, #f59e0b); border-color: transparent; font-weight: 700; }
+  .t-btn-new { margin-left: auto; padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 700; border: 1px solid rgba(16,185,129,0.35); background: rgba(16,185,129,0.08); color: var(--success); text-decoration: none; white-space: nowrap; transition: all 0.15s; }
+  .t-btn-new:hover { background: rgba(16,185,129,0.16); }
+
+  /* ── LAYOUT ── */
+  .main-grid { max-width: 1360px; margin: 0 auto; padding: 24px 16px 60px; display: grid; grid-template-columns: 1fr 310px; gap: 22px; align-items: start; }
+  .primary-content { min-width: 0; }
+
+  /* ── SECTION HEADERS ── */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; margin-top: 28px; gap: 10px; }
+  .section-header:first-child { margin-top: 0; }
+  .section-title-row { display: flex; align-items: center; gap: 10px; }
+  .section-title { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: #fff; }
+  .section-count { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; }
+  .see-all-btn { font-size: 12px; font-weight: 700; color: var(--accent); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 20px; padding: 5px 14px; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+  .see-all-btn:hover { background: rgba(245,158,11,0.16); }
+  .see-all-btn .arr { font-size: 10px; transition: transform 0.2s; display: inline-block; }
+  .see-all-btn.open .arr { transform: rotate(180deg); }
+
+  /* ── MATCH TYPE PILL ── */
+  .match-type-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 800; letter-spacing: 1.2px;
+    text-transform: uppercase; border-radius: 20px; padding: 3px 10px;
+    margin-right: 6px;
+  }
+  .pill-league {
+    background: rgba(59,130,246,0.12); color: #60a5fa;
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+  .pill-knockout {
+    background: rgba(245,158,11,0.12); color: var(--accent);
+    border: 1px solid rgba(245,158,11,0.3);
+  }
+  .pill-pqf  { background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+  .pill-qf   { background: rgba(234,179,8,0.12);  color: #facc15; border: 1px solid rgba(234,179,8,0.3); }
+  .pill-sf   { background: rgba(249,115,22,0.12); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
+  .pill-f    { background: rgba(239,68,68,0.12);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+  /* ── BADGES ── */
+  .badge { font-size: 11px; font-weight: 700; border-radius: 20px; padding: 3px 12px; white-space: nowrap; flex-shrink: 0; }
+  .badge-live { color: var(--success); background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); animation: pulse 2s infinite; }
+  .badge-done { color: var(--muted); background: transparent; border: 1px solid var(--border); }
+  .badge-sched { color: var(--info); background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); }
+  .badge-prog { color: var(--accent); background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  /* ── FEATURED MATCH (most recent completed) ── */
+  .featured-match { background: linear-gradient(135deg, #1a2a4a 0%, #0f1f38 100%); border: 1px solid #1e3a5f; border-radius: 18px; overflow: hidden; }
+  .fm-header { padding: 18px 22px; border-bottom: 1px solid #1e3a5f; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .fm-teams { font-family: 'Rajdhani', sans-serif; font-size: 21px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+  .fm-meta { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .fm-scores { display: flex; }
+  .fm-score-half { flex: 1; padding: 16px 22px; }
+  .fm-score-half:first-child { border-right: 1px solid #1e3a5f; }
+  .fm-team-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+  .fm-score-num { font-family: 'Rajdhani', sans-serif; font-size: 38px; font-weight: 700; color: #fff; line-height: 1; }
+  .fm-wkts { color: var(--accent); }
+  .fm-overs { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .fm-winner-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--success); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; padding: 3px 10px; }
+  .fm-result-bar { padding: 11px 22px; font-size: 13px; font-weight: 600; color: var(--success); background: rgba(16,185,129,0.06); border-bottom: 1px solid rgba(16,185,129,0.12); display: flex; align-items: center; gap: 8px; }
+
+  /* ── SCORECARD TOGGLE ── */
+  .sc-toggle { padding: 11px 22px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); transition: background 0.1s; border-top: 1px solid var(--border); }
+  .sc-toggle:hover { background: rgba(255,255,255,0.02); color: var(--accent); }
+  .sc-toggle .arr { font-size: 10px; transition: transform 0.2s; display: inline-block; }
+  .sc-toggle.open .arr { transform: rotate(180deg); }
+  .sc-body { display: none; padding: 20px 22px; border-top: 1px solid var(--border); }
+  .sc-body.visible { display: block; }
+
+  /* ── SCORECARD INTERNALS ── */
+  .sc-section { margin-bottom: 22px; }
+  .sc-section:last-child { margin-bottom: 0; }
+  .sc-section-title { font-size: 12px; font-weight: 700; color: #94a3b8; padding-bottom: 9px; margin-bottom: 11px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; }
+  .sc-table { width: 100%; border-collapse: collapse; }
+  .sc-table th { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 6px 9px; text-align: left; border-bottom: 1px solid var(--border); }
+  .sc-table th.r { text-align: right; }
+  .sc-table td { padding: 8px 9px; font-size: 13px; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .sc-table td.r { text-align: right; }
+  .sc-table tr:last-child td { border-bottom: none; }
+  .sc-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .sc-player { font-weight: 600; color: #fff; }
+  .sc-runs { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; color: var(--accent); }
+  .sc-not-out { color: var(--success); font-size: 11px; }
+  .sc-dismissal { font-size: 11px; color: var(--muted); font-style: italic; }
+  .sc-wkts { font-weight: 700; color: var(--accent); }
+  .inn-total { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.15); border-radius: 9px; padding: 9px 13px; margin-top: 9px; display: flex; justify-content: space-between; align-items: center; }
+  .inn-total-label { font-size: 11px; font-weight: 700; color: var(--muted); }
+  .inn-total-score { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: var(--accent); }
+  .inn-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .inn-divider::before,.inn-divider::after { content:''; flex:1; height:1px; background: var(--border); }
+
+  /* ── SMALLER MATCH CARDS ── */
+  .older-list { display: none; flex-direction: column; gap: 12px; margin-top: 12px; }
+  .older-list.visible { display: flex; }
+  .pending-more { display: none; flex-direction: column; gap: 12px; margin-top: 12px; }
+  .pending-more.visible { display: flex; }
+  .pending-initial { display: flex; flex-direction: column; gap: 12px; }
+
+  .match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.15s; }
+  .match-card:hover { border-color: rgba(245,158,11,0.25); }
+  .mc-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .mc-teams { font-size: 14px; font-weight: 700; color: #fff; }
+  .mc-meta { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .mc-scores { display: flex; }
+  .mc-score-half { flex: 1; padding: 12px 18px; }
+  .mc-score-half:first-child { border-right: 1px solid var(--border); }
+  .mc-team-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+  .mc-score-num { font-family: 'Rajdhani', sans-serif; font-size: 26px; font-weight: 700; color: #fff; line-height: 1; }
+  .mc-wkts { color: var(--accent); }
+  .mc-overs { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .mc-result { padding: 9px 18px; font-size: 12px; font-weight: 600; color: var(--success); background: rgba(16,185,129,0.06); border-top: 1px solid rgba(16,185,129,0.12); }
+  .mc-pending { padding: 14px 18px; font-size: 13px; color: var(--muted); font-style: italic; display: flex; align-items: center; justify-content: space-between; }
+  .mc-pending a { color: var(--accent); font-style: normal; font-weight: 600; font-size: 12px; text-decoration: none; }
+
+  /* ── EMPTY STATES ── */
+  .empty-state { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 50px 24px; text-align: center; }
+  .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; }
+  .empty-title { font-family: 'Rajdhani', sans-serif; font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  .btn-primary { display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 700; background: linear-gradient(135deg,#b45309,#f59e0b); color: #000; text-decoration: none; transition: all 0.15s; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245,158,11,.3); color:#000; }
+  .btn-secondary { display: inline-flex; align-items: center; gap: 7px; margin-left: 8px; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; background: var(--surface2); color: var(--text); border: 1px solid var(--border); text-decoration: none; transition: all 0.15s; }
+  .btn-secondary:hover { border-color: rgba(245,158,11,.3); color: var(--accent); }
+
+  /* ── SIDEBAR ── */
+  .sidebar { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; }
+  .sidebar-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .sidebar-section.blue { background: linear-gradient(135deg,#1a2a4a,#0f1f38); border-color: #1e3a5f; }
+  .sb-title { font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 14px; padding-bottom: 9px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .t-tag { font-size: 10px; color: var(--accent); font-weight: 600; background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.2); border-radius: 10px; padding: 2px 8px; }
+  .perf-list { display: flex; flex-direction: column; gap: 12px; }
+  .perf-item { display: flex; align-items: center; gap: 9px; }
+  .perf-rank { font-family:'Rajdhani',sans-serif; font-size: 17px; font-weight: 700; color: var(--accent); min-width: 26px; }
+  .perf-details { flex: 1; min-width: 0; }
+  .perf-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .perf-stat { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .perf-team { font-size: 10px; color: #475569; }
+  .no-data { padding: 16px 0; text-align: center; color: var(--muted); font-size: 13px; }
+  .qa-list { display: flex; flex-direction: column; gap: 8px; }
+  .qa-btn { padding: 10px 13px; border-radius: 9px; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 7px; transition: all .15s; }
+  .qa-btn.amber { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2); color: var(--accent); }
+  .qa-btn.amber:hover { background: rgba(245,158,11,.16); }
+  .qa-btn.green { background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.2); color: var(--success); }
+  .qa-btn.green:hover { background: rgba(16,185,129,.16); }
+  .qa-btn.blue { background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.2); color: var(--info); }
+  .qa-btn.blue:hover { background: rgba(59,130,246,.16); }
+  .qa-btn.grey { background: var(--surface2); border: 1px solid var(--border); color: #94a3b8; }
+  .qa-btn.grey:hover { color: #fff; }
+  .info-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; margin-bottom: 8px; }
+  .info-pill:last-child { margin-bottom: 0; }
+  .pill-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .pill-value { font-size: 14px; font-weight: 600; color: #fff; }
+  .pill-value.big { font-family:'Rajdhani',sans-serif; font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1; }
+
+  @media (max-width:1080px) { .main-grid { grid-template-columns: 1fr; } .sidebar { position: static; } }
+  @media (max-width:600px) { .fm-scores,.mc-scores { flex-direction: column; } .fm-score-half:first-child,.mc-score-half:first-child { border-right: none; border-bottom: 1px solid var(--border); } }
+</style>
+
+<!-- TOURNAMENT SELECTOR -->
+<div class="t-selector-wrap">
+  <div class="t-selector">
+    <span class="t-selector-label">🏆 Tournament:</span>
+    {% for t in all_tournaments %}
+      <a href="/?t={{ t.id }}" class="t-btn {% if selected_tournament and selected_tournament.id == t.id %}active{% endif %}">
+        {{ t.tournament_name }}
+      </a>
+    {% empty %}
+      <span style="font-size:13px;color:var(--muted);">No tournaments yet</span>
+    {% endfor %}
+    <a href="{% url 'manage_cricket' %}" class="t-btn-new">＋ New Tournament</a>
+  </div>
+</div>
+
+<div class="main-grid">
+<div class="primary-content">
+
+{% if not all_tournaments %}
+  <div class="empty-state" style="margin-top:8px;">
+    <span class="empty-icon">🏏</span>
+    <div class="empty-title">Welcome to Cricket Manager!</div>
+    <div class="empty-sub">Create a tournament, add teams and players, then start scoring.</div>
+    <a href="{% url 'manage_cricket' %}" class="btn-primary">🏆 Create First Tournament</a>
+  </div>
+
+{% elif not selected_tournament %}
+  <div class="empty-state" style="margin-top:8px;">
+    <span class="empty-icon">👆</span>
+    <div class="empty-title">Select a Tournament Above</div>
+    <div class="empty-sub">Click any tournament button to view its data.</div>
+  </div>
+
+{% elif not completed_matches and not live_matches and not pending_matches %}
+  <div class="empty-state" style="margin-top:8px;">
+    <span class="empty-icon">📋</span>
+    <div class="empty-title">No Matches in {{ selected_tournament.tournament_name }}</div>
+    <div class="empty-sub">Create a match and start scoring!</div>
+    <a href="{% url 'create_match' %}" class="btn-primary">🆕 Create Match</a>
+    <a href="{% url 'match_start' %}" class="btn-secondary">▶ Start Toss</a>
+  </div>
+
+{% else %}
+
+{# ── HELPER MACRO: match type pill ── #}
+{% for mc in live_matches %}{% endfor %}
+
+{# ════════ LIVE MATCHES ════════ #}
+{% if live_matches %}
+<div class="section-header" style="margin-top:8px;">
+  <div class="section-title-row">
+    <span class="section-title">🔴 Live</span>
+    <span class="section-count">{{ live_matches|length }}</span>
+  </div>
+</div>
+{% for mc in live_matches %}
+<div class="match-card" style="border-color:rgba(16,185,129,0.3);margin-bottom:12px;">
+  <div class="mc-header">
+    <div>
+      <div class="mc-teams">
+        {% if mc.is_knockout %}
+          {% with stage_code=mc.match.knockout_match.stage.stage %}
+            {% if stage_code == 'PQF' %}<span class="match-type-pill pill-pqf">PQF · M{{ mc.match.knockout_match.match_number }}</span>
+            {% elif stage_code == 'QF' %}<span class="match-type-pill pill-qf">QF · M{{ mc.match.knockout_match.match_number }}</span>
+            {% elif stage_code == 'SF' %}<span class="match-type-pill pill-sf">SF · M{{ mc.match.knockout_match.match_number }}</span>
+            {% elif stage_code == 'F' %}<span class="match-type-pill pill-f">🏆 FINAL</span>
+            {% endif %}
+          {% endwith %}
+        {% else %}
+          <span class="match-type-pill pill-league">League · M{{ mc.match_number }}</span>
+        {% endif %}
+        {{ mc.match.team1 }} vs {{ mc.match.team2 }}
+      </div>
+      <div class="mc-meta">📍 {{ mc.match.venue }} · 📅 {{ mc.match.match_date }}</div>
+    </div>
+    <span class="badge badge-live">● LIVE</span>
+  </div>
+  {% if mc.inn1 %}
+  <div class="mc-scores">
+    <div class="mc-score-half">
+      <div class="mc-team-label">{{ mc.inn1.batting_team }}</div>
+      <div class="mc-score-num">{{ mc.inn1.total_runs }}/<span class="mc-wkts">{{ mc.inn1.total_wickets }}</span></div>
+      <div class="mc-overs">{{ mc.inn1.overs_completed }} overs</div>
+    </div>
+    {% if mc.inn2 %}
+    <div class="mc-score-half">
+      <div class="mc-team-label">{{ mc.inn2.batting_team }}</div>
+      <div class="mc-score-num">{{ mc.inn2.total_runs }}/<span class="mc-wkts">{{ mc.inn2.total_wickets }}</span></div>
+      <div class="mc-overs">{{ mc.inn2.overs_completed }} overs</div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{# ════════ COMPLETED MATCHES ════════ #}
+{% if completed_matches %}
+<div class="section-header" {% if not live_matches %}style="margin-top:8px;"{% endif %}>
+  <div class="section-title-row">
+    <span class="section-title">✅ Completed</span>
+    <span class="section-count">{{ completed_matches|length }}</span>
+  </div>
+  {% if completed_matches|length > 1 %}
+  <button class="see-all-btn" id="comp-toggle" onclick="toggleSection('comp-older','comp-toggle')">
+    See all <span class="arr">▼</span>
+  </button>
+  {% endif %}
+</div>
+
+{# Most recent completed — FEATURED #}
+{% with mc=completed_matches.0 %}
+<div class="featured-match">
+  <div class="fm-header">
+    <div>
+      <div class="fm-teams">
+        {% if mc.is_knockout %}
+          {% with stage_code=mc.match.knockout_match.stage.stage %}
+            {% if stage_code == 'PQF' %}<span class="match-type-pill pill-pqf">PQF · M{{ mc.match.knockout_match.match_number }}</span>
+            {% elif stage_code == 'QF' %}<span class="match-type-pill pill-qf">QF · M{{ mc.match.knockout_match.match_number }}</span>
+            {% elif stage_code == 'SF' %}<span class="match-type-pill pill-sf">SF · M{{ mc.match.knockout_match.match_number }}</span>
+            {% elif stage_code == 'F' %}<span class="match-type-pill pill-f">🏆 FINAL</span>
+            {% endif %}
+          {% endwith %}
+        {% else %}
+          <span class="match-type-pill pill-league">League · M{{ mc.match_number }}</span>
+        {% endif %}
+        {{ mc.match.team1 }} vs {{ mc.match.team2 }}
+      </div>
+      <div class="fm-meta">
+        <span>📍 {{ mc.match.venue }}</span>
+        <span>📅 {{ mc.match.match_date }}</span>
+      </div>
+    </div>
+    <span class="badge badge-done">✔ Completed</span>
+  </div>
+
+  {% if mc.inn1 %}
+  <div class="fm-scores">
+    <div class="fm-score-half">
+      <div class="fm-team-label">{{ mc.inn1.batting_team }}</div>
+      <div class="fm-score-num">{{ mc.inn1.total_runs }}/<span class="fm-wkts">{{ mc.inn1.total_wickets }}</span></div>
+      <div class="fm-overs">{{ mc.inn1.overs_completed }} overs</div>
+      {% if mc.winner == mc.inn1.batting_team %}<div class="fm-winner-chip">🏆 Winner</div>{% endif %}
+    </div>
+    {% if mc.inn2 %}
+    <div class="fm-score-half">
+      <div class="fm-team-label">{{ mc.inn2.batting_team }}</div>
+      <div class="fm-score-num">{{ mc.inn2.total_runs }}/<span class="fm-wkts">{{ mc.inn2.total_wickets }}</span></div>
+      <div class="fm-overs">{{ mc.inn2.overs_completed }} overs</div>
+      {% if mc.winner == mc.inn2.batting_team %}<div class="fm-winner-chip">🏆 Winner</div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% if mc.winner %}
+  <div class="fm-result-bar">🏆 {{ mc.winner }} won by {{ mc.margin }}</div>
+  {% elif mc.margin %}<div class="fm-result-bar">⚖️ {{ mc.margin }}</div>{% endif %}
+
+  <div class="sc-toggle" id="toggle-feat" onclick="toggleSC('sc-feat','toggle-feat')">
+    <span>📊 View Full Scorecard</span><span class="arr">▼</span>
+  </div>
+  <div class="sc-body" id="sc-feat">
+    {% if mc.batting_sc1 %}
+    <div class="sc-section">
+      <div class="sc-section-title">🏏 {{ mc.inn1.batting_team }} — Batting</div>
+      <table class="sc-table">
+        <thead><tr><th>Batsman</th><th>How Out</th><th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">SR</th></tr></thead>
+        <tbody>
+          {% for b in mc.batting_sc1 %}
+          <tr>
+            <td><span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</td>
+            <td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td>
+            <td class="r"><span class="sc-runs">{{ b.runs }}</span></td>
+            <td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="inn-total"><span class="inn-total-label">Total · {{ mc.inn1.overs_completed }} ov · Extras: {{ mc.inn1.extras }}</span><span class="inn-total-score">{{ mc.inn1.total_runs }}/{{ mc.inn1.total_wickets }}</span></div>
+    </div>
+    {% endif %}
+    {% if mc.bowling_sc1 %}
+    <div class="sc-section">
+      <div class="sc-section-title">⚾ {{ mc.inn1.bowling_team }} — Bowling</div>
+      <table class="sc-table">
+        <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
+        <tbody>
+          {% for b in mc.bowling_sc1 %}<tr><td><span class="sc-player">{{ b.bowler.player_name }}</span></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if mc.inn2 %}<div class="inn-divider">2nd Innings</div>{% endif %}
+    {% if mc.batting_sc2 %}
+    <div class="sc-section">
+      <div class="sc-section-title">🏏 {{ mc.inn2.batting_team }} — Batting</div>
+      <table class="sc-table">
+        <thead><tr><th>Batsman</th><th>How Out</th><th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">SR</th></tr></thead>
+        <tbody>
+          {% for b in mc.batting_sc2 %}
+          <tr>
+            <td><span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</td>
+            <td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td>
+            <td class="r"><span class="sc-runs">{{ b.runs }}</span></td>
+            <td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="inn-total"><span class="inn-total-label">Total · {{ mc.inn2.overs_completed }} ov · Extras: {{ mc.inn2.extras }}</span><span class="inn-total-score">{{ mc.inn2.total_runs }}/{{ mc.inn2.total_wickets }}</span></div>
+    </div>
+    {% endif %}
+    {% if mc.bowling_sc2 %}
+    <div class="sc-section">
+      <div class="sc-section-title">⚾ {{ mc.inn2.bowling_team }} — Bowling</div>
+      <table class="sc-table">
+        <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
+        <tbody>
+          {% for b in mc.bowling_sc2 %}<tr><td><span class="sc-player">{{ b.bowler.player_name }}</span></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if not mc.batting_sc1 and not mc.batting_sc2 %}<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">No scorecard data yet.</div>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endwith %}
+
+{# Older completed matches #}
+{% if completed_matches|length > 1 %}
+<div class="older-list" id="comp-older">
+  {% for mc in completed_matches %}{% if not forloop.first %}
+  <div class="match-card">
+    <div class="mc-header">
+      <div>
+        <div class="mc-teams">
+          {% if mc.is_knockout %}
+            {% with stage_code=mc.match.knockout_match.stage.stage %}
+              {% if stage_code == 'PQF' %}<span class="match-type-pill pill-pqf">PQF · M{{ mc.match.knockout_match.match_number }}</span>
+              {% elif stage_code == 'QF' %}<span class="match-type-pill pill-qf">QF · M{{ mc.match.knockout_match.match_number }}</span>
+              {% elif stage_code == 'SF' %}<span class="match-type-pill pill-sf">SF · M{{ mc.match.knockout_match.match_number }}</span>
+              {% elif stage_code == 'F' %}<span class="match-type-pill pill-f">🏆 FINAL</span>
+              {% endif %}
+            {% endwith %}
+          {% else %}
+            <span class="match-type-pill pill-league">League · M{{ mc.match_number }}</span>
+          {% endif %}
+          {{ mc.match.team1 }} vs {{ mc.match.team2 }}
+        </div>
+        <div class="mc-meta">📍 {{ mc.match.venue }} · 📅 {{ mc.match.match_date }}</div>
+      </div>
+      <span class="badge badge-done">✔ Done</span>
+    </div>
+    {% if mc.inn1 %}
+    <div class="mc-scores">
+      <div class="mc-score-half">
+        <div class="mc-team-label">{{ mc.inn1.batting_team }}</div>
+        <div class="mc-score-num">{{ mc.inn1.total_runs }}/<span class="mc-wkts">{{ mc.inn1.total_wickets }}</span></div>
+        <div class="mc-overs">{{ mc.inn1.overs_completed }} ov</div>
+      </div>
+      {% if mc.inn2 %}
+      <div class="mc-score-half">
+        <div class="mc-team-label">{{ mc.inn2.batting_team }}</div>
+        <div class="mc-score-num">{{ mc.inn2.total_runs }}/<span class="mc-wkts">{{ mc.inn2.total_wickets }}</span></div>
+        <div class="mc-overs">{{ mc.inn2.overs_completed }} ov</div>
+      </div>
+      {% endif %}
+    </div>
+    {% if mc.winner %}<div class="mc-result">🏆 {{ mc.winner }} won by {{ mc.margin }}</div>{% elif mc.margin %}<div class="mc-result">⚖️ {{ mc.margin }}</div>{% endif %}
+    <div class="sc-toggle" id="tog-c{{ forloop.counter }}" onclick="toggleSC('sc-c{{ forloop.counter }}','tog-c{{ forloop.counter }}')">
+      <span>📊 View Full Scorecard</span><span class="arr">▼</span>
+    </div>
+    <div class="sc-body" id="sc-c{{ forloop.counter }}">
+      {% if mc.batting_sc1 %}
+      <div class="sc-section">
+        <div class="sc-section-title">🏏 {{ mc.inn1.batting_team }} — Batting</div>
+        <table class="sc-table">
+          <thead><tr><th>Batsman</th><th>How Out</th><th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">SR</th></tr></thead>
+          <tbody>
+            {% for b in mc.batting_sc1 %}<tr><td><span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</td><td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td><td class="r"><span class="sc-runs">{{ b.runs }}</span></td><td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+        <div class="inn-total"><span class="inn-total-label">Total · {{ mc.inn1.overs_completed }} ov · Extras: {{ mc.inn1.extras }}</span><span class="inn-total-score">{{ mc.inn1.total_runs }}/{{ mc.inn1.total_wickets }}</span></div>
+      </div>
+      {% endif %}
+      {% if mc.bowling_sc1 %}
+      <div class="sc-section">
+        <div class="sc-section-title">⚾ {{ mc.inn1.bowling_team }} — Bowling</div>
+        <table class="sc-table">
+          <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
+          <tbody>{% for b in mc.bowling_sc1 %}<tr><td><span class="sc-player">{{ b.bowler.player_name }}</span></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+      {% endif %}
+      {% if mc.inn2 %}<div class="inn-divider">2nd Innings</div>{% endif %}
+      {% if mc.batting_sc2 %}
+      <div class="sc-section">
+        <div class="sc-section-title">🏏 {{ mc.inn2.batting_team }} — Batting</div>
+        <table class="sc-table">
+          <thead><tr><th>Batsman</th><th>How Out</th><th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">SR</th></tr></thead>
+          <tbody>{% for b in mc.batting_sc2 %}<tr><td><span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</td><td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td><td class="r"><span class="sc-runs">{{ b.runs }}</span></td><td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td></tr>{% endfor %}</tbody>
+        </table>
+        <div class="inn-total"><span class="inn-total-label">Total · {{ mc.inn2.overs_completed }} ov · Extras: {{ mc.inn2.extras }}</span><span class="inn-total-score">{{ mc.inn2.total_runs }}/{{ mc.inn2.total_wickets }}</span></div>
+      </div>
+      {% endif %}
+      {% if mc.bowling_sc2 %}
+      <div class="sc-section">
+        <div class="sc-section-title">⚾ {{ mc.inn2.bowling_team }} — Bowling</div>
+        <table class="sc-table">
+          <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
+          <tbody>{% for b in mc.bowling_sc2 %}<tr><td><span class="sc-player">{{ b.bowler.player_name }}</span></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+      {% endif %}
+      {% if not mc.batting_sc1 and not mc.batting_sc2 %}<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">No scorecard data yet.</div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}{% endfor %}
+</div>
+{% endif %}
+{% endif %}
+
+{# ════════ PENDING / SCHEDULED MATCHES ════════ #}
+{% if pending_matches %}
+<div class="section-header">
+  <div class="section-title-row">
+    <span class="section-title">📋 Upcoming / Pending</span>
+    <span class="section-count">{{ pending_matches|length }}</span>
+  </div>
+  {% if pending_matches|length > 2 %}
+  <button class="see-all-btn" id="pend-toggle" onclick="toggleSection('pend-more','pend-toggle')">
+    See all <span class="arr">▼</span>
+  </button>
+  {% endif %}
+</div>
+
+<div class="pending-initial">
+{% for mc in pending_matches %}{% if forloop.counter <= 2 %}
+  <div class="match-card">
+    <div class="mc-header" style="cursor:default;">
+      <div>
+        <div class="mc-teams">
+          {% if mc.is_knockout %}
+            {% with stage_code=mc.match.knockout_match.stage.stage %}
+              {% if stage_code == 'PQF' %}<span class="match-type-pill pill-pqf">PQF · M{{ mc.match.knockout_match.match_number }}</span>
+              {% elif stage_code == 'QF' %}<span class="match-type-pill pill-qf">QF · M{{ mc.match.knockout_match.match_number }}</span>
+              {% elif stage_code == 'SF' %}<span class="match-type-pill pill-sf">SF · M{{ mc.match.knockout_match.match_number }}</span>
+              {% elif stage_code == 'F' %}<span class="match-type-pill pill-f">🏆 FINAL</span>
+              {% endif %}
+            {% endwith %}
+          {% else %}
+            <span class="match-type-pill pill-league">League · M{{ mc.match_number }}</span>
+          {% endif %}
+          {{ mc.match.team1 }} vs {{ mc.match.team2 }}
+        </div>
+        <div class="mc-meta">📍 {{ mc.match.venue }} · 📅 {{ mc.match.match_date }}</div>
+      </div>
+      {% if mc.status == 'IN_PROGRESS' %}<span class="badge badge-prog">⏳ In Progress</span>
+      {% else %}<span class="badge badge-sched">Scheduled</span>{% endif %}
+    </div>
+    {% if mc.inn1 %}
+    <div class="mc-scores">
+      <div class="mc-score-half">
+        <div class="mc-team-label">{{ mc.inn1.batting_team }}</div>
+        <div class="mc-score-num">{{ mc.inn1.total_runs }}/<span class="mc-wkts">{{ mc.inn1.total_wickets }}</span></div>
+        <div class="mc-overs">{{ mc.inn1.overs_completed }} ov</div>
+      </div>
+      {% if mc.inn2 %}
+      <div class="mc-score-half">
+        <div class="mc-team-label">{{ mc.inn2.batting_team }}</div>
+        <div class="mc-score-num">{{ mc.inn2.total_runs }}/<span class="mc-wkts">{{ mc.inn2.total_wickets }}</span></div>
+        <div class="mc-overs">{{ mc.inn2.overs_completed }} ov</div>
+      </div>
+      {% else %}
+      <div class="mc-score-half" style="display:flex;align-items:center;"><span style="color:var(--muted);font-size:12px;opacity:.6;">{{ mc.match.team2 }} — Yet to bat</span></div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="mc-pending">
+      <span>Match not started yet</span>
+      <a href="{% url 'match_start' %}">▶ Start Toss →</a>
+    </div>
+    {% endif %}
+  </div>
+{% endif %}{% endfor %}
+</div>
+
+{% if pending_matches|length > 2 %}
+<div class="pending-more" id="pend-more">
+{% for mc in pending_matches %}{% if forloop.counter > 2 %}
+  <div class="match-card">
+    <div class="mc-header" style="cursor:default;">
+      <div>
+        <div class="mc-teams">
+          {% if mc.is_knockout %}
+            {% with stage_code=mc.match.knockout_match.stage.stage %}
+              {% if stage_code == 'PQF' %}<span class="match-type-pill pill-pqf">PQF · M{{ mc.match.knockout_match.match_number }}</span>
+              {% elif stage_code == 'QF' %}<span class="match-type-pill pill-qf">QF · M{{ mc.match.knockout_match.match_number }}</span>
+              {% elif stage_code == 'SF' %}<span class="match-type-pill pill-sf">SF · M{{ mc.match.knockout_match.match_number }}</span>
+              {% elif stage_code == 'F' %}<span class="match-type-pill pill-f">🏆 FINAL</span>
+              {% endif %}
+            {% endwith %}
+          {% else %}
+            <span class="match-type-pill pill-league">League · M{{ mc.match_number }}</span>
+          {% endif %}
+          {{ mc.match.team1 }} vs {{ mc.match.team2 }}
+        </div>
+        <div class="mc-meta">📍 {{ mc.match.venue }} · 📅 {{ mc.match.match_date }}</div>
+      </div>
+      {% if mc.status == 'IN_PROGRESS' %}<span class="badge badge-prog">⏳ In Progress</span>
+      {% else %}<span class="badge badge-sched">Scheduled</span>{% endif %}
+    </div>
+    {% if mc.inn1 %}
+    <div class="mc-scores">
+      <div class="mc-score-half">
+        <div class="mc-team-label">{{ mc.inn1.batting_team }}</div>
+        <div class="mc-score-num">{{ mc.inn1.total_runs }}/<span class="mc-wkts">{{ mc.inn1.total_wickets }}</span></div>
+        <div class="mc-overs">{{ mc.inn1.overs_completed }} ov</div>
+      </div>
+      {% if mc.inn2 %}
+      <div class="mc-score-half">
+        <div class="mc-team-label">{{ mc.inn2.batting_team }}</div>
+        <div class="mc-score-num">{{ mc.inn2.total_runs }}/<span class="mc-wkts">{{ mc.inn2.total_wickets }}</span></div>
+        <div class="mc-overs">{{ mc.inn2.overs_completed }} ov</div>
+      </div>
+      {% else %}
+      <div class="mc-score-half" style="display:flex;align-items:center;"><span style="color:var(--muted);font-size:12px;opacity:.6;">{{ mc.match.team2 }} — Yet to bat</span></div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="mc-pending">
+      <span>Match not started yet</span>
+      <a href="{% url 'match_start' %}">▶ Start Toss →</a>
+    </div>
+    {% endif %}
+  </div>
+{% endif %}{% endfor %}
+</div>
+{% endif %}
+{% endif %}
+
+{% endif %}
+</div>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sidebar-section blue">
+    <h3 class="sb-title">🏏 Top Run Scorers {% if selected_tournament %}<span class="t-tag">{{ selected_tournament.tournament_name }}</span>{% endif %}</h3>
+    {% if top_batsmen %}
+    <div class="perf-list">
+      {% for p in top_batsmen %}
+      <div class="perf-item">
+        <div class="perf-rank">#{{ forloop.counter }}</div>
+        <div class="perf-details">
+          <div class="perf-name">{{ p.batsman__player_name }}</div>
+          <div class="perf-stat"><strong style="color:var(--accent)">{{ p.total_runs }}</strong> runs · {{ p.total_balls }}b · {{ p.total_fours }}×4 · {{ p.total_sixes }}×6</div>
+          <div class="perf-team">{{ p.batsman__team__team_name }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<div class="no-data">No batting data yet</div>{% endif %}
+  </div>
+
+  <div class="sidebar-section">
+    <h3 class="sb-title">⚾ Top Wicket Takers {% if selected_tournament %}<span class="t-tag">{{ selected_tournament.tournament_name }}</span>{% endif %}</h3>
+    {% if top_bowlers %}
+    <div class="perf-list">
+      {% for p in top_bowlers %}
+      <div class="perf-item">
+        <div class="perf-rank">#{{ forloop.counter }}</div>
+        <div class="perf-details">
+          <div class="perf-name">{{ p.bowler__player_name }}</div>
+          <div class="perf-stat"><strong style="color:var(--accent)">{{ p.total_wickets }}</strong> wkts · {{ p.total_runs_given }} runs</div>
+          <div class="perf-team">{{ p.bowler__team__team_name }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<div class="no-data">No bowling data yet</div>{% endif %}
+  </div>
+
+  <div class="sidebar-section">
+    <h3 class="sb-title">⚡ Quick Actions</h3>
+    <div class="qa-list">
+      <a href="{% url 'manage_cricket' %}" class="qa-btn amber">⚙ Manage Tournaments &amp; Teams</a>
+      <a href="{% url 'create_match' %}" class="qa-btn blue">🆕 Create New Match</a>
+      <a href="{% url 'match_start' %}" class="qa-btn green">▶ Start a Match / Toss</a>
+      <a href="{% url 'tournaments' %}" class="qa-btn grey">📋 All Tournaments</a>
+    </div>
+  </div>
+
+  {% if selected_tournament %}
+  <div class="sidebar-section">
+    <h3 class="sb-title">📋 Tournament Info</h3>
+    <div class="info-pill"><div class="pill-label">Tournament</div><div class="pill-value">{{ selected_tournament.tournament_name }}</div></div>
+    <div class="info-pill"><div class="pill-label">Format</div><div class="pill-value">{{ selected_tournament.get_tournament_type_display }}</div></div>
+    <div class="info-pill"><div class="pill-label">Overs Per Match</div><div class="pill-value big">{{ selected_tournament.number_of_overs }}</div></div>
+    <div class="info-pill"><div class="pill-label">Completed / Total</div><div class="pill-value big">{{ completed_matches|length }} / {{ completed_matches|length|add:pending_matches|length|add:live_matches|length }}</div></div>
+    {% if selected_tournament.start_date %}
+    <div class="info-pill"><div class="pill-label">Dates</div><div class="pill-value" style="font-size:13px;">{{ selected_tournament.start_date }} → {{ selected_tournament.end_date|default:"TBD" }}</div></div>
+    {% endif %}
+  </div>
+  {% endif %}
+</aside>
+</div>
+
+<script>
+  function toggleSection(contentId, btnId) {
+    const el = document.getElementById(contentId);
+    const btn = document.getElementById(btnId);
+    if (!el) return;
+    const open = el.classList.toggle('visible');
+    if (btn) {
+      btn.classList.toggle('open', open);
+      btn.querySelector('span:first-child').textContent = open ? 'Show less' : 'See all';
+    }
+  }
+
+  function toggleSC(scId, togId) {
+    const sc = document.getElementById(scId);
+    const tog = document.getElementById(togId);
+    if (!sc) return;
+    const open = sc.classList.toggle('visible');
+    if (tog) {
+      tog.classList.toggle('open', open);
+      const lbl = tog.querySelector('span:first-child');
+      if (lbl) lbl.textContent = open ? '🔼 Hide Scorecard' : '📊 View Full Scorecard';
+    }
+  }
+</script>
+
+{% endblock %}

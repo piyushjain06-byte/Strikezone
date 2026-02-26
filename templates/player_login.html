@@ -1,0 +1,127 @@
+
+{%extends 'base.html' %}
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0f1e; --surface: #111827; --surface2: #1a2235;
+    --border: #1e2d45; --accent: #f59e0b; --success: #10b981;
+    --danger: #ef4444; --text: #e2e8f0; --muted: #64748b; --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center; padding: 20px; }
+
+  .auth-wrap { width: 100%; max-width: 400px; }
+
+  .auth-logo {
+    text-align: center; margin-bottom: 28px;
+  }
+  .auth-logo .icon { font-size: 48px; line-height: 1; margin-bottom: 10px; }
+  .auth-logo h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 28px; font-weight: 700; color: #fff;
+  }
+  .auth-logo p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px; padding: 28px 24px;
+  }
+
+  .auth-title {
+    font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 6px;
+  }
+  .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%; background: var(--surface2);
+    border: 1.5px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 15px; padding: 12px 14px;
+    outline: none; transition: border-color 0.15s; font-family: 'Inter', sans-serif;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--muted); }
+
+  .error-box {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px; padding: 11px 14px;
+    font-size: 13px; color: #f87171; margin-bottom: 16px;
+  }
+
+  .btn-login {
+    width: 100%; background: linear-gradient(135deg, #b45309, #f59e0b);
+    border: none; border-radius: 10px; color: #000;
+    font-size: 15px; font-weight: 700; padding: 13px;
+    cursor: pointer; transition: opacity 0.15s; letter-spacing: 0.3px;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-login:hover { opacity: 0.88; }
+
+  .divider {
+    text-align: center; margin: 18px 0;
+    font-size: 12px; color: var(--muted); position: relative;
+  }
+  .divider::before, .divider::after {
+    content: ''; position: absolute; top: 50%;
+    width: 42%; height: 1px; background: var(--border);
+  }
+  .divider::before { left: 0; }
+  .divider::after { right: 0; }
+
+  .btn-register {
+    display: block; width: 100%; text-align: center;
+    background: transparent; border: 1.5px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    font-size: 14px; font-weight: 600; padding: 12px;
+    text-decoration: none; transition: all 0.15s;
+  }
+  .btn-register:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+
+<div class="auth-wrap">
+
+  <div class="auth-logo">
+    <div class="icon">🏏</div>
+    <h1>CricketApp</h1>
+    <p>Player Portal</p>
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-title">Welcome Back</div>
+    <div class="auth-sub">Login with your mobile number</div>
+
+    {% if error %}
+    <div class="error-box">⚠️ {{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+      {% csrf_token %}
+      <div class="field">
+        <label>Mobile Number</label>
+        <input type="tel" name="mobile" placeholder="Enter your mobile number" required autofocus>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Enter your password" required>
+      </div>
+      <button type="submit" class="btn-login">Login →</button>
+    </form>
+
+    <div class="divider">or</div>
+
+    <a href="{% url 'player_register' %}" class="btn-register">
+      ✦ Create a New Account
+    </a>
+  </div>
+
+</div>
+{%endblock%}

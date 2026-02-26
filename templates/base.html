@@ -1,0 +1,255 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>StrikeZone Live — Cricket Scores</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #0a0f1e;
+      --surface: #111827;
+      --surface2: #1a2235;
+      --border: #1e2d45;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --radius: 14px;
+      --header-h: 64px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ── TOP GLOW LINE ── */
+    .stadium-lights {
+      position: fixed; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg,
+        transparent 0%, #f59e0b 20%, #fbbf24 50%, #f59e0b 80%, transparent 100%);
+      z-index: 1000;
+      box-shadow: 0 0 30px 4px rgba(245,158,11,0.35);
+    }
+
+    /* ── HEADER ── */
+    .main-header {
+      position: sticky; top: 0; z-index: 900;
+      height: var(--header-h);
+      background: rgba(10,15,30,0.96);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: flex; align-items: center; gap: 20px;
+      padding: 0 20px;
+    }
+
+    /* Logo */
+    .logo-container {
+      display: flex; flex-direction: column; line-height: 1;
+      flex-shrink: 0; text-decoration: none;
+    }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px; letter-spacing: 3px;
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; line-height: 1;
+    }
+    .tagline {
+      font-size: 9px; font-weight: 600; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--muted); margin-top: 2px;
+    }
+
+    /* Nav */
+    .nav-tabs {
+      display: flex; gap: 2px; flex: 1;
+      overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+
+    .nav-tab {
+      padding: 7px 14px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      text-decoration: none; white-space: nowrap;
+      transition: all 0.15s; border: 1px solid transparent;
+    }
+    .nav-tab:hover {
+      color: var(--accent); background: rgba(245,158,11,0.08);
+      border-color: rgba(245,158,11,0.2);
+    }
+    .nav-tab.active {
+      color: var(--accent); background: rgba(245,158,11,0.1);
+      border-color: rgba(245,158,11,0.3);
+    }
+
+    /* Auth */
+    .auth-buttons { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+
+    .btn {
+      padding: 7px 16px; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      text-decoration: none; transition: all 0.15s;
+      cursor: pointer; border: none; font-family: 'Inter', sans-serif;
+    }
+    .login-btn {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .login-btn:hover { color: var(--text); border-color: #475569; }
+    .register-btn {
+      background: linear-gradient(135deg, #b45309, #f59e0b);
+      color: #000; font-weight: 700;
+    }
+    .register-btn:hover { opacity: 0.88; }
+
+    /* Hamburger */
+    .hamburger {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: 6px; color: var(--muted); flex-direction: column; gap: 5px;
+    }
+    .hamburger span {
+      display: block; width: 22px; height: 2px;
+      background: currentColor; border-radius: 2px; transition: all 0.2s;
+    }
+
+    /* ── MAIN ── */
+    main { flex: 1; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 18px 20px; text-align: center;
+      background: var(--surface);
+    }
+    .footer-text { font-size: 12px; color: var(--muted); letter-spacing: 0.5px; }
+    .footer-accent { color: var(--accent); font-weight: 700; }
+
+    /* ── MOBILE NAV OVERLAY ── */
+    .mobile-nav {
+      display: none; position: fixed;
+      top: var(--header-h); inset-inline: 0; bottom: 0;
+      background: rgba(10,15,30,0.99);
+      z-index: 850; flex-direction: column;
+      padding: 20px 16px; gap: 6px;
+      border-top: 1px solid var(--border);
+      overflow-y: auto;
+    }
+    .mobile-nav.open { display: flex; }
+    .mobile-nav .nav-tab {
+      padding: 14px 16px; font-size: 15px;
+      border: 1px solid var(--border); border-radius: 10px;
+    }
+    .mobile-nav .auth-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;
+    }
+    .mobile-nav .btn { text-align: center; padding: 13px; font-size: 14px; }
+
+    /* ── DJANGO MESSAGES ── */
+    .messages-wrap { max-width: 900px; margin: 14px auto 0; padding: 0 16px; }
+    .message-item {
+      padding: 11px 16px; border-radius: 10px;
+      font-size: 13px; font-weight: 600; margin-bottom: 8px;
+    }
+    .message-item.success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
+    .message-item.error   { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);  color: #f87171; }
+    .message-item.warning { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: var(--accent); }
+    .message-item.info    { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .nav-tabs { display: none; }
+      .auth-buttons { display: none; }
+      .hamburger { display: flex; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="stadium-lights"></div>
+
+  <!-- HEADER -->
+  <header class="main-header">
+    <a href="/" class="logo-container">
+      <div class="logo">STRIKEZONE</div>
+      <span class="tagline">Real-Time Cricket</span>
+    </a>
+
+    <nav class="nav-tabs" id="desktop-nav">
+      {% for i in categories %}
+        <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
+           class="nav-tab">{{ i.category_name }}</a>
+      {% endfor %}
+    </nav>
+
+    <div class="auth-buttons">
+      <a href="{% url 'player_login' %}" class="btn login-btn">Login</a>
+      <a href="{% url 'player_register' %}" class="btn register-btn">Register</a>
+    </div>
+
+    <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <!-- MOBILE NAV -->
+  <div class="mobile-nav" id="mobile-nav">
+    {% for i in categories %}
+      <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Create Match' %}{% url 'create_match' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
+         class="nav-tab">{{ i.category_name }}</a>
+    {% endfor %}
+    <div class="auth-row">
+      <a href="{% url 'player_login' %}"    class="btn login-btn">Login</a>
+      <a href="{% url 'player_register' %}" class="btn register-btn">Register</a>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="messages-wrap">
+    {% for message in messages %}
+    <div class="message-item {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <main>{% block content %}{% endblock %}</main>
+
+  <footer>
+    <p class="footer-text">
+      <span class="footer-accent">STRIKEZONE</span> &nbsp;•&nbsp; Your Ultimate Cricket Companion
+    </p>
+  </footer>
+
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const mobileNav = document.getElementById('mobile-nav');
+    hamburger.addEventListener('click', () => mobileNav.classList.toggle('open'));
+
+    // Auto-close mobile nav on link click
+    mobileNav.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => mobileNav.classList.remove('open'));
+    });
+
+    // Active nav highlight
+    const path = window.location.pathname;
+    document.querySelectorAll('.nav-tab').forEach(link => {
+      if (link.getAttribute('href').trim() === path) link.classList.add('active');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --accent: #f59e0b;
+    --success: #10b981;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  .td-wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 24px 14px 60px;
+  }
+
+  /* ── HEADER ── */
+  .td-header {
+    background: linear-gradient(135deg, #1a2a4a 0%, #0f1f38 100%);
+    border: 1px solid #1e3a5f;
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .td-header::before {
+    content: '';
+    position: absolute; top: -50px; right: -50px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
+  }
+  .td-tag {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 20px; padding: 3px 12px;
+    display: inline-block; margin-bottom: 10px;
+  }
+  .td-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 34px; font-weight: 700;
+    color: #fff; line-height: 1.1;
+    margin-bottom: 18px;
+  }
+
+  /* ── INFO GRID ── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .info-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .info-label {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 4px;
+  }
+  .info-value {
+    font-size: 15px; font-weight: 600; color: #fff;
+  }
+
+  /* ── HISTORY BUTTON ── */
+  .btn-history {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%;
+    background: linear-gradient(135deg, #b45309, #f59e0b);
+    border: none; border-radius: var(--radius);
+    color: #000; font-size: 14px; font-weight: 700;
+    padding: 14px; text-decoration: none;
+    transition: opacity 0.15s; margin-bottom: 14px;
+    letter-spacing: 0.3px;
+  }
+  .btn-history:hover { opacity: 0.88; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px;
+  }
+
+  /* ── TEAMS LIST ── */
+  .teams-list {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .team-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .team-row:last-child { border-bottom: none; }
+  .team-row:hover { background: var(--surface2); }
+  .team-num {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px; font-weight: 700;
+    color: var(--muted); min-width: 28px;
+  }
+  .team-name {
+    font-size: 15px; font-weight: 600; color: #fff;
+    flex: 1;
+  }
+  .team-arrow {
+    color: var(--muted); font-size: 16px;
+  }
+  .team-row:hover .team-arrow { color: var(--accent); }
+
+  .empty-state {
+    padding: 32px; text-align: center;
+    color: var(--muted); font-size: 14px;
+  }
+</style>
+
+<div class="td-wrap">
+
+  <!-- HEADER CARD -->
+  <div class="td-header">
+    <div class="td-tag">🏏 Tournament</div>
+    <div class="td-title">{{ tournament.tournament_name }}</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Type</div>
+        <div class="info-value">{{ tournament.get_tournament_type_display }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Overs</div>
+        <div class="info-value">{{ tournament.number_of_overs }} ov</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Start Date</div>
+        <div class="info-value">{{ tournament.start_date }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">End Date</div>
+        <div class="info-value">{{ tournament.end_date }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOURNAMENT HISTORY BUTTON -->
+  <a href="{% url 'tournament_history' tournament.id %}" class="btn-history">
+    📊 &nbsp;View Tournament History
+  </a>
+
+  <!-- TEAMS -->
+  <div class="section-title">Participating Teams</div>
+  <div class="teams-list">
+    {% for team in teams %}
+    <a href="{% url 'teamdetails' tournament.id team.id %}" class="team-row">
+      <div class="team-num">{{ forloop.counter }}</div>
+      <div class="team-name">{{ team.team_name }}</div>
+      <div class="team-arrow">›</div>
+    </a>
+    {% empty %}
+    <div class="empty-state">No teams added yet.</div>
+    {% endfor %}
+  </div>
+
+</div>
+
+{% endblock %}

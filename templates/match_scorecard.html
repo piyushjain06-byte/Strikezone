@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #07090f;
+    --surface: #0e1117;
+    --surface2: #161b26;
+    --border: #1e2a3a;
+    --accent: #22c55e;
+    --gold: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  .wrap { max-width: 780px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  /* ── RESULT HERO ── */
+  .result-hero {
+    background: linear-gradient(135deg, #0a1f0a 0%, #071a07 100%);
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-hero::before {
+    content: '';
+    position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+    width: 250px; height: 250px;
+    background: radial-gradient(circle, rgba(34,197,94,0.1) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
+  }
+  .result-hero .tournament-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .result-hero .match-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px; color: #fff; letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .result-hero .match-meta { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+
+  .scores-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .score-block { text-align: center; }
+  .score-block .team { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+  .score-block .runs {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px; color: #fff; line-height: 1; letter-spacing: 1px;
+  }
+  .score-block .runs span { color: var(--accent); font-size: 28px; }
+  .score-block .overs { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .vs-divider {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px; color: var(--muted); letter-spacing: 2px;
+  }
+
+  .result-text {
+    font-size: 16px; font-weight: 700;
+    color: var(--accent); margin-top: 4px;
+  }
+  .tied-text { color: var(--gold); }
+
+  /* ── BACK ── */
+  .btn-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--muted);
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; text-decoration: none; margin-bottom: 20px;
+    transition: all 0.15s;
+  }
+  .btn-back:hover { color: #fff; border-color: #475569; }
+
+  /* ── INNINGS SECTION ── */
+  .innings-section { margin-bottom: 24px; }
+  .innings-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+  }
+  .innings-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; letter-spacing: 1px; color: #fff;
+  }
+  .innings-title span { color: var(--accent); }
+  .innings-summary {
+    font-size: 13px; color: var(--muted);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 12px;
+  }
+
+  /* ── SCORECARD TABLE ── */
+  .scorecard-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .scorecard-card-label {
+    background: var(--surface2);
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted);
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--muted);
+    padding: 10px 16px; text-align: left;
+    background: transparent;
+  }
+  th:not(:first-child) { text-align: right; }
+  td {
+    font-size: 13px; padding: 11px 16px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    color: #cbd5e1;
+  }
+  td:not(:first-child) { text-align: right; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .batsman-name { font-weight: 600; color: #fff; }
+  .not-out { color: var(--accent); font-weight: 800; }
+  .dismissal { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .four-badge { color: #38bdf8; font-weight: 700; }
+  .six-badge  { color: var(--gold); font-weight: 700; }
+  .sr-good    { color: var(--accent); }
+  .sr-avg     { color: var(--gold); }
+  .sr-low     { color: var(--muted); }
+  .dnb-row td { color: var(--muted); font-style: italic; }
+
+  .economy-good { color: var(--accent); }
+  .economy-avg  { color: var(--gold); }
+  .economy-bad  { color: var(--danger); }
+
+  .extras-row td { color: var(--muted); font-size: 12px; }
+  .total-row td  { font-weight: 700; color: #fff; background: var(--surface2); }
+
+  /* ── EMPTY ── */
+  .empty-innings {
+    text-align: center; padding: 30px;
+    color: var(--muted); font-size: 13px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+</style>
+
+
+<div class="wrap">
+
+  <a href="{% url 'tournament_history' match.tournament.id %}" class="btn-back">← Back to Tournament</a>
+
+  <!-- RESULT HERO -->
+  <div class="result-hero">
+    <div class="tournament-tag">{{ match.tournament }} · {{ match.match_date }}</div>
+    <div class="match-title">{{ match.team1 }} vs {{ match.team2 }}</div>
+    <div class="match-meta">📍 {{ match.venue }}</div>
+
+    <div class="scores-row">
+      {% if sc1 %}
+      <div class="score-block">
+        <div class="team">{{ sc1.innings.batting_team }}</div>
+        <div class="runs">{{ sc1.innings.total_runs }}<span>/{{ sc1.innings.total_wickets }}</span></div>
+        <div class="overs">({{ sc1.innings.overs_completed }} ov)</div>
+      </div>
+      {% endif %}
+
+      <div class="vs-divider">VS</div>
+
+      {% if sc2 %}
+      <div class="score-block">
+        <div class="team">{{ sc2.innings.batting_team }}</div>
+        <div class="runs">{{ sc2.innings.total_runs }}<span>/{{ sc2.innings.total_wickets }}</span></div>
+        <div class="overs">({{ sc2.innings.overs_completed }} ov)</div>
+      </div>
+      {% else %}
+      <div class="score-block">
+        <div class="team" style="color:var(--muted);">2nd Innings</div>
+        <div class="runs" style="color:var(--muted);">—</div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if winner %}
+      <div class="result-text">🏆 {{ winner }} won by {{ margin }}</div>
+    {% elif margin == "Tied" %}
+      <div class="result-text tied-text">🤝 Match Tied!</div>
+    {% elif sc1 and sc1.innings.status == 'IN_PROGRESS' or sc2 and sc2.innings.status == 'IN_PROGRESS' %}
+      <div class="result-text" style="color:#f87171;">● Match In Progress</div>
+    {% endif %}
+  </div>
+
+
+  <!-- 1ST INNINGS -->
+  {% if sc1 %}
+  <div class="innings-section">
+    <div class="innings-header">
+      <div class="innings-title">1st Innings — <span>{{ sc1.innings.batting_team }}</span></div>
+      <div class="innings-summary">
+        {{ sc1.innings.total_runs }}/{{ sc1.innings.total_wickets }} · {{ sc1.innings.overs_completed }} ov · Extras: {{ sc1.innings.extras }}
+      </div>
+    </div>
+
+    <!-- Batting -->
+    <div class="scorecard-card">
+      <div class="scorecard-card-label">Batting</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Batsman</th>
+            <th>R</th>
+            <th>B</th>
+            <th>4s</th>
+            <th>6s</th>
+            <th>SR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in sc1.batting %}
+          {% if b.status == 'DNB' %}
+          <tr class="dnb-row">
+            <td><div class="batsman-name">{{ b.batsman.player_name }}</div><div class="dismissal">Did Not Bat</div></td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td>
+              <div class="batsman-name">
+                {{ b.batsman.player_name }}
+                {% if b.status == 'NOT_OUT' %}<span class="not-out">*</span>{% endif %}
+              </div>
+              {% if b.status != 'NOT_OUT' and b.dismissal_info %}
+                <div class="dismissal">{{ b.dismissal_info }}</div>
+              {% elif b.status != 'NOT_OUT' %}
+                <div class="dismissal">out</div>
+              {% endif %}
+            </td>
+            <td><strong style="color:#fff;">{{ b.runs }}</strong></td>
+            <td>{{ b.balls_faced }}</td>
+            <td class="four-badge">{{ b.fours }}</td>
+            <td class="six-badge">{{ b.sixes }}</td>
+            <td class="{% if b.strike_rate >= 150 %}sr-good{% elif b.strike_rate >= 100 %}sr-avg{% else %}sr-low{% endif %}">
+              {{ b.strike_rate }}
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+          <tr class="extras-row">
+            <td colspan="5">Extras</td>
+            <td>{{ sc1.innings.extras }}</td>
+          </tr>
+          <tr class="total-row">
+            <td colspan="3">Total</td>
+            <td colspan="3">{{ sc1.innings.total_runs }}/{{ sc1.innings.total_wickets }} ({{ sc1.innings.overs_completed }} ov)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bowling -->
+    <div class="scorecard-card">
+      <div class="scorecard-card-label">Bowling</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Bowler</th>
+            <th>O</th>
+            <th>R</th>
+            <th>W</th>
+            <th>Wd</th>
+            <th>Nb</th>
+            <th>Eco</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in sc1.bowling %}
+          <tr>
+            <td class="batsman-name">{{ b.bowler.player_name }}</td>
+            <td>{{ b.overs_bowled }}</td>
+            <td>{{ b.runs_given }}</td>
+            <td><strong {% if b.wickets >= 3 %}style="color:var(--accent)"{% endif %}>{{ b.wickets }}</strong></td>
+            <td>{{ b.wides }}</td>
+            <td>{{ b.no_balls }}</td>
+            <td class="{% if b.economy <= 6 %}economy-good{% elif b.economy <= 9 %}economy-avg{% else %}economy-bad{% endif %}">
+              {{ b.economy }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+
+  <!-- 2ND INNINGS -->
+  {% if sc2 %}
+  <div class="innings-section">
+    <div class="innings-header">
+      <div class="innings-title">2nd Innings — <span>{{ sc2.innings.batting_team }}</span></div>
+      <div class="innings-summary">
+        {{ sc2.innings.total_runs }}/{{ sc2.innings.total_wickets }} · {{ sc2.innings.overs_completed }} ov · Target: {{ sc2.innings.target|default:"—" }}
+      </div>
+    </div>
+
+    <!-- Batting -->
+    <div class="scorecard-card">
+      <div class="scorecard-card-label">Batting</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Batsman</th>
+            <th>R</th>
+            <th>B</th>
+            <th>4s</th>
+            <th>6s</th>
+            <th>SR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in sc2.batting %}
+          {% if b.status == 'DNB' %}
+          <tr class="dnb-row">
+            <td><div class="batsman-name">{{ b.batsman.player_name }}</div><div class="dismissal">Did Not Bat</div></td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td>
+              <div class="batsman-name">
+                {{ b.batsman.player_name }}
+                {% if b.status == 'NOT_OUT' %}<span class="not-out">*</span>{% endif %}
+              </div>
+              {% if b.status != 'NOT_OUT' and b.dismissal_info %}
+                <div class="dismissal">{{ b.dismissal_info }}</div>
+              {% elif b.status != 'NOT_OUT' %}
+                <div class="dismissal">out</div>
+              {% endif %}
+            </td>
+            <td><strong style="color:#fff;">{{ b.runs }}</strong></td>
+            <td>{{ b.balls_faced }}</td>
+            <td class="four-badge">{{ b.fours }}</td>
+            <td class="six-badge">{{ b.sixes }}</td>
+            <td class="{% if b.strike_rate >= 150 %}sr-good{% elif b.strike_rate >= 100 %}sr-avg{% else %}sr-low{% endif %}">
+              {{ b.strike_rate }}
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+          <tr class="extras-row">
+            <td colspan="5">Extras</td>
+            <td>{{ sc2.innings.extras }}</td>
+          </tr>
+          <tr class="total-row">
+            <td colspan="3">Total</td>
+            <td colspan="3">{{ sc2.innings.total_runs }}/{{ sc2.innings.total_wickets }} ({{ sc2.innings.overs_completed }} ov)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bowling -->
+    <div class="scorecard-card">
+      <div class="scorecard-card-label">Bowling</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Bowler</th>
+            <th>O</th>
+            <th>R</th>
+            <th>W</th>
+            <th>Wd</th>
+            <th>Nb</th>
+            <th>Eco</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in sc2.bowling %}
+          <tr>
+            <td class="batsman-name">{{ b.bowler.player_name }}</td>
+            <td>{{ b.overs_bowled }}</td>
+            <td>{{ b.runs_given }}</td>
+            <td><strong {% if b.wickets >= 3 %}style="color:var(--accent)"{% endif %}>{{ b.wickets }}</strong></td>
+            <td>{{ b.wides }}</td>
+            <td>{{ b.no_balls }}</td>
+            <td class="{% if b.economy <= 6 %}economy-good{% elif b.economy <= 9 %}economy-avg{% else %}economy-bad{% endif %}">
+              {{ b.economy }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-innings">2nd innings has not started yet.</div>
+  {% endif %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #07090f; --surface: #0e1117; --surface2: #161b26;
+    --border: #1e2a3a; --accent: #22c55e; --gold: #f59e0b;
+    --danger: #ef4444; --blue: #3b82f6; --text: #e2e8f0;
+    --muted: #64748b; --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  .page-header { margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .page-header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: #fff; letter-spacing: 1px; line-height: 1; }
+  .btn-back { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 13px; font-weight: 600; padding: 8px 16px; text-decoration: none; }
+  .btn-back:hover { color: #fff; }
+
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #fff; margin-bottom: 14px; letter-spacing: 1px; }
+  .section-title span { color: var(--accent); }
+
+  /* FORM CARD */
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+  .form-card h3 { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #fff; margin-bottom: 18px; letter-spacing: 1px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .form-row.four  { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .form-group select,
+  .form-group input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; padding: 10px 12px; outline: none; width: 100%; transition: border-color 0.15s; }
+  .form-group select:focus,
+  .form-group input:focus { border-color: var(--accent); }
+  .form-group select option { background: var(--surface2); }
+
+  /* MATCH BUILDER */
+  .match-builder { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
+  .match-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 18px; position: relative; }
+  .match-block-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--gold); margin-bottom: 14px; letter-spacing: 1px; }
+  .vs-divider { text-align: center; color: var(--muted); font-weight: 700; font-size: 13px; margin: 4px 0; }
+
+  .btn { display: inline-block; border-radius: 8px; font-size: 13px; font-weight: 700; padding: 10px 20px; border: none; cursor: pointer; transition: opacity 0.15s; text-decoration: none; }
+  .btn:hover { opacity: 0.85; }
+  .btn-green { background: linear-gradient(135deg, #14532d, #22c55e); color: #000; }
+  .btn-blue  { background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: #fff; }
+  .btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
+  .btn-sm { font-size: 12px; padding: 7px 14px; }
+
+  .add-match-btn { margin-top: 8px; }
+  .submit-row { margin-top: 24px; display: flex; gap: 12px; align-items: center; }
+
+  /* LEADERBOARD REFERENCE */
+  .lb-ref { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 28px; }
+  .lb-ref table { width: 100%; border-collapse: collapse; }
+  .lb-ref th { background: var(--surface2); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .lb-ref td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .lb-ref tr:last-child td { border-bottom: none; }
+  .rank-b { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--muted); margin-right: 8px; }
+
+  .info-box { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: #93c5fd; line-height: 1.6; }
+</style>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <div class="label">Knockout Setup</div>
+      <h1>{{ tournament.tournament_name }}</h1>
+    </div>
+    <a href="{% url 'knockout_bracket' tournament.id %}" class="btn-back">← Back to Bracket</a>
+  </div>
+
+  <div class="info-box">
+    ℹ️ Use the leaderboard below as reference. Select teams for each match pairing.
+    The <strong>team label</strong> is what shows on the bracket (e.g. "TOP 1", "PQF1 Winner").
+  </div>
+
+  <!-- LEADERBOARD REFERENCE -->
+  <div class="section-title">📊 <span>Leaderboard Reference</span></div>
+  <div class="lb-ref">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>L</th><th>NRR</th><th>Pts</th></tr>
+      </thead>
+      <tbody>
+        {% for entry in leaderboard %}
+        <tr>
+          <td><span class="rank-b">{{ entry.rank }}</span></td>
+          <td style="font-weight:600;color:#fff;">{{ entry.team.team_name }}</td>
+          <td>{{ entry.played }}</td>
+          <td style="color:#22c55e;font-weight:700;">{{ entry.wins }}</td>
+          <td style="color:#ef4444;">{{ entry.losses }}</td>
+          <td style="{% if entry.nrr >= 0 %}color:#22c55e{% else %}color:#ef4444{% endif %};font-weight:700;">
+            {% if entry.nrr >= 0 %}+{% endif %}{{ entry.nrr|floatformat:3 }}
+          </td>
+          <td><span style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);border-radius:20px;color:#22c55e;font-size:12px;font-weight:700;padding:2px 9px;">{{ entry.points }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SETUP FORM -->
+  <div class="section-title">🏆 <span>Setup Stage</span></div>
+  <form method="POST" id="stageForm">
+    {% csrf_token %}
+
+    <div class="form-card">
+      <h3>Stage Details</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Stage Type</label>
+          <select name="stage_code" id="stageCode" required>
+            <option value="">-- Select Stage --</option>
+            {% for code, label in stage_choices %}
+            <option value="{{ code }}" {% if next_stage_code == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Number of Matches</label>
+          <select name="num_matches" id="numMatches">
+            {% for n in "12345678"|make_list %}
+            <option value="{{ n }}">{{ n }} Match{% if n != "1" %}es{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATCH BLOCKS (dynamic) -->
+    <div class="match-builder" id="matchBuilder"></div>
+
+    <div class="submit-row">
+      <button type="submit" class="btn btn-green">✅ Save Stage & Matches</button>
+      <a href="{% url 'knockout_bracket' tournament.id %}" class="btn btn-danger btn-sm">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  const teams = [
+    {% for team, label in available_teams %}
+    { id: "{{ team.id|default:'' }}", name: "{{ team.team_name|default:'TBD' }}", label: "{{ label }}" },
+    {% endfor %}
+  ];
+
+  function buildMatches() {
+    const n = parseInt(document.getElementById('numMatches').value);
+    const stage = document.getElementById('stageCode').value;
+    const builder = document.getElementById('matchBuilder');
+    builder.innerHTML = '';
+
+    for (let i = 1; i <= n; i++) {
+      const div = document.createElement('div');
+      div.className = 'form-card';
+      div.innerHTML = `
+        <h3>${stage || 'Match'} ${i}</h3>
+
+        <div class="match-block">
+          <div class="match-block-title">Team 1</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Select Team</label>
+              <select name="match_${i}_team1" required>
+                <option value="">-- Select Team --</option>
+                ${teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Label on Bracket</label>
+              <input type="text" name="match_${i}_team1_label" placeholder="e.g. TOP 1" />
+            </div>
+          </div>
+        </div>
+
+        <div class="vs-divider">— VS —</div>
+
+        <div class="match-block" style="margin-top:10px;">
+          <div class="match-block-title">Team 2</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Select Team</label>
+              <select name="match_${i}_team2" required>
+                <option value="">-- Select Team --</option>
+                ${teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Label on Bracket</label>
+              <input type="text" name="match_${i}_team2_label" placeholder="e.g. TOP 8" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row three" style="margin-top:14px;">
+          <div class="form-group">
+            <label>Match Date</label>
+            <input type="date" name="match_${i}_date" />
+          </div>
+          <div class="form-group" style="grid-column:span 2;">
+            <label>Venue</label>
+            <input type="text" name="match_${i}_venue" placeholder="e.g. Wankhede Stadium" />
+          </div>
+        </div>
+      `;
+      builder.appendChild(div);
+    }
+  }
+
+  document.getElementById('numMatches').addEventListener('change', buildMatches);
+  document.getElementById('stageCode').addEventListener('change', buildMatches);
+  buildMatches();
+</script>
+
+{% endblock %}

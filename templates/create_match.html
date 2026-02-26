@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0f1e; --surface: #111827; --surface2: #1a2235;
+    --border: #1e2d45; --accent: #f59e0b; --success: #10b981;
+    --info: #3b82f6;
+    --text: #e2e8f0; --muted: #64748b; --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+  .cm-layout {
+    max-width: 1100px; margin: 0 auto;
+    padding: 24px 16px 60px;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── HEADER ── */
+  .cm-header {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #1a2a4a 0%, #0f1f38 100%);
+    border: 1px solid #1e3a5f;
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    position: relative; overflow: hidden;
+  }
+  .cm-header::before {
+    content: '';
+    position: absolute; top: -50px; right: -50px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
+  }
+  .cm-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 20px; padding: 3px 12px;
+    display: inline-block; margin-bottom: 10px;
+  }
+  .cm-title { font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700; color: #fff; }
+  .cm-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* ── FORM CARD ── */
+  .form-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 20px;
+  }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .field select,
+  .field input[type="date"],
+  .field input[type="text"] {
+    width: 100%; background: var(--surface2);
+    border: 1.5px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 14px; padding: 12px 14px;
+    outline: none; transition: border-color 0.15s;
+    font-family: 'Inter', sans-serif; appearance: none;
+  }
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+    background-color: var(--surface2); cursor: pointer;
+  }
+  .field select:focus, .field input:focus { border-color: var(--accent); }
+  .field select option { background: var(--surface2); color: var(--text); }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .vs-wrap {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: end; gap: 10px; margin-bottom: 16px;
+  }
+  .vs-badge {
+    font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700; color: var(--accent);
+    background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 50%; width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  .form-divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  .btn-submit {
+    width: 100%; background: linear-gradient(135deg, #b45309, #f59e0b);
+    border: none; border-radius: 10px; color: #000;
+    font-size: 15px; font-weight: 700; padding: 14px;
+    cursor: pointer; transition: opacity 0.15s;
+    font-family: 'Inter', sans-serif; margin-top: 6px;
+  }
+  .btn-submit:hover { opacity: 0.88; }
+
+  .loading-hint { font-size: 11px; color: var(--muted); margin-top: 5px; display: none; }
+  .loading-hint.show { display: block; }
+
+  /* ── SIDEBAR ── */
+  .sidebar { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 20px; }
+
+  .sidebar-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+
+  .t-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, #162035, #0f1a2e);
+  }
+  .t-icon {
+    width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+    background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .t-name {
+    font-size: 14px; font-weight: 700; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
+  }
+  .t-overs { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── MATCH ITEM ── */
+  .match-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .match-item:last-child { border-bottom: none; }
+
+  .match-num {
+    font-family: 'Rajdhani', sans-serif; font-size: 15px;
+    font-weight: 700; color: var(--muted); min-width: 18px; flex-shrink: 0;
+  }
+  .match-info { flex: 1; min-width: 0; }
+  .match-teams {
+    font-size: 13px; font-weight: 600; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .match-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── START INNINGS BUTTON ── */
+  .btn-start-innings {
+    background: linear-gradient(135deg, #065f46, #10b981);
+    border: none; border-radius: 7px;
+    color: #000; font-size: 11px; font-weight: 800;
+    padding: 6px 10px; text-decoration: none;
+    white-space: nowrap; flex-shrink: 0;
+    transition: opacity 0.15s; display: inline-block;
+  }
+  .btn-start-innings:hover { opacity: 0.85; }
+
+  .no-matches {
+    padding: 16px; text-align: center;
+    color: var(--muted); font-size: 12px; font-style: italic;
+  }
+  .sidebar-empty {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px;
+    text-align: center; color: var(--muted); font-size: 13px;
+  }
+
+  @media (max-width: 768px) {
+    .cm-layout { grid-template-columns: 1fr; }
+    .cm-header { grid-column: 1; }
+    .sidebar { position: static; }
+  }
+  @media (max-width: 400px) {
+    .field-row { grid-template-columns: 1fr; }
+    .vs-wrap { grid-template-columns: 1fr; }
+    .vs-badge { display: none; }
+  }
+</style>
+
+<div class="cm-layout">
+
+  <!-- HEADER -->
+  <div class="cm-header">
+    <div class="cm-tag">🏏 Schedule</div>
+    <div class="cm-title">Create Match</div>
+    <div class="cm-sub">Set up matches and start innings directly</div>
+  </div>
+
+  <!-- LEFT: FORM -->
+  <div>
+    <div class="form-card">
+      <form method="POST">
+        {% csrf_token %}
+
+        <div class="field">
+          <label for="id_tournament">Tournament</label>
+          {{ form.tournament }}
+          <div class="loading-hint" id="loading-hint">Loading teams…</div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <div class="vs-wrap">
+          <div class="field" style="margin-bottom:0">
+            <label for="id_team1">Team 1</label>
+            {{ form.team1 }}
+          </div>
+          <div class="vs-badge">VS</div>
+          <div class="field" style="margin-bottom:0">
+            <label for="id_team2">Team 2</label>
+            {{ form.team2 }}
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <div class="field-row">
+          <div class="field" style="margin-bottom:0">
+            <label for="id_match_date">Match Date</label>
+            {{ form.match_date }}
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="id_venue">Venue</label>
+            {{ form.venue }}
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">🏏 &nbsp;Create Match →</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- RIGHT: SIDEBAR -->
+  <div class="sidebar">
+    {% for entry in sidebar %}
+    <div class="sidebar-card">
+
+      <!-- Tournament header -->
+      <div class="t-header">
+        <div class="t-icon">🏆</div>
+        <div style="flex:1; min-width:0;">
+          <div class="t-name">{{ entry.tournament.tournament_name }}</div>
+          <div class="t-overs">{{ entry.tournament.number_of_overs }} overs</div>
+        </div>
+      </div>
+
+      <!-- Matches -->
+      {% if entry.matches %}
+        {% for match in entry.matches %}
+        <div class="match-item">
+          <div class="match-num">{{ forloop.counter }}</div>
+          <div class="match-info">
+            <div class="match-teams">{{ match.team1 }} vs {{ match.team2 }}</div>
+            <div class="match-meta">{{ match.match_date }} &nbsp;·&nbsp; {{ match.venue }}</div>
+          </div>
+          <a href="{% url 'match_start' %}?match_id={{ match.id }}" class="btn-start-innings">
+            ▶ Start
+          </a>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="no-matches">No matches yet — create one!</div>
+      {% endif %}
+
+    </div>
+    {% empty %}
+    <div class="sidebar-empty">
+      No tournaments yet.<br>Create one from the management panel first.
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const tournamentField = document.getElementById("id_tournament");
+  const team1Field      = document.getElementById("id_team1");
+  const team2Field      = document.getElementById("id_team2");
+  const loadingHint     = document.getElementById("loading-hint");
+
+  tournamentField.addEventListener("change", function () {
+    const tournamentId = this.value;
+    team1Field.innerHTML = "<option value=''>— Select Team —</option>";
+    team2Field.innerHTML = "<option value=''>— Select Team —</option>";
+    if (!tournamentId) return;
+    loadingHint.classList.add('show');
+    fetch(`/ajax/load-teams/?tournament_id=${tournamentId}`)
+      .then(r => r.json())
+      .then(data => {
+        loadingHint.classList.remove('show');
+        data.forEach(team => {
+          team1Field.add(new Option(team.name, team.id));
+          team2Field.add(new Option(team.name, team.id));
+        });
+      })
+      .catch(() => {
+        loadingHint.classList.remove('show');
+      });
+  });
+});
+</script>
+
+{% endblock %}
