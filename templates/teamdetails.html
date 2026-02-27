@@ -265,7 +265,11 @@
     {% for player in players %}
     <div class="player-row" onclick="openPlayerStats({{ player.id }}, '{{ player.player_name }}', '{{ player.get_role_display }}')">
       <div class="player-num">{{ forloop.counter }}</div>
-      <div class="player-avatar">{{ player.player_name|slice:":1"|upper }}</div>
+      {% if player.photo %}
+        <img src="{{ player.photo.url }}" class="player-avatar" style="object-fit:cover;" alt="{{ player.player_name }}">
+      {% else %}
+        <div class="player-avatar">{{ player.player_name|slice:":1"|upper }}</div>
+      {% endif %}
       <div class="player-info">
         <div class="player-name">{{ player.player_name }}</div>
         <div class="player-meta">
@@ -291,7 +295,7 @@
     <div class="modal-handle"></div>
     <div class="modal-header">
       <div class="modal-player-info">
-        <div class="modal-avatar" id="modal-avatar">?</div>
+        <div class="modal-avatar" id="modal-avatar-wrap"><div id="modal-avatar" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1e3a5f,#0f2a45);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--accent);">?</div></div>
         <div>
           <div class="modal-player-name" id="modal-name">—</div>
           <div class="modal-player-role" id="modal-role">—</div>
@@ -408,7 +412,8 @@
     // Reset UI
     document.getElementById('modal-name').textContent = playerName;
     document.getElementById('modal-role').textContent = playerRole;
-    document.getElementById('modal-avatar').textContent = playerName.charAt(0).toUpperCase();
+    // Avatar reset to initial while loading
+    document.getElementById('modal-avatar-wrap').innerHTML = `<div id="modal-avatar" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1e3a5f,#0f2a45);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--accent);">${playerName.charAt(0).toUpperCase()}</div>`;
     document.getElementById('modal-badges').innerHTML = '';
     document.getElementById('stats-loading').style.display = 'block';
     document.getElementById('tab-batting').classList.remove('active');
@@ -425,6 +430,11 @@
       .then(d => {
         document.getElementById('stats-loading').style.display = 'none';
         populateStats(d);
+        // Update avatar with actual photo if available
+        if (d.photo_url) {
+          document.getElementById('modal-avatar-wrap').innerHTML =
+            `<img src="${d.photo_url}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);" alt="">`;
+        }
         document.getElementById('tab-batting').classList.add('active');
       })
       .catch(() => {

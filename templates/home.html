@@ -97,6 +97,9 @@
   .sc-table tr:last-child td { border-bottom: none; }
   .sc-table tr:hover td { background: rgba(255,255,255,0.02); }
   .sc-player { font-weight: 600; color: #fff; }
+  .sc-cell { display: flex; align-items: center; gap: 7px; }
+  .sc-av { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1.5px solid rgba(255,255,255,0.12); }
+  .sc-av-init { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg,#14532d,#22c55e); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
   .sc-runs { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; color: var(--accent); }
   .sc-not-out { color: var(--success); font-size: 11px; }
   .sc-dismissal { font-size: 11px; color: var(--muted); font-style: italic; }
@@ -148,6 +151,8 @@
   .t-tag { font-size: 10px; color: var(--accent); font-weight: 600; background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.2); border-radius: 10px; padding: 2px 8px; }
   .perf-list { display: flex; flex-direction: column; gap: 12px; }
   .perf-item { display: flex; align-items: center; gap: 9px; }
+  .perf-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1.5px solid rgba(255,255,255,0.12); }
+  .perf-avatar-init { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#1e3a8a,#3b82f6); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; border: 1.5px solid rgba(59,130,246,0.3); }
   .perf-rank { font-family:'Rajdhani',sans-serif; font-size: 17px; font-weight: 700; color: var(--accent); min-width: 26px; }
   .perf-details { flex: 1; min-width: 0; }
   .perf-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -341,7 +346,7 @@
         <tbody>
           {% for b in mc.batting_sc1 %}
           <tr>
-            <td><span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</td>
+            <td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td>
             <td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td>
             <td class="r"><span class="sc-runs">{{ b.runs }}</span></td>
             <td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td>
@@ -358,7 +363,7 @@
       <table class="sc-table">
         <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
         <tbody>
-          {% for b in mc.bowling_sc1 %}<tr><td><span class="sc-player">{{ b.bowler.player_name }}</span></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}
+          {% for b in mc.bowling_sc1 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.bowler.player_name }}</span></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
@@ -372,7 +377,7 @@
         <tbody>
           {% for b in mc.batting_sc2 %}
           <tr>
-            <td><span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</td>
+            <td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td>
             <td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td>
             <td class="r"><span class="sc-runs">{{ b.runs }}</span></td>
             <td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td>
@@ -389,7 +394,7 @@
       <table class="sc-table">
         <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
         <tbody>
-          {% for b in mc.bowling_sc2 %}<tr><td><span class="sc-player">{{ b.bowler.player_name }}</span></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}
+          {% for b in mc.bowling_sc2 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.bowler.player_name }}</span></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
@@ -451,7 +456,7 @@
         <table class="sc-table">
           <thead><tr><th>Batsman</th><th>How Out</th><th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">SR</th></tr></thead>
           <tbody>
-            {% for b in mc.batting_sc1 %}<tr><td><span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</td><td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td><td class="r"><span class="sc-runs">{{ b.runs }}</span></td><td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td></tr>{% endfor %}
+            {% for b in mc.batting_sc1 %}<tr><td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td><td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td><td class="r"><span class="sc-runs">{{ b.runs }}</span></td><td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td></tr>{% endfor %}
           </tbody>
         </table>
         <div class="inn-total"><span class="inn-total-label">Total · {{ mc.inn1.overs_completed }} ov · Extras: {{ mc.inn1.extras }}</span><span class="inn-total-score">{{ mc.inn1.total_runs }}/{{ mc.inn1.total_wickets }}</span></div>
@@ -462,7 +467,7 @@
         <div class="sc-section-title">⚾ {{ mc.inn1.bowling_team }} — Bowling</div>
         <table class="sc-table">
           <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
-          <tbody>{% for b in mc.bowling_sc1 %}<tr><td><span class="sc-player">{{ b.bowler.player_name }}</span></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}</tbody>
+          <tbody>{% for b in mc.bowling_sc1 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.bowler.player_name }}</span></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}</tbody>
         </table>
       </div>
       {% endif %}
@@ -472,7 +477,7 @@
         <div class="sc-section-title">🏏 {{ mc.inn2.batting_team }} — Batting</div>
         <table class="sc-table">
           <thead><tr><th>Batsman</th><th>How Out</th><th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">SR</th></tr></thead>
-          <tbody>{% for b in mc.batting_sc2 %}<tr><td><span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</td><td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td><td class="r"><span class="sc-runs">{{ b.runs }}</span></td><td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td></tr>{% endfor %}</tbody>
+          <tbody>{% for b in mc.batting_sc2 %}<tr><td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td><td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td><td class="r"><span class="sc-runs">{{ b.runs }}</span></td><td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td></tr>{% endfor %}</tbody>
         </table>
         <div class="inn-total"><span class="inn-total-label">Total · {{ mc.inn2.overs_completed }} ov · Extras: {{ mc.inn2.extras }}</span><span class="inn-total-score">{{ mc.inn2.total_runs }}/{{ mc.inn2.total_wickets }}</span></div>
       </div>
@@ -482,7 +487,7 @@
         <div class="sc-section-title">⚾ {{ mc.inn2.bowling_team }} — Bowling</div>
         <table class="sc-table">
           <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
-          <tbody>{% for b in mc.bowling_sc2 %}<tr><td><span class="sc-player">{{ b.bowler.player_name }}</span></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}</tbody>
+          <tbody>{% for b in mc.bowling_sc2 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.bowler.player_name }}</span></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}</tbody>
         </table>
       </div>
       {% endif %}
@@ -638,6 +643,11 @@
       {% for p in top_batsmen %}
       <div class="perf-item">
         <div class="perf-rank">#{{ forloop.counter }}</div>
+        {% if p.batsman__photo %}
+          <img src="/media/{{ p.batsman__photo }}" class="perf-avatar" alt="{{ p.batsman__player_name }}">
+        {% else %}
+          <div class="perf-avatar-init">{{ p.batsman__player_name|first|upper }}</div>
+        {% endif %}
         <div class="perf-details">
           <div class="perf-name">{{ p.batsman__player_name }}</div>
           <div class="perf-stat"><strong style="color:var(--accent)">{{ p.total_runs }}</strong> runs · {{ p.total_balls }}b · {{ p.total_fours }}×4 · {{ p.total_sixes }}×6</div>
@@ -656,6 +666,11 @@
       {% for p in top_bowlers %}
       <div class="perf-item">
         <div class="perf-rank">#{{ forloop.counter }}</div>
+        {% if p.bowler__photo %}
+          <img src="/media/{{ p.bowler__photo }}" class="perf-avatar" alt="{{ p.bowler__player_name }}">
+        {% else %}
+          <div class="perf-avatar-init" style="background:linear-gradient(135deg,#14532d,#22c55e);border-color:rgba(34,197,94,0.3);">{{ p.bowler__player_name|first|upper }}</div>
+        {% endif %}
         <div class="perf-details">
           <div class="perf-name">{{ p.bowler__player_name }}</div>
           <div class="perf-stat"><strong style="color:var(--accent)">{{ p.total_wickets }}</strong> wkts · {{ p.total_runs_given }} runs</div>

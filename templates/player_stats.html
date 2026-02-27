@@ -181,7 +181,15 @@
   <!-- ── PLAYER HERO ── -->
   <div class="player-hero">
     <div class="hero-top">
-      <div class="player-avatar">🏏</div>
+      <div style="position:relative;">
+      {% if player.photo %}
+        <img src="{{ player.photo.url }}" alt="{{ player.player_name }}"
+             style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(34,197,94,0.4);">
+      {% else %}
+        <div class="player-avatar">{{ player.player_name|first|upper }}</div>
+      {% endif %}
+      <label for="photo-upload" title="Change photo" style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;background:#22c55e;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;">📷</label>
+    </div>
       <div class="hero-info">
         <div class="player-name-big">{{ player.player_name }}</div>
         <div class="player-meta">
@@ -195,6 +203,10 @@
       </div>
     </div>
   </div>
+  <form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" id="photo-upload" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="this.form.submit()">
+  </form>
 
 
   <!-- ── BATTING ── -->

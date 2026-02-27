@@ -68,6 +68,13 @@ class PlayerDetails(models.Model):
         help_text="Player's mobile number used for login (e.g. 9876543210)"
     )
 
+    photo = models.ImageField(
+        upload_to='player_photos/',
+        null=True,
+        blank=True,
+        help_text='Optional profile photo (jpg, png)'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

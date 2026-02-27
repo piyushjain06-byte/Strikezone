@@ -231,6 +231,9 @@
   tr:last-child td { border-bottom: none; }
   .out-marker { color: var(--success); font-weight: 700; margin-left: 2px; }
   .player-name { font-weight: 500; color: #e2e8f0; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player-cell-sc { display: flex; align-items: center; gap: 7px; }
+  .sc-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1.5px solid rgba(255,255,255,0.12); }
+  .sc-avatar-init { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg,#14532d,#22c55e); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
 
   /* ── MODALS ── */
   .modal-overlay {
@@ -432,7 +435,11 @@
   <div class="batsmen-grid">
     <div class="batsman-card active" id="striker-card" onclick="setScorer('striker')">
       <div class="bat-label">⭐ Striker</div>
-      <div class="bat-name" id="striker-name">{{ striker.player_name|default:"—" }}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+        {% if striker and striker.photo %}<img src="{{ striker.photo.url }}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid rgba(245,158,11,0.5);" alt="">
+        {% elif striker %}<div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#78350f,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#000;">{{ striker.player_name|first|upper }}</div>{% endif %}
+        <div class="bat-name" id="striker-name">{{ striker.player_name|default:"—" }}</div>
+      </div>
       <div class="bat-score" id="striker-runs">
         {% for b in batting_scorecard %}{% if b.batsman == striker %}{{ b.runs }}{% endif %}{% endfor %}
       </div>
@@ -442,7 +449,11 @@
     </div>
     <div class="batsman-card" id="nonstriker-card" onclick="setScorer('nonstriker')">
       <div class="bat-label">Non-Striker</div>
-      <div class="bat-name" id="nonstriker-name">{{ non_striker.player_name|default:"—" }}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+        {% if non_striker and non_striker.photo %}<img src="{{ non_striker.photo.url }}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.2);" alt="">
+        {% elif non_striker %}<div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1e3a8a,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;">{{ non_striker.player_name|first|upper }}</div>{% endif %}
+        <div class="bat-name" id="nonstriker-name">{{ non_striker.player_name|default:"—" }}</div>
+      </div>
       <div class="bat-score" id="nonstriker-runs">
         {% for b in batting_scorecard %}{% if b.batsman == non_striker %}{{ b.runs }}{% endif %}{% endfor %}
       </div>
@@ -480,7 +491,12 @@
         <tbody>
           {% for b in bowling_scorecard %}
           <tr>
-            <td class="player-name">{{ b.bowler.player_name }}</td>
+            <td class="player-name">
+              <div class="player-cell-sc">
+                {% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-avatar" alt="">{% else %}<div class="sc-avatar-init">{{ b.bowler.player_name|first|upper }}</div>{% endif %}
+                {{ b.bowler.player_name }}
+              </div>
+            </td>
             <td>{{ b.overs_bowled }}</td>
             <td>{{ b.runs_given }}</td>
             <td>{{ b.wickets }}</td>
@@ -497,8 +513,10 @@
           {% for b in batting_scorecard %}
           <tr>
             <td class="player-name">
-              {{ b.batsman.player_name }}
-              {% if b.status == 'NOT_OUT' %}<span class="out-marker">*</span>{% endif %}
+              <div class="player-cell-sc">
+                {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-avatar" alt="">{% else %}<div class="sc-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+                {{ b.batsman.player_name }}{% if b.status == 'NOT_OUT' %}<span class="out-marker">*</span>{% endif %}
+              </div>
             </td>
             <td>{{ b.runs }}</td>
             <td>{{ b.balls_faced }}</td>

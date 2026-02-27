@@ -1,8 +1,6 @@
 from django.db import models
 from matches.models import CreateMatch
 from teams.models import TeamDetails, PlayerDetails
-from decimal import Decimal
-
 
 
 # ---------------------------------
@@ -323,7 +321,9 @@ class BowlingScorecard(models.Model):
 
     @property
     def economy(self):
-        """Economy rate per over. overs_bowled stored as X.Y where Y = extra balls (not decimal overs)."""
+        """Economy = (Runs Conceded x 6) / Total Legal Balls Bowled
+        overs_bowled stored as X.Y where Y=extra balls. e.g. 4.3 = 27 balls.
+        """
         overs = float(self.overs_bowled)
         if overs == 0:
             return 0.0
@@ -332,8 +332,7 @@ class BowlingScorecard(models.Model):
         total_balls = full_overs * 6 + extra_balls
         if total_balls == 0:
             return 0.0
-        real_overs = total_balls / 6
-        return round(self.runs_given / real_overs, 2)
+        return round((self.runs_given * 6) / total_balls, 2)
 
     def __str__(self):
         return f"{self.bowler.player_name} - {self.wickets}W/{self.runs_given}R"

@@ -339,12 +339,22 @@
   <div class="tab-panel {% if active_tab == 'player' %}active{% endif %}" id="tab-player">
     <div class="form-card">
       <h3>🏏 Add Player</h3>
-      <form method="POST">
+      <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         {% for field in player_form %}
           <div style="margin-bottom:14px;">
             <label>{{ field.label }}</label>
-            {{ field }}
+            {% if field.name == 'photo' %}
+              <div style="margin-top:6px;">
+                <label style="display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;color:#60a5fa;letter-spacing:0;">
+                  📷 Choose Photo (optional)
+                  {{ field }}
+                </label>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">JPG, PNG or WebP · shown as avatar next to player name everywhere</div>
+              </div>
+            {% else %}
+              {{ field }}
+            {% endif %}
             {% if field.errors %}<p style="color:#f87171;font-size:12px;margin-top:4px;">{{ field.errors.0 }}</p>{% endif %}
           </div>
         {% endfor %}

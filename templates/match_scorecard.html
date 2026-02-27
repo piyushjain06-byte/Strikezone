@@ -136,6 +136,9 @@
   tr:hover td { background: rgba(255,255,255,0.02); }
 
   .batsman-name { font-weight: 600; color: #fff; }
+  .player-cell { display: flex; align-items: center; gap: 8px; }
+  .player-avatar-sm { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1.5px solid rgba(255,255,255,0.15); }
+  .player-avatar-init { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#14532d,#22c55e); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
   .not-out { color: var(--accent); font-weight: 800; }
   .dismissal { font-size: 11px; color: var(--muted); margin-top: 2px; }
   .four-badge { color: #38bdf8; font-weight: 700; }
@@ -235,15 +238,18 @@
           {% for b in sc1.batting %}
           {% if b.status == 'DNB' %}
           <tr class="dnb-row">
-            <td><div class="batsman-name">{{ b.batsman.player_name }}</div><div class="dismissal">Did Not Bat</div></td>
+            <td><div class="player-cell">
+                {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="player-avatar-sm" alt="">{% else %}<div class="player-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+                <div><div class="batsman-name">{{ b.batsman.player_name }}</div><div class="dismissal">Did Not Bat</div></div>
+              </div></td>
             <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
           </tr>
           {% else %}
           <tr>
             <td>
-              <div class="batsman-name">
-                {{ b.batsman.player_name }}
-                {% if b.status == 'NOT_OUT' %}<span class="not-out">*</span>{% endif %}
+              <div class="player-cell">
+                {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="player-avatar-sm" alt="">{% else %}<div class="player-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+                <div class="batsman-name">{{ b.batsman.player_name }}{% if b.status == 'NOT_OUT' %}<span class="not-out">*</span>{% endif %}</div>
               </div>
               {% if b.status != 'NOT_OUT' and b.dismissal_info %}
                 <div class="dismissal">{{ b.dismissal_info }}</div>
@@ -291,7 +297,10 @@
         <tbody>
           {% for b in sc1.bowling %}
           <tr>
-            <td class="batsman-name">{{ b.bowler.player_name }}</td>
+            <td><div class="player-cell">
+                {% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="player-avatar-sm" alt="">{% else %}<div class="player-avatar-init">{{ b.bowler.player_name|first|upper }}</div>{% endif %}
+                <span class="batsman-name">{{ b.bowler.player_name }}</span>
+              </div></td>
             <td>{{ b.overs_bowled }}</td>
             <td>{{ b.runs_given }}</td>
             <td><strong {% if b.wickets >= 3 %}style="color:var(--accent)"{% endif %}>{{ b.wickets }}</strong></td>
@@ -337,15 +346,18 @@
           {% for b in sc2.batting %}
           {% if b.status == 'DNB' %}
           <tr class="dnb-row">
-            <td><div class="batsman-name">{{ b.batsman.player_name }}</div><div class="dismissal">Did Not Bat</div></td>
+            <td><div class="player-cell">
+                {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="player-avatar-sm" alt="">{% else %}<div class="player-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+                <div><div class="batsman-name">{{ b.batsman.player_name }}</div><div class="dismissal">Did Not Bat</div></div>
+              </div></td>
             <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
           </tr>
           {% else %}
           <tr>
             <td>
-              <div class="batsman-name">
-                {{ b.batsman.player_name }}
-                {% if b.status == 'NOT_OUT' %}<span class="not-out">*</span>{% endif %}
+              <div class="player-cell">
+                {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="player-avatar-sm" alt="">{% else %}<div class="player-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+                <div class="batsman-name">{{ b.batsman.player_name }}{% if b.status == 'NOT_OUT' %}<span class="not-out">*</span>{% endif %}</div>
               </div>
               {% if b.status != 'NOT_OUT' and b.dismissal_info %}
                 <div class="dismissal">{{ b.dismissal_info }}</div>
@@ -393,7 +405,10 @@
         <tbody>
           {% for b in sc2.bowling %}
           <tr>
-            <td class="batsman-name">{{ b.bowler.player_name }}</td>
+            <td><div class="player-cell">
+                {% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="player-avatar-sm" alt="">{% else %}<div class="player-avatar-init">{{ b.bowler.player_name|first|upper }}</div>{% endif %}
+                <span class="batsman-name">{{ b.bowler.player_name }}</span>
+              </div></td>
             <td>{{ b.overs_bowled }}</td>
             <td>{{ b.runs_given }}</td>
             <td><strong {% if b.wickets >= 3 %}style="color:var(--accent)"{% endif %}>{{ b.wickets }}</strong></td>

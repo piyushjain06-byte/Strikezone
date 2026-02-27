@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
@@ -72,6 +74,4 @@ path('tournament/<int:tournament_id>/knockout/setup/', views.setup_knockout_stag
 path('tournament/<int:tournament_id>/knockout/link/', views.link_knockout_matches, name='link_knockout_matches'),
 path('tournament/<int:tournament_id>/knockout/public/', views.public_knockout_bracket, name='public_knockout_bracket'),
 path('knockout-match/<int:knockout_match_id>/start/', views.start_knockout_match, name='start_knockout_match'),
-]
-
-
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

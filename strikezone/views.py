@@ -114,10 +114,10 @@ def home(request):
                 except ValueError:
                     match_number = None
 
-            batting_sc1 = BattingScorecard.objects.filter(innings=inn1).order_by('batting_position') if inn1 else []
-            bowling_sc1 = BowlingScorecard.objects.filter(innings=inn1) if inn1 else []
-            batting_sc2 = BattingScorecard.objects.filter(innings=inn2).order_by('batting_position') if inn2 else []
-            bowling_sc2 = BowlingScorecard.objects.filter(innings=inn2) if inn2 else []
+            batting_sc1 = BattingScorecard.objects.filter(innings=inn1).order_by('batting_position').select_related('batsman') if inn1 else []
+            bowling_sc1 = BowlingScorecard.objects.filter(innings=inn1).select_related('bowler') if inn1 else []
+            batting_sc2 = BattingScorecard.objects.filter(innings=inn2).order_by('batting_position').select_related('batsman') if inn2 else []
+            bowling_sc2 = BowlingScorecard.objects.filter(innings=inn2).select_related('bowler') if inn2 else []
 
             card = {
                 'match': m,
@@ -150,7 +150,7 @@ def home(request):
         top_batsmen = (
             BattingScorecard.objects
             .filter(innings_id__in=all_innings_ids)
-            .values('batsman__id', 'batsman__player_name', 'batsman__team__team_name')
+            .values('batsman__id', 'batsman__player_name', 'batsman__team__team_name', 'batsman__photo')
             .annotate(
                 total_runs=Sum('runs'),
                 total_balls=Sum('balls_faced'),
@@ -163,7 +163,7 @@ def home(request):
         top_bowlers = (
             BowlingScorecard.objects
             .filter(innings_id__in=all_innings_ids)
-            .values('bowler__id', 'bowler__player_name', 'bowler__team__team_name')
+            .values('bowler__id', 'bowler__player_name', 'bowler__team__team_name', 'bowler__photo')
             .annotate(
                 total_wickets=Sum('wickets'),
                 total_runs_given=Sum('runs_given'),
@@ -229,7 +229,7 @@ def manage_cricket(request):
                 team_form = TeamForm()
             active_tab = 'team'
         elif "player_submit" in request.POST:
-            player_form = PlayerForm(request.POST)
+            player_form = PlayerForm(request.POST, request.FILES)
             if player_form.is_valid():
                 player_form.save()
                 messages.success(request, "Player created successfully!")
@@ -944,8 +944,8 @@ def match_scorecard(request, match_id):
     def get_scorecard(innings):
         if not innings:
             return None
-        batting = BattingScorecard.objects.filter(innings=innings).order_by('batting_position')
-        bowling = BowlingScorecard.objects.filter(innings=innings)
+        batting = BattingScorecard.objects.filter(innings=innings).order_by('batting_position').select_related('batsman', 'batsman__team')
+        bowling = BowlingScorecard.objects.filter(innings=innings).select_related('bowler', 'bowler__team')
         return {'innings': innings, 'batting': batting, 'bowling': bowling}
 
     sc1 = get_scorecard(inn1)
@@ -1086,6 +1086,13 @@ def player_stats(request):
 
     player = get_object_or_404(PlayerDetails, id=int(player_id))
 
+    # Handle photo upload
+    if request.method == 'POST' and request.FILES.get('photo'):
+        player.photo = request.FILES['photo']
+        player.save()
+        messages.success(request, 'Profile photo updated!')
+        return redirect('player_stats')
+
     batting_entries = BattingScorecard.objects.filter(batsman=player).select_related('innings__match__tournament')
 
     total_matches     = batting_entries.values('innings__match').distinct().count()
@@ -1115,8 +1122,7 @@ def player_stats(request):
         extra = round((o - full) * 10)
         return full * 6 + extra
     total_balls_bowled  = sum(overs_to_balls(b.overs_bowled) for b in bowling_entries)
-    total_real_overs    = total_balls_bowled / 6
-    bowling_economy     = round(total_runs_given / total_real_overs, 2) if total_real_overs > 0 else 0
+    bowling_economy     = round((total_runs_given * 6) / total_balls_bowled, 2) if total_balls_bowled > 0 else 0
     bowling_avg         = round(total_runs_given / total_wickets, 2) if total_wickets > 0 else 0
 
     recent_innings = batting_entries.order_by('-innings__match__match_date')[:5]
@@ -1187,7 +1193,7 @@ def player_stats_api(request, player_id):
     def _o2b(o):
         f = int(o); return f*6 + round((o-f)*10)
     total_balls_api  = sum(_o2b(float(b.overs_bowled)) for b in bowling_entries)
-    bowling_economy  = round(total_runs_given / (total_balls_api/6), 2) if total_balls_api > 0 else 0
+    bowling_economy  = round((total_runs_given * 6) / total_balls_api, 2) if total_balls_api > 0 else 0
     bowling_avg      = round(total_runs_given / total_wickets, 2) if total_wickets > 0 else 0
     best_entry       = bowling_entries.order_by('-wickets', 'runs_given').first()
     best_bowling     = f"{best_entry.wickets}/{best_entry.runs_given}" if best_entry else '—'
@@ -1201,7 +1207,10 @@ def player_stats_api(request, player_id):
             'wickets': b.wickets,
         })
 
+    photo_url = player.photo.url if player.photo else ''
+
     return JsonResponse({
+        'photo_url': photo_url,
         'total_runs': total_runs,
         'batting_avg': batting_avg,
         'batting_sr': batting_sr,
