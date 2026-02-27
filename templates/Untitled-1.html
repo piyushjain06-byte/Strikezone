@@ -1,37 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Assignment 2</title>
+    <title>Assignment 1</title>
+    <style>
+        .myPara {
+            padding: 5px;
+        }
+    </style>
 </head>
 <body>
 
-    <!-- One heading -->
-    <h2>Enter Your Name</h2>
+    <!-- One heading with id -->
+    <h1 id="mainHeading">This is My Heading</h1>
 
-    <!-- One paragraph -->
-    <p id="output">Your name will appear here</p>
+    <!-- Three paragraphs with same class name -->
+    <p class="myPara">Paragraph 1</p>
+    <p class="myPara">Paragraph 2</p>
+    <p class="myPara">Paragraph 3</p>
 
-    <!-- One input field -->
-    <input type="text" id="nameInput" placeholder="Enter your name">
+    <!-- Two div elements -->
+    <div>Div 1 content</div>
+    <div>Div 2 content</div>
 
     <!-- One button -->
-    <button onclick="showName()">Submit</button>
+    <button onclick="changeContent()">Click Me</button>
 
     <script>
-        function showName() {
+        function changeContent() {
 
-            // Read input using value
-            let name = document.getElementById("nameInput").value;
+            // 1. Change heading color using getElementById()
+            document.getElementById("mainHeading").style.color = "red";
 
-            // Display entered name using textContent
-            let para = document.getElementById("output");
-            para.textContent = "Hello " + name;
+            // 2. Change background color of all paragraphs using getElementsByClassName()
+            let paras = document.getElementsByClassName("myPara");
+            for (let i = 0; i < paras.length; i++) {
+                paras[i].style.backgroundColor = "yellow";
+            }
 
-            // Add bold formatting using innerHTML
-            para.innerHTML = "Hello <b>" + name + "</b>! Welcome.";
+            // 3. Change text of all div elements using getElementsByTagName()
+            let divs = document.getElementsByTagName("div");
+            for (let i = 0; i < divs.length; i++) {
+                divs[i].textContent = "Div text changed!";
+            }
 
-            // Change paragraph color to blue using style
-            para.style.color = "blue";
+            // 4. Change first paragraph text using querySelector()
+            document.querySelector(".myPara").textContent = "First paragraph changed using querySelector!";
+
+            // 5. Change all paragraphs font size using querySelectorAll()
+            let allParas = document.querySelectorAll(".myPara");
+            allParas.forEach(function(p) {
+                p.style.fontSize = "20px";
+            });
         }
     </script>
 

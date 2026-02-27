@@ -178,7 +178,7 @@
     {% for team in teams %}
     <a href="{% url 'teamdetails' tournament.id team.id %}" class="team-row">
       <div class="team-num">{{ forloop.counter }}</div>
-      <div class="team-name">{{ team.team_name }}</div>
+      <div class="team-name">{{ team.team_name }} <span style="color:var(--muted);font-weight:600;font-size:12px;">({{ team.team_code }})</span></div>
       <div class="team-arrow">›</div>
     </a>
     {% empty %}

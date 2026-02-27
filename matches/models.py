@@ -4,7 +4,7 @@ from django.db import models
 from django.db import models
 from django.core.exceptions import ValidationError
 from tournaments.models import TournamentDetails
-from teams.models import TeamDetails
+from teams.models import TeamDetails, TournamentTeam
 
 
 # ---------------------------------
@@ -36,11 +36,13 @@ class CreateMatch(models.Model):
         if self.team1 == self.team2:
             raise ValidationError("Both the Teams cannot be the Same")
 
-        if self.team1.tournament != self.tournament:
-            raise ValidationError(f"The selected Team1 must be of the {self.tournament}")
-
-        if self.team2.tournament != self.tournament:
-            raise ValidationError(f"The selected Team2 must be of the {self.tournament}")
+        # Teams must be registered in this tournament
+        if self.tournament_id and self.team1_id:
+            if not TournamentTeam.objects.filter(tournament_id=self.tournament_id, team_id=self.team1_id).exists():
+                raise ValidationError("Selected Team1 is not registered for this tournament.")
+        if self.tournament_id and self.team2_id:
+            if not TournamentTeam.objects.filter(tournament_id=self.tournament_id, team_id=self.team2_id).exists():
+                raise ValidationError("Selected Team2 is not registered for this tournament.")
 
     def __str__(self):
         return f"{self.team1} vs {self.team2}"

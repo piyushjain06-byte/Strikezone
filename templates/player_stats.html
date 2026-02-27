@@ -149,6 +149,36 @@
   /* ── NO DATA ── */
   .no-data { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
 
+  /* ── EDIT PROFILE CARD ── */
+  .profile-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 18px 16px; margin: 14px 0 6px;
+  }
+  .profile-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .profile-field {
+    display: flex; flex-direction: column; gap: 4px; margin-top: 10px;
+  }
+  .profile-field label {
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .profile-input {
+    background: var(--surface2); border-radius: 10px;
+    border: 1px solid var(--border); padding: 9px 11px;
+    font-size: 14px; color: var(--text);
+  }
+  .profile-input:focus { outline: none; border-color: var(--accent); }
+  .profile-save-btn {
+    margin-top: 14px; width: 100%;
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    border: none; border-radius: 10px; color: #000;
+    font-size: 14px; font-weight: 700; padding: 11px;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+
   @media (max-width: 400px) {
     .stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
     .stats-grid-3 { grid-template-columns: repeat(3, 1fr); }
@@ -163,7 +193,10 @@
     <div style="font-size:13px; color:var(--muted);">
       👋 Hello, <strong style="color:#fff;">{% if player %}{{ player.player_name }}{% else %}{{ player_name }}{% endif %}</strong>
     </div>
-    <a href="{% url 'player_logout' %}" class="btn-logout">Logout →</a>
+    <form method="post" action="{% url 'player_logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn-logout">Logout →</button>
+    </form>
   </div>
 
 
@@ -193,13 +226,11 @@
       <div class="hero-info">
         <div class="player-name-big">{{ player.player_name }}</div>
         <div class="player-meta">
-          <span>🏟 {{ player.team.team_name }}</span>
-          {% if player.jersey_number %}<span>#{{ player.jersey_number }}</span>{% endif %}
           <span>📱 {{ player.mobile_number }}</span>
+          {% if teams_played %}
+            <span>👕 {{ teams_played|join:", " }}</span>
+          {% endif %}
         </div>
-        <span class="role-badge">{{ player.get_role_display }}</span>
-        {% if player.is_captain %}<span class="captain-badge">👑 Captain</span>{% endif %}
-        {% if player.is_vice_captain %}<span class="captain-badge" style="background:rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.25);color:#60a5fa;">VC</span>{% endif %}
       </div>
     </div>
   </div>
@@ -207,6 +238,26 @@
     {% csrf_token %}
     <input type="file" id="photo-upload" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="this.form.submit()">
   </form>
+
+  <!-- ── EDIT PROFILE ── -->
+  <div class="profile-card">
+    <h3>Edit Profile</h3>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="update_profile" value="1">
+      <div class="profile-field">
+        <label for="player_name">Name</label>
+        <input id="player_name" name="player_name" class="profile-input"
+               type="text" value="{{ player.player_name }}">
+      </div>
+      <div class="profile-field">
+        <label for="mobile_number">Mobile Number</label>
+        <input id="mobile_number" name="mobile_number" class="profile-input"
+               type="tel" value="{{ player.mobile_number|default_if_none:'' }}">
+      </div>
+      <button type="submit" class="profile-save-btn">Save Changes</button>
+    </form>
+  </div>
 
 
   <!-- ── BATTING ── -->

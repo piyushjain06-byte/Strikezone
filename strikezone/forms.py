@@ -1,6 +1,6 @@
 from django import forms
 from tournaments.models import TournamentDetails
-from teams.models import TeamDetails, PlayerDetails
+from teams.models import TeamDetails, PlayerDetails, TournamentTeam, TournamentRoster
 from matches.models import CreateMatch
 
 
@@ -17,17 +17,67 @@ class TournamentForm(forms.ModelForm):
         ]
 
 
-class TeamForm(forms.ModelForm):
-    class Meta:
-        model = TeamDetails
-        fields = "__all__"
+class TeamForm(forms.Form):
+    tournament = forms.ModelChoiceField(queryset=TournamentDetails.objects.all())
+    team_code = forms.CharField(
+        max_length=12,
+        required=False,
+        help_text="If team already exists, enter Team ID (e.g. TM000123) to register it in this tournament.",
+    )
+    team_name = forms.CharField(
+        max_length=100,
+        required=False,
+        help_text="If creating a brand new team, enter team name (can be same as others).",
+    )
+    team_created_date = forms.DateField(required=False)
+
+    def clean(self):
+        cleaned = super().clean()
+        code = (cleaned.get("team_code") or "").strip()
+        name = (cleaned.get("team_name") or "").strip()
+        if not code and not name:
+            raise forms.ValidationError("Enter Team ID or Team Name.")
+        return cleaned
 
 
-class PlayerForm(forms.ModelForm):
-    class Meta:
-        model = PlayerDetails
-        fields = ['player_name', 'team', 'role', 'is_captain',
-                  'is_vice_captain', 'jersey_number', 'mobile_number', 'photo']
+class _TeamChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        code = getattr(obj, "team_code", "") or ""
+        if code:
+            return f"{code} · {obj.team_name}"
+        return obj.team_name
+
+
+class PlayerForm(forms.Form):
+    tournament = forms.ModelChoiceField(queryset=TournamentDetails.objects.all())
+    team = _TeamChoiceField(queryset=TeamDetails.objects.all())
+
+    player_name = forms.CharField(max_length=100, required=False)
+    mobile_number = forms.CharField(max_length=15, required=False)
+    photo = forms.ImageField(required=False)
+
+    role = forms.ChoiceField(choices=PlayerDetails.PLAYER_ROLE, initial="BATSMAN")
+    is_captain = forms.BooleanField(required=False)
+    is_vice_captain = forms.BooleanField(required=False)
+    jersey_number = forms.IntegerField(required=False, min_value=0)
+
+    def clean(self):
+        cleaned = super().clean()
+        name = (cleaned.get("player_name") or "").strip()
+        mobile = (cleaned.get("mobile_number") or "").strip()
+
+        # Mobile number alone is enough (we can auto-create a player identity).
+        # If mobile is not provided, name is required.
+        if not mobile and not name:
+            raise forms.ValidationError("Enter mobile number (recommended) or player name.")
+
+        if not mobile and name:
+            return cleaned
+
+        # If mobile is present, allow empty name.
+        # (If player doesn't exist yet, we'll auto-create a placeholder name in the view.)
+
+        return cleaned
 
 
 class MatchForm(forms.ModelForm):
@@ -39,17 +89,20 @@ class MatchForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['team1'].queryset = TeamDetails.objects.none()
         self.fields['team2'].queryset = TeamDetails.objects.none()
+        # Show team code in dropdown labels
+        self.fields['team1'].label_from_instance = lambda obj: f"{obj.team_code} · {obj.team_name}" if getattr(obj, "team_code", None) else obj.team_name
+        self.fields['team2'].label_from_instance = lambda obj: f"{obj.team_code} · {obj.team_name}" if getattr(obj, "team_code", None) else obj.team_name
 
         if 'tournament' in self.data:
             try:
                 tournament_id = int(self.data.get('tournament'))
-                teams = TeamDetails.objects.filter(tournament_id=tournament_id)
+                teams = TeamDetails.objects.filter(tournament_entries__tournament_id=tournament_id).distinct()
                 self.fields['team1'].queryset = teams
                 self.fields['team2'].queryset = teams
             except (ValueError, TypeError):
                 pass
         elif self.instance.pk:
             tournament = self.instance.tournament
-            teams = tournament.teams.all()
+            teams = TeamDetails.objects.filter(tournament_entries__tournament=tournament).distinct()
             self.fields['team1'].queryset = teams
             self.fields['team2'].queryset = teams

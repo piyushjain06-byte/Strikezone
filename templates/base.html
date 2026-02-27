@@ -118,6 +118,28 @@
     }
     .register-btn:hover { opacity: 0.88; }
 
+    .admin-btn {
+      background: rgba(59,130,246,0.1);
+      color: #93c5fd;
+      border: 1px solid rgba(59,130,246,0.25);
+    }
+    .admin-btn:hover {
+      background: rgba(59,130,246,0.16);
+      border-color: rgba(59,130,246,0.35);
+      color: #bfdbfe;
+    }
+    .logout-btn {
+      background: rgba(239,68,68,0.1);
+      color: #fca5a5;
+      border: 1px solid rgba(239,68,68,0.25);
+    }
+    .logout-btn:hover {
+      background: rgba(239,68,68,0.16);
+      border-color: rgba(239,68,68,0.35);
+      color: #fecaca;
+    }
+    .btn-inline-form { display: inline; }
+
     /* Hamburger */
     .hamburger {
       display: none; background: none; border: none; cursor: pointer;
@@ -192,14 +214,49 @@
 
     <nav class="nav-tabs" id="desktop-nav">
       {% for i in categories %}
-        <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
-           class="nav-tab">{{ i.category_name }}</a>
+        {% if i.category_name == 'Manage Cricket' or i.category_name == 'Create Match' or i.category_name == 'Start Tournament' %}
+          {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
+            <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Create Match' %}{% url 'create_match' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
+               class="nav-tab">{{ i.category_name }}</a>
+          {% endif %}
+        {% elif i.category_name == 'My Profile' %}
+          {% if request.session.player_id and not request.user.is_staff and not request.user.is_superuser %}
+            <a href="{% url 'player_stats' %}" class="nav-tab">My Profile</a>
+          {% endif %}
+        {% elif i.category_name == 'My Matches' %}
+          {% if request.session.player_id and not request.user.is_staff and not request.user.is_superuser %}
+            <a href="{% url 'player_matches' %}" class="nav-tab">My Matches</a>
+          {% endif %}
+        {% else %}
+          <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% else %}#{% endif %}"
+             class="nav-tab">{{ i.category_name }}</a>
+        {% endif %}
       {% endfor %}
     </nav>
 
     <div class="auth-buttons">
-      <a href="{% url 'player_login' %}" class="btn login-btn">Login</a>
-      <a href="{% url 'player_register' %}" class="btn register-btn">Register</a>
+      {% if request.session.player_id %}
+        <a href="{% url 'player_stats' %}" class="btn login-btn">
+          {{ request.session.player_name|default:"Player" }}
+        </a>
+        <form class="btn-inline-form" method="post" action="{% url 'player_logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn logout-btn">Player Logout</button>
+        </form>
+      {% else %}
+        <a href="{% url 'player_login' %}" class="btn login-btn">Player Login</a>
+        <a href="{% url 'player_register' %}" class="btn register-btn">Register</a>
+      {% endif %}
+
+      {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
+        <a href="{% url 'manage_cricket' %}" class="btn admin-btn">Admin</a>
+        <form class="btn-inline-form" method="post" action="{% url 'admin_logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn logout-btn">Admin Logout</button>
+        </form>
+      {% else %}
+        <a href="{% url 'admin_login' %}" class="btn admin-btn">Admin Login</a>
+      {% endif %}
     </div>
 
     <button class="hamburger" id="hamburger" aria-label="Toggle menu">
@@ -210,12 +267,50 @@
   <!-- MOBILE NAV -->
   <div class="mobile-nav" id="mobile-nav">
     {% for i in categories %}
-      <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Create Match' %}{% url 'create_match' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
-         class="nav-tab">{{ i.category_name }}</a>
+      {% if i.category_name == 'Manage Cricket' or i.category_name == 'Create Match' or i.category_name == 'Start Tournament' %}
+        {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
+          <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Create Match' %}{% url 'create_match' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
+             class="nav-tab">{{ i.category_name }}</a>
+        {% endif %}
+      {% elif i.category_name == 'My Profile' %}
+        {% if request.session.player_id and not request.user.is_staff and not request.user.is_superuser %}
+          <a href="{% url 'player_stats' %}" class="nav-tab">My Profile</a>
+        {% endif %}
+      {% elif i.category_name == 'My Matches' %}
+        {% if request.session.player_id and not request.user.is_staff and not request.user.is_superuser %}
+          <a href="{% url 'player_matches' %}" class="nav-tab">My Matches</a>
+        {% endif %}
+      {% else %}
+        <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% else %}#{% endif %}"
+           class="nav-tab">{{ i.category_name }}</a>
+      {% endif %}
     {% endfor %}
     <div class="auth-row">
-      <a href="{% url 'player_login' %}"    class="btn login-btn">Login</a>
-      <a href="{% url 'player_register' %}" class="btn register-btn">Register</a>
+      {% if request.session.player_id %}
+        <a href="{% url 'player_stats' %}" class="btn login-btn">
+          {{ request.session.player_name|default:"Player" }}
+        </a>
+        <form method="post" action="{% url 'player_logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn logout-btn" style="width: 100%;">Player Logout</button>
+        </form>
+      {% else %}
+        <a href="{% url 'player_login' %}"    class="btn login-btn">Player Login</a>
+        <a href="{% url 'player_register' %}" class="btn register-btn">Register</a>
+      {% endif %}
+    </div>
+
+    <div class="auth-row">
+      {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
+        <a href="{% url 'manage_cricket' %}" class="btn admin-btn">Admin</a>
+        <form method="post" action="{% url 'admin_logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn logout-btn" style="width: 100%;">Admin Logout</button>
+        </form>
+      {% else %}
+        <a href="{% url 'admin_login' %}" class="btn admin-btn">Admin Login</a>
+        <a href="{% url 'home' %}" class="btn login-btn">Back Home</a>
+      {% endif %}
     </div>
   </div>
 

@@ -1,7 +1,6 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
-# Create your models here.
-from django.db import models
 from tournaments.models import TournamentDetails
 
 
@@ -10,11 +9,13 @@ from tournaments.models import TournamentDetails
 # ---------------------------------
 class TeamDetails(models.Model):
     team_name = models.CharField(max_length=100)
-
-    tournament = models.ForeignKey(
-        TournamentDetails,
-        on_delete=models.CASCADE,
-        related_name="teams"
+    team_code = models.CharField(
+        max_length=12,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Unique team ID (auto-generated). Use this to register team in new tournaments.",
     )
 
     team_created_date = models.DateField(null=True, blank=True)
@@ -27,6 +28,45 @@ class TeamDetails(models.Model):
 
     def __str__(self):
         return self.team_name
+
+    def save(self, *args, **kwargs):
+        creating = self.pk is None
+        super().save(*args, **kwargs)
+        # Generate code after we have a primary key
+        if not self.team_code:
+            self.team_code = f"TM{self.pk:06d}"
+            # Avoid recursion / full save; only update this field
+            super().save(update_fields=["team_code"])
+
+
+# ---------------------------------
+# Tournament Team (registration)
+# ---------------------------------
+class TournamentTeam(models.Model):
+    tournament = models.ForeignKey(
+        TournamentDetails,
+        on_delete=models.CASCADE,
+        related_name="tournament_teams",
+    )
+    team = models.ForeignKey(
+        TeamDetails,
+        on_delete=models.CASCADE,
+        related_name="tournament_entries",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Tournament Teams"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tournament", "team"],
+                name="uniq_tournament_team",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.tournament} · {self.team}"
 
 
 # ---------------------------------
@@ -42,23 +82,6 @@ class PlayerDetails(models.Model):
     ]
 
     player_name = models.CharField(max_length=100)
-
-    team = models.ForeignKey(
-        TeamDetails,
-        on_delete=models.CASCADE,
-        related_name="players"
-    )
-
-    role = models.CharField(
-        max_length=20,
-        choices=PLAYER_ROLE,
-        default='BATSMAN'
-    )
-
-    is_captain = models.BooleanField(default=False)
-    is_vice_captain = models.BooleanField(default=False)
-
-    jersey_number = models.PositiveIntegerField(null=True, blank=True)
 
     mobile_number = models.CharField(
         max_length=15,
@@ -83,3 +106,63 @@ class PlayerDetails(models.Model):
 
     def __str__(self):
         return self.player_name
+
+
+# ---------------------------------
+# Tournament Roster (player assignment)
+# ---------------------------------
+class TournamentRoster(models.Model):
+    tournament_team = models.ForeignKey(
+        TournamentTeam,
+        on_delete=models.CASCADE,
+        related_name="roster",
+    )
+    # Denormalized for constraints + faster querying
+    tournament = models.ForeignKey(
+        TournamentDetails,
+        on_delete=models.CASCADE,
+        related_name="roster_entries",
+    )
+
+    player = models.ForeignKey(
+        PlayerDetails,
+        on_delete=models.CASCADE,
+        related_name="tournament_rosters",
+    )
+
+    role = models.CharField(
+        max_length=20,
+        choices=PlayerDetails.PLAYER_ROLE,
+        default="BATSMAN",
+    )
+    is_captain = models.BooleanField(default=False)
+    is_vice_captain = models.BooleanField(default=False)
+    jersey_number = models.PositiveIntegerField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Tournament Roster"
+        constraints = [
+            # A player can be in only ONE team in the same tournament
+            models.UniqueConstraint(
+                fields=["tournament", "player"],
+                name="uniq_player_per_tournament",
+            ),
+            models.UniqueConstraint(
+                fields=["tournament_team", "player"],
+                name="uniq_player_per_tournament_team",
+            ),
+        ]
+
+    def clean(self):
+        if self.tournament_team_id and self.tournament_id:
+            if self.tournament_team.tournament_id != self.tournament_id:
+                raise ValidationError("TournamentRoster.tournament must match tournament_team.tournament")
+
+    def save(self, *args, **kwargs):
+        # Keep tournament in sync automatically
+        if self.tournament_team_id:
+            self.tournament_id = self.tournament_team.tournament_id
+        super().save(*args, **kwargs)

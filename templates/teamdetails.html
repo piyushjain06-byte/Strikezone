@@ -256,27 +256,28 @@
   <div class="team-header">
     <div class="team-tag">🏏 Team</div>
     <div class="team-title">{{ team.team_name }}</div>
+    <div class="team-tournament" style="margin-top:6px;">Team ID: <span>{{ team.team_code }}</span></div>
     <div class="team-tournament">Tournament: <span>{{ tournament.tournament_name }}</span></div>
   </div>
 
   <!-- PLAYERS -->
   <div class="section-title">Players Squad</div>
   <div class="players-list">
-    {% for player in players %}
-    <div class="player-row" onclick="openPlayerStats({{ player.id }}, '{{ player.player_name }}', '{{ player.get_role_display }}')">
+    {% for r in roster %}
+    <div class="player-row" onclick="openPlayerStats({{ r.player.id }}, '{{ r.player.player_name }}', '{{ r.get_role_display }}')">
       <div class="player-num">{{ forloop.counter }}</div>
-      {% if player.photo %}
-        <img src="{{ player.photo.url }}" class="player-avatar" style="object-fit:cover;" alt="{{ player.player_name }}">
+      {% if r.player.photo %}
+        <img src="{{ r.player.photo.url }}" class="player-avatar" style="object-fit:cover;" alt="{{ r.player.player_name }}">
       {% else %}
-        <div class="player-avatar">{{ player.player_name|slice:":1"|upper }}</div>
+        <div class="player-avatar">{{ r.player.player_name|slice:":1"|upper }}</div>
       {% endif %}
       <div class="player-info">
-        <div class="player-name">{{ player.player_name }}</div>
+        <div class="player-name">{{ r.player.player_name }}</div>
         <div class="player-meta">
-          <span class="player-role">{{ player.get_role_display }}</span>
-          {% if player.jersey_number %}<span class="jersey-num">#{{ player.jersey_number }}</span>{% endif %}
-          {% if player.is_captain %}<span class="badge-c">C</span>{% endif %}
-          {% if player.is_vice_captain %}<span class="badge-vc">VC</span>{% endif %}
+          <span class="player-role">{{ r.get_role_display }}</span>
+          {% if r.jersey_number %}<span class="jersey-num">#{{ r.jersey_number }}</span>{% endif %}
+          {% if r.is_captain %}<span class="badge-c">C</span>{% endif %}
+          {% if r.is_vice_captain %}<span class="badge-vc">VC</span>{% endif %}
         </div>
       </div>
       <div class="player-arrow">›</div>

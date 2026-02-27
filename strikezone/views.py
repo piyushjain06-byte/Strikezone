@@ -4,11 +4,16 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_POST
 from django.db import models as django_models
+from django.db import IntegrityError
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.contrib.auth.hashers import check_password, identify_hasher, make_password
+from functools import wraps
+from urllib.parse import quote
 
 from tournaments.models import TournamentDetails, StartTournament
-from teams.models import TeamDetails, PlayerDetails
+from teams.models import TeamDetails, PlayerDetails, TournamentTeam, TournamentRoster
 from matches.models import CreateMatch, MatchStart, MatchResult
 from scoring.models import Innings, Over, Ball, BattingScorecard, BowlingScorecard
 from knockout.models import KnockoutStage, KnockoutMatch
@@ -23,12 +28,14 @@ from datetime import date, datetime
 
 # ── ADMIN ONLY DECORATOR ──
 def admin_required(view_func):
+    @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
             return view_func(request, *args, **kwargs)
         messages.error(request, "You must be logged in as an admin to access this page.")
-        return redirect('admin_login')
-    wrapper.__name__ = view_func.__name__
+        next_url = request.get_full_path()
+        login_url = f"{reverse('admin_login')}?next={quote(next_url, safe='')}"
+        return redirect(login_url)
     return wrapper
 
 
@@ -147,10 +154,17 @@ def home(request):
             match__tournament=selected_tournament
         ).values_list('id', flat=True)
 
-        top_batsmen = (
+        # Map player -> team name for this tournament (rule: one team per tournament)
+        roster_team_map = {
+            r.player_id: r.tournament_team.team.team_name
+            for r in TournamentRoster.objects.filter(tournament=selected_tournament)
+            .select_related('tournament_team__team')
+        }
+
+        top_batsmen = list(
             BattingScorecard.objects
             .filter(innings_id__in=all_innings_ids)
-            .values('batsman__id', 'batsman__player_name', 'batsman__team__team_name', 'batsman__photo')
+            .values('batsman__id', 'batsman__player_name', 'batsman__photo')
             .annotate(
                 total_runs=Sum('runs'),
                 total_balls=Sum('balls_faced'),
@@ -159,17 +173,21 @@ def home(request):
             )
             .order_by('-total_runs')[:8]
         )
+        for row in top_batsmen:
+            row['batsman__team__team_name'] = roster_team_map.get(row.get('batsman__id'), '')
 
-        top_bowlers = (
+        top_bowlers = list(
             BowlingScorecard.objects
             .filter(innings_id__in=all_innings_ids)
-            .values('bowler__id', 'bowler__player_name', 'bowler__team__team_name', 'bowler__photo')
+            .values('bowler__id', 'bowler__player_name', 'bowler__photo')
             .annotate(
                 total_wickets=Sum('wickets'),
                 total_runs_given=Sum('runs_given'),
             )
             .order_by('-total_wickets', 'total_runs_given')[:8]
         )
+        for row in top_bowlers:
+            row['bowler__team__team_name'] = roster_team_map.get(row.get('bowler__id'), '')
 
     return render(request, 'home.html', {
         'all_tournaments': all_tournaments,
@@ -189,15 +207,35 @@ def tournaments(request):
 
 def tournamentdetails(request, id):
     tournament = get_object_or_404(TournamentDetails, id=id)
-    teams = tournament.teams.all()
+    teams = (
+        TeamDetails.objects
+        .filter(tournament_entries__tournament=tournament)
+        .distinct()
+        .order_by('team_name')
+    )
     return render(request, 'tournamentdetails.html', {'tournament': tournament, 'teams': teams})
 
 
 def teamdetails(request, tournament_id, team_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
-    team = get_object_or_404(TeamDetails, id=team_id, tournament=tournament)
-    players = team.players.all()
-    return render(request, 'teamdetails.html', {'tournament': tournament, 'team': team, 'players': players})
+    team = get_object_or_404(TeamDetails, id=team_id)
+
+    tournament_team = get_object_or_404(
+        TournamentTeam,
+        tournament=tournament,
+        team=team,
+    )
+    roster = (
+        TournamentRoster.objects
+        .filter(tournament_team=tournament_team)
+        .select_related('player')
+        .order_by('id')
+    )
+    return render(request, 'teamdetails.html', {
+        'tournament': tournament,
+        'team': team,
+        'roster': roster,
+    })
 
 
 def manage_cricket(request):
@@ -205,7 +243,8 @@ def manage_cricket(request):
 
     if not is_admin:
         messages.error(request, "You must be logged in as an admin to access this page.")
-        return redirect('admin_login')
+        next_url = request.get_full_path()
+        return redirect(f"{reverse('admin_login')}?next={quote(next_url, safe='')}")
 
     tournament_form = TournamentForm()
     team_form = TeamForm()
@@ -224,29 +263,126 @@ def manage_cricket(request):
         elif "team_submit" in request.POST:
             team_form = TeamForm(request.POST)
             if team_form.is_valid():
-                team_form.save()
-                messages.success(request, "Team created successfully!")
-                team_form = TeamForm()
+                tournament = team_form.cleaned_data["tournament"]
+                team_code = (team_form.cleaned_data.get("team_code") or "").strip()
+                team_name = (team_form.cleaned_data.get("team_name") or "").strip()
+                team_created_date = team_form.cleaned_data.get("team_created_date")
+
+                team = None
+                if team_code:
+                    team = TeamDetails.objects.filter(team_code__iexact=team_code).first()
+                    if not team:
+                        messages.error(request, f"No team found with Team ID '{team_code}'.")
+                        active_tab = 'team'
+                        tournaments_qs = TournamentDetails.objects.all()
+                        # fall through to render at end
+                    else:
+                        TournamentTeam.objects.get_or_create(
+                            tournament=tournament,
+                            team=team,
+                        )
+                        messages.success(request, f"Team '{team.team_name}' ({team.team_code}) registered for {tournament.tournament_name}!")
+                        team_form = TeamForm()
+                else:
+                    if not team_name:
+                        messages.error(request, "Team name is required when Team ID is not provided.")
+                    else:
+                        team = TeamDetails.objects.create(
+                            team_name=team_name,
+                            team_created_date=team_created_date,
+                        )
+                        TournamentTeam.objects.get_or_create(
+                            tournament=tournament,
+                            team=team,
+                        )
+                        messages.success(request, f"New Team '{team.team_name}' created with ID {team.team_code} and registered for {tournament.tournament_name}!")
+                        team_form = TeamForm()
             active_tab = 'team'
         elif "player_submit" in request.POST:
             player_form = PlayerForm(request.POST, request.FILES)
             if player_form.is_valid():
-                player_form.save()
-                messages.success(request, "Player created successfully!")
-                player_form = PlayerForm()
+                tournament = player_form.cleaned_data["tournament"]
+                team = player_form.cleaned_data["team"]
+                player_name = (player_form.cleaned_data.get("player_name") or "").strip()
+                mobile_number = (player_form.cleaned_data.get("mobile_number") or "").strip() or None
+                photo = player_form.cleaned_data.get("photo")
+
+                role = player_form.cleaned_data.get("role") or "BATSMAN"
+                is_captain = bool(player_form.cleaned_data.get("is_captain"))
+                is_vice_captain = bool(player_form.cleaned_data.get("is_vice_captain"))
+                jersey_number = player_form.cleaned_data.get("jersey_number")
+
+                tournament_team, _ = TournamentTeam.objects.get_or_create(
+                    tournament=tournament,
+                    team=team,
+                )
+
+                player = None
+                if mobile_number:
+                    player = PlayerDetails.objects.filter(mobile_number=mobile_number).first()
+
+                    if player:
+                        # Mobile-only flow: if name not provided, keep existing name.
+                        if player_name and player.player_name != player_name:
+                            player.player_name = player_name
+                            player.save(update_fields=["player_name"])
+                    else:
+                        # New player with this mobile -> auto-create identity (no name needed)
+                        if not player_name:
+                            player_name = f"Player {mobile_number}"
+                        player = PlayerDetails.objects.create(
+                            player_name=player_name,
+                            mobile_number=mobile_number,
+                        )
+                else:
+                    # No mobile -> create a new player identity (name required by form)
+                    player = PlayerDetails.objects.create(
+                        player_name=player_name,
+                        mobile_number=None,
+                    )
+
+                if photo and player:
+                    player.photo = photo
+                    player.save(update_fields=["photo"])
+
+                try:
+                    TournamentRoster.objects.create(
+                        tournament_team=tournament_team,
+                        player=player,
+                        role=role,
+                        is_captain=is_captain,
+                        is_vice_captain=is_vice_captain,
+                        jersey_number=jersey_number,
+                    )
+                    messages.success(request, f"{player.player_name} added to {team.team_name} ({tournament.tournament_name})!")
+                    player_form = PlayerForm()
+                except IntegrityError:
+                    messages.error(
+                        request,
+                        f"{player.player_name} is already assigned to a team in {tournament.tournament_name}.",
+                    )
             active_tab = 'player'
 
-    tournaments_qs = TournamentDetails.objects.all().prefetch_related('teams__players')
+    tournaments_qs = TournamentDetails.objects.all()
     tournament_progress = []
     for t in tournaments_qs:
-        teams = list(t.teams.all())
-        teams_added = len(teams)
+        tournament_teams = list(
+            TournamentTeam.objects.filter(tournament=t).select_related("team").order_by("team__team_name")
+        )
+        teams_added = len(tournament_teams)
         teams_needed = t.number_of_teams
         teams_remaining = max(0, teams_needed - teams_added)
         team_data = []
-        for team in teams:
-            players = list(team.players.all())
-            team_data.append({'team': team, 'players': players, 'player_count': len(players)})
+        for tt in tournament_teams:
+            roster = list(
+                TournamentRoster.objects.filter(tournament_team=tt).select_related("player").order_by("id")
+            )
+            team_data.append({
+                'tournament_team': tt,
+                'team': tt.team,
+                'roster': roster,
+                'player_count': len(roster),
+            })
         tournament_progress.append({
             'tournament': t,
             'teams_added': teams_added,
@@ -264,7 +400,7 @@ def manage_cricket(request):
         'player_form': player_form,
         'tournament_progress': tournament_progress,
         'tournaments': tournaments_qs,
-        'teams': TeamDetails.objects.select_related('tournament').all(),
+        'teams': TeamDetails.objects.all().order_by('team_name'),
         'active_tab': active_tab,
         'team_count_options': [2, 4, 6, 8, 10],
     }
@@ -296,7 +432,7 @@ def create_match(request):
 
 def load_teams(request):
     tournament_id = request.GET.get('tournament_id')
-    teams = TeamDetails.objects.filter(tournament_id=tournament_id)
+    teams = TeamDetails.objects.filter(tournament_entries__tournament_id=tournament_id).distinct()
     team_list = [{'id': t.id, 'name': t.team_name} for t in teams]
     return JsonResponse(team_list, safe=False)
 
@@ -378,8 +514,20 @@ def start_innings_view(request, match_id):
         batting_team = match_start.bowling_team
         bowling_team = match_start.batting_team
 
-    batsmen = PlayerDetails.objects.filter(team=batting_team)
-    bowlers = PlayerDetails.objects.filter(team=bowling_team)
+    batting_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=batting_team).first()
+    bowling_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=bowling_team).first()
+
+    batsmen = (
+        PlayerDetails.objects.filter(tournament_rosters__tournament_team=batting_tt)
+        .distinct()
+        .order_by('player_name')
+    ) if batting_tt else PlayerDetails.objects.none()
+
+    bowlers = (
+        PlayerDetails.objects.filter(tournament_rosters__tournament_team=bowling_tt)
+        .distinct()
+        .order_by('player_name')
+    ) if bowling_tt else PlayerDetails.objects.none()
 
     if request.method == "POST":
         striker_id = request.POST.get("striker")
@@ -454,7 +602,12 @@ def scoring_view(request, match_id):
 
     batting_scorecard = BattingScorecard.objects.filter(innings=innings).order_by('batting_position')
     bowling_scorecard = BowlingScorecard.objects.filter(innings=innings)
-    bowling_team_players = PlayerDetails.objects.filter(team=innings.bowling_team)
+    bowling_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=innings.bowling_team).first()
+    bowling_team_players = (
+        PlayerDetails.objects.filter(tournament_rosters__tournament_team=bowling_tt)
+        .distinct()
+        .order_by('player_name')
+    ) if bowling_tt else PlayerDetails.objects.none()
 
     dismissed_ids = list(
         BattingScorecard.objects.filter(innings=innings)
@@ -463,7 +616,13 @@ def scoring_view(request, match_id):
     )
     currently_in = [int(striker_id), int(non_striker_id)] if striker_id and non_striker_id else []
     excluded_ids = list(set(dismissed_ids + currently_in))
-    available_batsmen = PlayerDetails.objects.filter(team=innings.batting_team).exclude(id__in=excluded_ids)
+    batting_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=innings.batting_team).first()
+    available_batsmen = (
+        PlayerDetails.objects.filter(tournament_rosters__tournament_team=batting_tt)
+        .exclude(id__in=excluded_ids)
+        .distinct()
+        .order_by('player_name')
+    ) if batting_tt else PlayerDetails.objects.none()
 
     innings1 = Innings.objects.filter(match=match, innings_number=1).first()
     target = (innings1.total_runs + 1) if innings1 and innings.innings_number == 2 else None
@@ -842,7 +1001,7 @@ def tournament_history(request, tournament_id):
 
     # ── LEADERBOARD WITH NRR ──
     max_overs = tournament.number_of_overs
-    teams = TeamDetails.objects.filter(tournament=tournament)
+    teams = TeamDetails.objects.filter(tournament_entries__tournament=tournament).distinct()
     leaderboard = []
 
     for team in teams:
@@ -944,8 +1103,8 @@ def match_scorecard(request, match_id):
     def get_scorecard(innings):
         if not innings:
             return None
-        batting = BattingScorecard.objects.filter(innings=innings).order_by('batting_position').select_related('batsman', 'batsman__team')
-        bowling = BowlingScorecard.objects.filter(innings=innings).select_related('bowler', 'bowler__team')
+        batting = BattingScorecard.objects.filter(innings=innings).order_by('batting_position').select_related('batsman')
+        bowling = BowlingScorecard.objects.filter(innings=innings).select_related('bowler')
         return {'innings': innings, 'batting': batting, 'bowling': bowling}
 
     sc1 = get_scorecard(inn1)
@@ -979,7 +1138,11 @@ def match_scorecard(request, match_id):
 # ── ADMIN LOGIN / LOGOUT ──
 
 def admin_login(request):
+    next_param = request.GET.get("next") or request.POST.get("next") or ""
+
     if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
+        if next_param and url_has_allowed_host_and_scheme(next_param, allowed_hosts={request.get_host()}):
+            return redirect(next_param)
         return redirect('manage_cricket')
 
     error = None
@@ -988,16 +1151,22 @@ def admin_login(request):
         password = request.POST.get('password', '').strip()
         user = authenticate(request, username=username, password=password)
         if user is not None and (user.is_staff or user.is_superuser):
+            # When admin logs in, force any existing player/guest session to log out
+            for key in ('player_id', 'player_name', 'player_mobile'):
+                request.session.pop(key, None)
             auth_login(request, user)
+            if next_param and url_has_allowed_host_and_scheme(next_param, allowed_hosts={request.get_host()}):
+                return redirect(next_param)
             return redirect('manage_cricket')
         elif user is not None:
             error = "Your account does not have admin privileges."
         else:
             error = "Invalid username or password."
 
-    return render(request, 'admin_login.html', {'error': error})
+    return render(request, 'admin_login.html', {'error': error, 'next': next_param})
 
 
+@require_POST
 def admin_logout(request):
     auth_logout(request)
     return redirect('admin_login')
@@ -1006,31 +1175,73 @@ def admin_logout(request):
 # ── PLAYER LOGIN ──
 
 def player_login(request):
+    next_param = request.GET.get("next") or request.POST.get("next") or ""
+
     if request.session.get('player_id'):
+        if next_param and url_has_allowed_host_and_scheme(next_param, allowed_hosts={request.get_host()}):
+            return redirect(next_param)
         return redirect('player_stats')
 
     error = None
     if request.method == 'POST':
-        mobile = request.POST.get('mobile', '').strip()
-        password = request.POST.get('password', '').strip()
+        mobile = (request.POST.get('mobile', '') or '').strip()
+        password = (request.POST.get('password', '') or '').strip()
 
-        PLAYER_PASSWORD = "cricket123"
-
-        if password != PLAYER_PASSWORD:
-            error = "Incorrect password."
+        if not mobile or len(mobile) < 10 or not mobile.replace("+", "").isdigit():
+            error = "Enter a valid mobile number."
+        elif not password:
+            error = "Password is required."
         else:
+            guest = GuestUser.objects.filter(mobile_number=mobile).first()
             player = PlayerDetails.objects.filter(mobile_number=mobile).first()
-            if player:
-                request.session['player_id'] = player.id
-                request.session['player_name'] = player.player_name
-                return redirect('player_stats')
-            else:
-                request.session['player_id'] = 'guest'
-                request.session['player_name'] = 'Guest'
-                request.session['player_mobile'] = mobile
-                return redirect('player_stats')
 
-    return render(request, 'player_login.html', {'error': error})
+            if not guest and not player:
+                error = "Account not found. Please register first."
+            else:
+                password_ok = False
+
+                if guest:
+                    try:
+                        identify_hasher(guest.password)
+                        password_ok = check_password(password, guest.password)
+                    except Exception:
+                        password_ok = (guest.password == password)
+                        if password_ok:
+                            guest.password = make_password(password)
+                            guest.save(update_fields=["password"])
+                else:
+                    if len(password) < 6:
+                        error = "Password must be at least 6 characters."
+                    else:
+                        guest = GuestUser(mobile_number=mobile)
+                        guest.password = make_password(password)
+                        guest.save()
+                        password_ok = True
+
+                if password_ok and not error:
+                    # When player/guest logs in, force any existing Django user (admin) to log out
+                    if request.user.is_authenticated:
+                        auth_logout(request)
+
+                    request.session.cycle_key()
+
+                    if player:
+                        request.session['player_id'] = player.id
+                        request.session['player_name'] = player.player_name
+                    else:
+                        request.session['player_id'] = 'guest'
+                        request.session['player_name'] = 'Guest'
+
+                    request.session['player_mobile'] = mobile
+
+                    if next_param and url_has_allowed_host_and_scheme(next_param, allowed_hosts={request.get_host()}):
+                        return redirect(next_param)
+                    return redirect('home')
+
+                if not password_ok and not error:
+                    error = "Invalid mobile number or password."
+
+    return render(request, 'player_login.html', {'error': error, 'next': next_param})
 
 
 def player_register(request):
@@ -1041,32 +1252,34 @@ def player_register(request):
     success = None
 
     if request.method == 'POST':
-        mobile   = request.POST.get('mobile', '').strip()
-        password = request.POST.get('password', '').strip()
-        confirm  = request.POST.get('confirm_password', '').strip()
+        mobile   = (request.POST.get('mobile', '') or '').strip()
+        password = (request.POST.get('password', '') or '').strip()
+        confirm  = (request.POST.get('confirm_password', '') or '').strip()
 
         if not mobile or not password or not confirm:
             error = "All fields are required."
-        elif len(mobile) < 10:
+        elif len(mobile) < 10 or not mobile.replace("+", "").isdigit():
             error = "Enter a valid mobile number (at least 10 digits)."
         elif len(password) < 6:
             error = "Password must be at least 6 characters."
         elif password != confirm:
             error = "Passwords do not match."
-        elif PlayerDetails.objects.filter(mobile_number=mobile).exists():
-            error = "This number is linked to a player account. Please login directly."
         elif GuestUser.objects.filter(mobile_number=mobile).exists():
             error = "An account with this mobile number already exists. Please login."
         else:
-            GuestUser.objects.create(mobile_number=mobile, password=password)
+            guest = GuestUser(mobile_number=mobile)
+            guest.password = make_password(password)
+            guest.save()
             success = "Account created! You can now login."
 
     return render(request, 'player_register.html', {'error': error, 'success': success})
 
 
+@require_POST
 def player_logout(request):
     for key in ('player_id', 'player_name', 'player_mobile'):
         request.session.pop(key, None)
+    request.session.cycle_key()
     return redirect('player_login')
 
 
@@ -1077,7 +1290,9 @@ def player_stats(request):
     if not player_id:
         return redirect('player_login')
 
-    if str(player_id).startswith('guest') or not str(player_id).isdigit():
+    is_guest = str(player_id).startswith('guest') or not str(player_id).isdigit()
+
+    if is_guest:
         return render(request, 'player_stats.html', {
             'player': None,
             'player_name': request.session.get('player_name', 'Guest'),
@@ -1086,12 +1301,56 @@ def player_stats(request):
 
     player = get_object_or_404(PlayerDetails, id=int(player_id))
 
-    # Handle photo upload
-    if request.method == 'POST' and request.FILES.get('photo'):
-        player.photo = request.FILES['photo']
-        player.save()
-        messages.success(request, 'Profile photo updated!')
-        return redirect('player_stats')
+    # Handle profile updates
+    if request.method == 'POST':
+        if request.FILES.get('photo'):
+            player.photo = request.FILES['photo']
+            player.save(update_fields=['photo'])
+            messages.success(request, 'Profile photo updated!')
+            return redirect('player_stats')
+
+        if request.POST.get('update_profile'):
+            new_name = (request.POST.get('player_name') or '').strip()
+            new_mobile = (request.POST.get('mobile_number') or '').strip()
+
+            if not new_name:
+                messages.error(request, "Name cannot be empty.")
+                return redirect('player_stats')
+
+            if new_mobile and (len(new_mobile) < 10 or not new_mobile.replace("+", "").isdigit()):
+                messages.error(request, "Enter a valid mobile number (at least 10 digits).")
+                return redirect('player_stats')
+
+            # Mobile is optional at model level, but if provided it must be unique
+            if new_mobile and PlayerDetails.objects.filter(mobile_number=new_mobile).exclude(id=player.id).exists():
+                messages.error(request, "This mobile number is already used by another player.")
+                return redirect('player_stats')
+
+            # Update core fields
+            player.player_name = new_name
+            player.mobile_number = new_mobile or None
+            player.save(update_fields=['player_name', 'mobile_number'])
+
+            # Keep GuestUser and session in sync when mobile changes
+            old_mobile = request.session.get('player_mobile')
+            if old_mobile and old_mobile != new_mobile:
+                guest = GuestUser.objects.filter(mobile_number=old_mobile).first()
+                if guest:
+                    guest.mobile_number = new_mobile or old_mobile
+                    guest.save(update_fields=['mobile_number'])
+                request.session['player_mobile'] = new_mobile or old_mobile
+
+            request.session['player_name'] = player.player_name
+            messages.success(request, "Profile updated successfully.")
+            return redirect('player_stats')
+
+    teams_played = (
+        TournamentRoster.objects
+        .filter(player=player)
+        .select_related('tournament_team__team')
+        .values_list('tournament_team__team__team_name', flat=True)
+        .distinct()
+    )
 
     batting_entries = BattingScorecard.objects.filter(batsman=player).select_related('innings__match__tournament')
 
@@ -1131,6 +1390,7 @@ def player_stats(request):
     return render(request, 'player_stats.html', {
         'player': player,
         'is_guest': False,
+        'teams_played': list(teams_played),
         'total_matches': total_matches,
         'total_innings_b': total_innings_b,
         'total_runs': total_runs,
@@ -1231,13 +1491,98 @@ def player_stats_api(request, player_id):
     })
 
 
+def player_matches(request):
+    player_id = request.session.get('player_id')
+    if not player_id:
+        return redirect(f"{reverse('player_login')}?next={reverse('player_matches')}")
+
+    is_guest = str(player_id).startswith('guest') or not str(player_id).isdigit()
+    if is_guest:
+        return render(request, 'player_matches.html', {
+            'is_guest': True,
+            'tournaments': [],
+        })
+
+    player = get_object_or_404(PlayerDetails, id=int(player_id))
+
+    rosters = (
+        TournamentRoster.objects
+        .filter(player=player)
+        .select_related('tournament', 'tournament_team__team')
+    )
+
+    tournaments_map = {}
+    for r in rosters:
+        t = r.tournament
+        key = t.id
+        if key not in tournaments_map:
+            tournaments_map[key] = {
+                'tournament': t,
+                'teams': set(),
+                'matches': [],
+            }
+        tournaments_map[key]['teams'].add(r.tournament_team.team)
+
+    for info in tournaments_map.values():
+        teams = list(info['teams'])
+        matches = CreateMatch.objects.filter(
+            tournament=info['tournament']
+        ).filter(
+            django_models.Q(team1__in=teams) | django_models.Q(team2__in=teams)
+        ).select_related('team1', 'team2').order_by('match_date')
+
+        match_rows = []
+        for m in matches:
+            inn1 = Innings.objects.filter(match=m, innings_number=1).first()
+            inn2 = Innings.objects.filter(match=m, innings_number=2).first()
+
+            status = 'SCHEDULED'
+            status_label = 'Scheduled'
+
+            if inn2 and inn2.status == 'COMPLETED':
+                status = 'COMPLETED'
+                status_label = 'Completed'
+            elif (inn1 and inn1.status == 'IN_PROGRESS') or (inn2 and inn2.status == 'IN_PROGRESS'):
+                status = 'LIVE'
+                status_label = 'Live'
+            elif inn1 and inn1.status == 'COMPLETED':
+                status = 'IN_PROGRESS'
+                status_label = 'Innings Break'
+            elif inn1:
+                status = 'LIVE'
+                status_label = 'Live'
+
+            has_scorecard = bool(inn1 or inn2)
+            is_live = status in ('LIVE', 'IN_PROGRESS')
+
+            match_rows.append({
+                'match': m,
+                'status': status,
+                'status_label': status_label,
+                'has_scorecard': has_scorecard,
+                'is_live': is_live,
+            })
+
+        info['matches'] = match_rows
+
+    tournaments_list = sorted(
+        tournaments_map.values(),
+        key=lambda x: x['tournament'].start_date or x['tournament'].created_at
+    )
+
+    return render(request, 'player_matches.html', {
+        'is_guest': False,
+        'tournaments': tournaments_list,
+    })
+
+
 # ══════════════════════════════════════════════
 # KNOCKOUT BRACKET VIEWS
 # ══════════════════════════════════════════════
 
 def get_tournament_leaderboard(tournament):
     max_overs = tournament.number_of_overs
-    teams = TeamDetails.objects.filter(tournament=tournament)
+    teams = TeamDetails.objects.filter(tournament_entries__tournament=tournament).distinct()
     leaderboard = []
 
     for team in teams:

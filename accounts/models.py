@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.hashers import check_password, identify_hasher, make_password
 
 # Create your models here.
 
@@ -9,7 +10,9 @@ from django.db import models
 # ---------------------------------
 class GuestUser(models.Model):
     mobile_number = models.CharField(max_length=15, unique=True)
-    password = models.CharField(max_length=128)  # stored as plain text (simple app)
+    # Stores a Django password hash (PBKDF2 by default). Older rows may still contain
+    # a legacy plain-text value; login code upgrades those on successful auth.
+    password = models.CharField(max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -17,3 +20,16 @@ class GuestUser(models.Model):
 
     def __str__(self):
         return f"Guest: {self.mobile_number}"
+
+    def set_password(self, raw_password: str) -> None:
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password: str) -> bool:
+        return check_password(raw_password, self.password)
+
+    def has_usable_password_hash(self) -> bool:
+        try:
+            identify_hasher(self.password)
+            return True
+        except Exception:
+            return False

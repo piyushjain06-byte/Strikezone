@@ -105,6 +105,7 @@
 
     <form method="POST">
       {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next|default:'' }}">
       <div class="field">
         <label>Mobile Number</label>
         <input type="tel" name="mobile" placeholder="Enter your mobile number" required autofocus>
@@ -120,6 +121,12 @@
 
     <a href="{% url 'player_register' %}" class="btn-register">
       ✦ Create a New Account
+    </a>
+
+    <div class="divider">admin</div>
+
+    <a href="{% url 'admin_login' %}" class="btn-register">
+      Admin Login →
     </a>
   </div>
 

@@ -62,6 +62,7 @@ urlpatterns = [
     path('player/login/',  views.player_login,  name='player_login'),
     path('player/logout/', views.player_logout, name='player_logout'),
     path('player/stats/',  views.player_stats,  name='player_stats'),
+    path('player/matches/', views.player_matches, name='player_matches'),
     
     path('player/<int:player_id>/stats-api/', views.player_stats_api, name='player_stats_api'),
 

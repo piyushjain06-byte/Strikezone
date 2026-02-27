@@ -322,12 +322,17 @@
   <div class="tab-panel {% if active_tab == 'team' %}active{% endif %}" id="tab-team">
     <div class="form-card">
       <h3>👕 Add Team</h3>
+      <div style="font-size:12px;color:var(--muted);margin:-6px 0 14px;line-height:1.35;">
+        Tip: To reuse an existing team in a new tournament, enter its <strong>Team ID</strong> (e.g. <code>TM000123</code>).
+        To create a new team, leave Team ID empty and enter Team Name.
+      </div>
       <form method="POST">
         {% csrf_token %}
         {% for field in team_form %}
           <div style="margin-bottom:14px;">
             <label>{{ field.label }}</label>
             {{ field }}
+            {% if field.help_text %}<div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ field.help_text }}</div>{% endif %}
             {% if field.errors %}<p style="color:#f87171;font-size:12px;margin-top:4px;">{{ field.errors.0 }}</p>{% endif %}
           </div>
         {% endfor %}
@@ -421,18 +426,18 @@
               <div class="team-row-name">{{ td.team.team_name }}</div>
               <span class="player-count-badge">{{ td.player_count }} player{{ td.player_count|pluralize }}</span>
             </div>
-            {% if td.players %}
+            {% if td.roster %}
             <div class="player-pills" style="margin-left:18px; margin-top:6px;">
-              {% for p in td.players %}
-                <span class="player-pill {% if p.is_captain %}captain{% endif %}">
-                  {% if p.is_captain %}👑 {% endif %}{{ p.player_name }}
+              {% for r in td.roster %}
+                <span class="player-pill {% if r.is_captain %}captain{% endif %}">
+                  {% if r.is_captain %}👑 {% endif %}{{ r.player.player_name }}
                 </span>
               {% endfor %}
             </div>
             {% endif %}
           </div>
           <button class="btn-add-team"
-                  onclick="quickAddPlayer('{{ td.team.id }}', '{{ td.team.team_name }}')">
+                  onclick="quickAddPlayer('{{ tp.tournament.id }}', '{{ td.team.id }}', '{{ td.team.team_name }}')">
             + Player
           </button>
         </div>
@@ -499,8 +504,10 @@
   }
 
   // Quick add player — switch to player tab and pre-select team
-  function quickAddPlayer(teamId, teamName) {
+  function quickAddPlayer(tournamentId, teamId, teamName) {
     switchTab('player', document.querySelectorAll('.tab-btn')[2]);
+    const tsel = document.querySelector('#tab-player select[name="tournament"]');
+    if (tsel) tsel.value = tournamentId;
     const sel = document.querySelector('#tab-player select[name="team"]');
     if (sel) sel.value = teamId;
     window.scrollTo({ top: 0, behavior: 'smooth' });
