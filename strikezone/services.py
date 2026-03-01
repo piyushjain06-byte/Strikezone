@@ -86,7 +86,8 @@ def start_over(innings, over_number, bowler):
 @transaction.atomic
 def record_ball(over, batsman, runs_off_bat=0, extra_runs=0,
                 ball_type="NORMAL", is_wicket=False,
-                wicket_type="NONE", player_dismissed=None, fielder=None):
+                wicket_type="NONE", player_dismissed=None, fielder=None,
+                shot_direction=None):
     """
     Records a single delivery and auto-updates all scorecards.
 
@@ -127,6 +128,7 @@ def record_ball(over, batsman, runs_off_bat=0, extra_runs=0,
         wicket_type=wicket_type,
         player_dismissed=player_dismissed,
         fielder=fielder,
+        shot_direction=shot_direction or None,
     )
 
     # ── Update Batting Scorecard ──
@@ -316,3 +318,206 @@ def get_match_state(match):
         })
 
     return state
+
+
+# ─────────────────────────────────────────────
+# UNDO LAST BALL
+# ─────────────────────────────────────────────
+@transaction.atomic
+def undo_last_ball(innings):
+    """
+    Removes the last ball and fully reverses all scorecards.
+    Also computes the correct striker/non-striker state BEFORE
+    that ball was bowled so the view can restore the session.
+
+    Strike rotation rules (same as record_ball_view):
+      - Odd runs off bat (1,3,5)  → batsmen crossed → swap back
+      - End of over (legal ball 6) → swap back
+      - Wicket → restore dismissed player to their end
+
+    Returns a dict with restored state, or None if no balls.
+    """
+    # ── Get last ball ──
+    last_ball = (
+        Ball.objects
+        .filter(over__innings=innings)
+        .order_by('-over__over_number', '-ball_number')
+        .select_related('over', 'batsman', 'bowler', 'player_dismissed', 'fielder')
+        .first()
+    )
+    if not last_ball:
+        return None
+
+    over          = last_ball.over
+    batsman       = last_ball.batsman   # who was ON STRIKE for this ball
+    bowler        = last_ball.bowler
+    was_legal     = last_ball.is_legal_ball
+    was_wicket    = last_ball.is_wicket
+    runs_off_bat  = last_ball.runs_off_bat
+    extra_runs    = last_ball.extra_runs
+    ball_type     = last_ball.ball_type
+    wicket_type   = last_ball.wicket_type
+    dismissed_player = last_ball.player_dismissed
+
+    # ── Figure out who will be striker AFTER undo ──
+    # The ball record tells us who was batting (striker) at the TIME of this ball.
+    # We need to figure out who was NON-striker at that time too.
+    # Strategy: look at the previous ball to find out who batted before.
+    # But simpler: the current session already has post-ball striker.
+    # We derive purely from the ball data:
+    #
+    #   Case 1: Normal wicket (striker dismissed)
+    #     → after undo: striker = dismissed_player, non-striker = whoever is now non-striker
+    #
+    #   Case 2: Run-out of non-striker
+    #     → after undo: striker = batsman (on-strike for ball), non-striker = dismissed_player
+    #
+    #   Case 3: Odd runs (1,3,5) — batsmen crossed
+    #     → after undo: undo the swap → striker = batsman (who hit it), non-striker = current_striker
+    #
+    #   Case 4: Even runs or dot — no crossing
+    #     → after undo: striker = batsman (same as before), non-striker unchanged
+    #
+    #   Case 5: End of over (6th legal ball) was also completed
+    #     → the over-end swap also happened → undo it on top
+
+    # Was this the last legal ball of the over? (over was completed by this ball)
+    legal_balls_in_over_before = over.balls.filter(is_legal_ball=True).count()
+    # (last_ball is still in DB at this point, so this count includes it)
+    was_last_ball_of_over = was_legal and (legal_balls_in_over_before == 6) and over.is_completed
+
+    # ── Determine post-undo striker pair ──
+    # Start from "who was batting on this ball"
+    # We also need to know who was the non-striker on this ball.
+    # The non-striker on this ball = the CURRENT non-striker in session,
+    # but ONLY if no crossing happened. We can't reliably get non-striker
+    # from the ball record alone, so we compute it differently:
+    #
+    # Key insight: ball.batsman = striker on that ball.
+    # After the ball, the session holds the current striker.
+    # We just need to return the correct pair.
+    #
+    # The result dict will include restore_striker_id and restore_nonstriker_id
+    # which the VIEW will set into the session.
+    # The view currently has the POST-ball session state.
+    # We compute PRE-ball state here:
+
+    # We'll compute the restore pair based on ball type:
+    # restore_striker = the person who SHOULD be on strike after undo
+    # restore_nonstriker = the other active batsman
+
+    # We need to know the current (post-ball) session pair — pass them in via innings.
+    # Actually we can't access session here. So return enough info for the view to decide.
+
+    # Return: pre_ball_striker_id, pre_ball_nonstriker_id
+    # Rules:
+    #   - pre_ball_striker = ball.batsman ALWAYS (they were on strike)
+    #   - pre_ball_nonstriker:
+    #       * If wicket of striker → pre_nonstriker = current_nonstriker (unchanged)
+    #       * If run-out of nonstriker → pre_nonstriker = dismissed_player
+    #       * Otherwise → need to know who was non-striker on this ball
+    #         = the person who is currently the non-striker IF no run-crossing
+    #           OR the person currently the striker IF run-crossing happened
+
+    # To figure out run-crossing: odd runs_off_bat (for non-wide balls)
+    # For WIDE: runs are extras, no crossing even with odd extras typically,
+    # but wicket could happen. Wide + wicket (run-out) is possible.
+    # For NO_BALL: runs can cause crossing.
+
+    # Simpler approach: tell the view these facts and let the view resolve:
+    pre_ball_striker_id = batsman.id
+
+    # Crossing happened if:
+    runs_caused_crossing = (
+        ball_type in ('NORMAL', 'NO_BALL') and (runs_off_bat % 2 == 1) and not was_wicket
+    ) or (
+        ball_type in ('NORMAL', 'NO_BALL') and was_wicket and (runs_off_bat % 2 == 1)
+        # wicket ball with odd runs — batsmen crossed before wicket fell
+    )
+    # Wide: odd extra runs can cause crossing (rare, but handle it)
+    if ball_type == 'WIDE' and (extra_runs % 2 == 1):
+        runs_caused_crossing = True
+
+    # ── Reverse Batting Scorecard ──
+    bat_sc = BattingScorecard.objects.filter(innings=innings, batsman=batsman).first()
+    if bat_sc:
+        if ball_type not in ["WIDE", "BYE", "LEG_BYE"]:
+            bat_sc.runs = max(0, bat_sc.runs - runs_off_bat)
+        if was_legal:
+            bat_sc.balls_faced = max(0, bat_sc.balls_faced - 1)
+        if runs_off_bat == 4:
+            bat_sc.fours = max(0, bat_sc.fours - 1)
+        elif runs_off_bat == 6:
+            bat_sc.sixes = max(0, bat_sc.sixes - 1)
+        if was_wicket and (dismissed_player is None or dismissed_player == batsman):
+            bat_sc.status = "NOT_OUT"
+            bat_sc.dismissal_info = ""
+        bat_sc.save()
+
+    # Restore dismissed non-striker (run-out of non-striker)
+    if was_wicket and dismissed_player and dismissed_player != batsman:
+        dis_sc = BattingScorecard.objects.filter(innings=innings, batsman=dismissed_player).first()
+        if dis_sc:
+            dis_sc.status = "NOT_OUT"
+            dis_sc.dismissal_info = ""
+            dis_sc.save()
+
+    # ── Reverse Bowling Scorecard ──
+    bowl_sc = BowlingScorecard.objects.filter(innings=innings, bowler=bowler).first()
+    if bowl_sc:
+        if ball_type not in ["BYE", "LEG_BYE"]:
+            bowl_sc.runs_given = max(0, bowl_sc.runs_given - last_ball.total_runs)
+        if ball_type == "WIDE":
+            bowl_sc.wides = max(0, bowl_sc.wides - 1)
+        elif ball_type == "NO_BALL":
+            bowl_sc.no_balls = max(0, bowl_sc.no_balls - 1)
+        if was_wicket and wicket_type not in ["RUN_OUT"]:
+            bowl_sc.wickets = max(0, bowl_sc.wickets - 1)
+        legal_balls_after = (
+            Ball.objects
+            .filter(over__innings=innings, over__bowler=bowler, is_legal_ball=True)
+            .exclude(id=last_ball.id)
+            .count()
+        )
+        bowl_sc.overs_bowled = round(legal_balls_after // 6 + (legal_balls_after % 6) / 10, 1)
+        bowl_sc.save()
+
+    # ── Re-open over if it was completed ──
+    if over.is_completed:
+        over.is_completed = False
+        over.save()
+
+    # ── Delete the ball ──
+    last_ball.delete()
+
+    # ── Recompute innings totals ──
+    remaining_balls = Ball.objects.filter(over__innings=innings)
+    innings.total_runs    = sum(b.total_runs for b in remaining_balls)
+    innings.total_wickets = remaining_balls.filter(is_wicket=True).count()
+    innings.total_balls   = remaining_balls.filter(is_legal_ball=True).count()
+    innings.extras        = sum(b.extra_runs for b in remaining_balls)
+    if innings.status == "COMPLETED":
+        innings.status = "IN_PROGRESS"
+    innings.save()
+
+    legal_count_after = Ball.objects.filter(over=over, is_legal_ball=True).count()
+
+    return {
+        'success': True,
+        'total_runs': innings.total_runs,
+        'total_wickets': innings.total_wickets,
+        'overs': innings.overs_completed,
+        'total_balls': innings.total_balls,
+        'over_number': over.over_number,
+        'legal_ball_count': legal_count_after,
+        'was_wicket': was_wicket,
+        'was_last_ball_of_over': was_last_ball_of_over,
+        'dismissed_player_id': dismissed_player.id if dismissed_player else None,
+        # Who was on strike FOR this ball (pre-ball striker)
+        'pre_ball_striker_id': pre_ball_striker_id,
+        # Did runs cause a crossing?
+        'runs_caused_crossing': runs_caused_crossing,
+        # Was it a run-out of the non-striker?
+        'runout_nonstriker': was_wicket and dismissed_player and dismissed_player != batsman,
+        'runout_nonstriker_id': dismissed_player.id if (was_wicket and dismissed_player and dismissed_player != batsman) else None,
+    }

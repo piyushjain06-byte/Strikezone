@@ -260,6 +260,73 @@
   </div>
 
 
+  <!-- ── HONOURS ── -->
+  {% if mom_count > 0 or mot_count > 0 or bbat_count > 0 or bbol_count > 0 %}
+  <div style="margin-bottom:18px;">
+
+    {% if mom_count > 0 %}
+    <div style="background:linear-gradient(135deg,#1a1200,#0f0c00);border:1px solid rgba(245,158,11,0.4);border-radius:14px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;">
+      <div style="font-size:32px;">🏅</div>
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f59e0b;margin-bottom:2px;">Man of the Match</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:#fff;line-height:1;">{{ mom_count }} Award{{ mom_count|pluralize }}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;">
+        {% for award in player.mom_awards.all|slice:":3" %}
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">{{ award.match.match_date }}</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if mot_count > 0 %}
+    <div style="background:linear-gradient(135deg,#1a1200,#0f0c00);border:2px solid rgba(251,191,36,0.5);border-radius:14px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;">
+      <div style="font-size:32px;">🏆</div>
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fbbf24;margin-bottom:2px;">Man of the Tournament</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:#fbbf24;line-height:1;">{{ mot_count }}× Winner</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;">
+        {% for aw in tourn_awards %}{% if aw.award_type == 'MOT' %}
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">{{ aw.tournament.tournament_name }}</div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if bbat_count > 0 %}
+    <div style="background:linear-gradient(135deg,#0a1628,#0a0f1e);border:2px solid rgba(59,130,246,0.45);border-radius:14px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;">
+      <div style="font-size:32px;">🏏</div>
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#60a5fa;margin-bottom:2px;">Best Batsman</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:#60a5fa;line-height:1;">{{ bbat_count }}× Award</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;">
+        {% for aw in tourn_awards %}{% if aw.award_type == 'BBAT' %}
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">{{ aw.tournament.tournament_name }}</div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if bbol_count > 0 %}
+    <div style="background:linear-gradient(135deg,#062010,#0a0f1e);border:2px solid rgba(16,185,129,0.45);border-radius:14px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;">
+      <div style="font-size:32px;">🎳</div>
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#10b981;margin-bottom:2px;">Best Bowler</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:#10b981;line-height:1;">{{ bbol_count }}× Award</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;">
+        {% for aw in tourn_awards %}{% if aw.award_type == 'BBOL' %}
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">{{ aw.tournament.tournament_name }}</div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+  {% endif %}
+
   <!-- ── BATTING ── -->
   <div class="section-title">🏏 <span>Batting</span></div>
 
@@ -422,6 +489,56 @@
     </table>
   </div>
 
+  {% endif %}
+
+  <!-- ── FIELDING ── -->
+  {% if catches > 0 or run_outs > 0 or stumpings > 0 %}
+  <div class="section-title">🧤 <span>Fielding</span></div>
+  <div class="stats-grid stats-grid-4" style="margin-bottom:14px;">
+    <div class="stat-card">
+      <div class="stat-val" style="color:#34d399;">{{ catches }}</div>
+      <div class="stat-label">Catches</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:#f87171;">{{ run_outs }}</div>
+      <div class="stat-label">Run Outs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:#a78bfa;">{{ stumpings }}</div>
+      <div class="stat-label">Stumpings</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:#fbbf24;">{{ catches|add:run_outs|add:stumpings }}</div>
+      <div class="stat-label">Total</div>
+    </div>
+  </div>
+
+  {% if recent_dismissals %}
+  <div class="table-card" style="margin-bottom:18px;">
+    <table>
+      <thead><tr><th>Player Dismissed</th><th>How</th><th>Match</th></tr></thead>
+      <tbody>
+        {% for ball in recent_dismissals %}
+        <tr>
+          <td style="font-weight:600;color:#e2e8f0;">{{ ball.player_dismissed.player_name|default:"—" }}</td>
+          <td>
+            {% if ball.wicket_type == 'CAUGHT' or ball.wicket_type == 'CAUGHT_AND_BOWLED' %}
+              <span style="color:#34d399;font-size:12px;font-weight:600;">🤲 Catch</span>
+            {% elif ball.wicket_type == 'RUN_OUT' %}
+              <span style="color:#f87171;font-size:12px;font-weight:600;">🏃 Run Out</span>
+            {% elif ball.wicket_type == 'STUMPED' %}
+              <span style="color:#a78bfa;font-size:12px;font-weight:600;">🧤 Stumped</span>
+            {% endif %}
+          </td>
+          <td style="font-size:11px;color:var(--muted);">
+            {{ ball.over.innings.match.team1 }} vs {{ ball.over.innings.match.team2 }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
   {% endif %}
 
 </div>

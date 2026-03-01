@@ -172,6 +172,13 @@
     📊 &nbsp;View Tournament History
   </a>
 
+  {% if tournament_complete %}
+  <!-- TOURNAMENT HONOURS BUTTON -->
+  <a href="{% url 'tournament_awards' tournament.id %}" class="btn-history" style="background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(251,191,36,0.08));border-color:rgba(251,191,36,0.5);color:#fbbf24;margin-top:10px;">
+    🏆 &nbsp;Tournament Honours &amp; Awards
+  </a>
+  {% endif %}
+
   <!-- TEAMS -->
   <div class="section-title">Participating Teams</div>
   <div class="teams-list">

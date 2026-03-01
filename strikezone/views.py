@@ -8,22 +8,24 @@ from django.db import IntegrityError
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils import timezone
 from django.contrib.auth.hashers import check_password, identify_hasher, make_password
 from functools import wraps
 from urllib.parse import quote
 
-from tournaments.models import TournamentDetails, StartTournament
+from tournaments.models import TournamentDetails, StartTournament, TournamentAward
 from teams.models import TeamDetails, PlayerDetails, TournamentTeam, TournamentRoster
-from matches.models import CreateMatch, MatchStart, MatchResult
+from matches.models import CreateMatch, MatchStart, MatchResult, ManOfTheMatch
 from scoring.models import Innings, Over, Ball, BattingScorecard, BowlingScorecard
 from knockout.models import KnockoutStage, KnockoutMatch
 from accounts.models import GuestUser
 
 from strikezone.forms import MatchForm, TournamentForm, TeamForm, PlayerForm
-from strikezone.services import begin_innings, start_over, record_ball
+from strikezone.services import begin_innings, start_over, record_ball, undo_last_ball
 
 import json
-from datetime import date, datetime
+import random
+from datetime import date, datetime, timedelta
 
 
 # ── ADMIN ONLY DECORATOR ──
@@ -213,7 +215,15 @@ def tournamentdetails(request, id):
         .distinct()
         .order_by('team_name')
     )
-    return render(request, 'tournamentdetails.html', {'tournament': tournament, 'teams': teams})
+    tournament_complete = _is_tournament_complete(tournament)
+    # Try to backfill awards for already-completed tournaments
+    if tournament_complete:
+        award_tournament_awards(id)
+    return render(request, 'tournamentdetails.html', {
+        'tournament': tournament,
+        'teams': teams,
+        'tournament_complete': tournament_complete,
+    })
 
 
 def teamdetails(request, tournament_id, team_id):
@@ -691,6 +701,23 @@ def record_ball_view(request, match_id):
     wicket_type = data.get('wicket_type', 'NONE') if is_wicket else 'NONE'
     player_dismissed = batsman if is_wicket else None
 
+    # For run-out: dismissed player could be the non-striker
+    dismissed_id = data.get('dismissed_batsman_id')
+    if is_wicket and dismissed_id:
+        try:
+            player_dismissed = PlayerDetails.objects.get(id=int(dismissed_id))
+        except PlayerDetails.DoesNotExist:
+            player_dismissed = batsman
+
+    # Fielder (catcher / run-out thrower / stumper)
+    fielder = None
+    fielder_id = data.get('fielder_id')
+    if fielder_id:
+        fielder = PlayerDetails.objects.filter(id=int(fielder_id)).first()
+
+    # Shot direction (wagon wheel — stored for ML, not shown publicly)
+    shot_direction = data.get('shot_direction') or None
+
     ball = record_ball(
         over=over,
         batsman=batsman,
@@ -700,12 +727,38 @@ def record_ball_view(request, match_id):
         is_wicket=is_wicket,
         wicket_type=wicket_type,
         player_dismissed=player_dismissed,
+        fielder=fielder,
+        shot_direction=shot_direction,
     )
 
+    # ── STRIKE ROTATION ──
+    # On legal ball: odd runs off bat → batsmen cross → swap striker/non-striker
     if ball.is_legal_ball and (runs_off_bat % 2 == 1):
         request.session['striker_id'], request.session['non_striker_id'] = (
             int(non_striker_id), int(striker_id)
         )
+
+    # If wicket: the dismissed batsman must be replaced
+    # striker_id/non_striker_id may have already swapped above if odd runs
+    # The dismissed player is the one who faced the ball (batsman),
+    # so ensure they are marked correctly in session
+    if is_wicket:
+        # After possible swap, set striker to dismissed batsman so new batsman replaces them
+        # Actually: the new batsman always comes in at the END the dismissed player was at
+        # If striker was dismissed (no swap), new batsman = striker
+        # If striker was dismissed but also scored odd runs (ran before wicket), new = non_striker end
+        # This is handled by session already — dismissed batsman's session slot gets new batsman
+        dismissed_id = batsman.id
+        current_s  = request.session.get('striker_id')
+        current_ns = request.session.get('non_striker_id')
+        if current_s and int(current_s) == dismissed_id:
+            pass  # new batsman will replace striker — correct
+        elif current_ns and int(current_ns) == dismissed_id:
+            # Dismissed player is now in non_striker slot — new batsman should be non_striker
+            # But convention: new batsman always comes in at striker end facing next ball
+            request.session['striker_id'] = dismissed_id  # will be overwritten by select_new_batsman
+        # Ensure dismissed player is in striker slot so new batsman replaces striker
+        request.session['striker_id'] = dismissed_id
 
     over.refresh_from_db()
     innings.refresh_from_db()
@@ -756,21 +809,51 @@ def record_ball_view(request, match_id):
             )
             # Auto-advance knockout winner if this is a knockout match
             auto_advance_knockout(match.id)
+            # Award Man of the Match
+            award_man_of_the_match(match.id)
+            # Award Tournament Honours if tournament is now complete
+            award_tournament_awards(match.tournament_id)
 
     legal_balls = over.balls.filter(is_legal_ball=True).count()
     over_complete = over.is_completed
     innings_complete = innings.status == "COMPLETED"
 
-    if over_complete and not innings_complete:
-        s = request.session.get('striker_id')
+    # End-of-over: batsmen swap ends (non-striker faces next over)
+    # But NOT if a wicket just fell — the new batsman selection handles positioning
+    if over_complete and not innings_complete and not is_wicket:
+        s  = request.session.get('striker_id')
         ns = request.session.get('non_striker_id')
-        request.session['striker_id'] = ns
+        request.session['striker_id']     = ns
         request.session['non_striker_id'] = s
 
     current_striker = PlayerDetails.objects.filter(id=request.session.get('striker_id')).first()
     current_non_striker = PlayerDetails.objects.filter(id=request.session.get('non_striker_id')).first()
 
     needs_new_batsman = is_wicket and not innings_complete
+
+    # ── Batsman stats for instant UI update ──
+    def get_bat_stats(player):
+        if not player:
+            return {'runs': 0, 'balls': 0}
+        sc = BattingScorecard.objects.filter(innings=innings, batsman=player).first()
+        return {'runs': sc.runs if sc else 0, 'balls': sc.balls_faced if sc else 0}
+
+    striker_stats    = get_bat_stats(current_striker)
+    nonstriker_stats = get_bat_stats(current_non_striker)
+
+    # ── Bowler stats for instant UI update ──
+    current_bowler = over.bowler if over else None
+    def get_bowl_stats(player):
+        if not player:
+            return {'overs': '0', 'runs': 0, 'wickets': 0}
+        sc = BowlingScorecard.objects.filter(innings=innings, bowler=player).first()
+        return {
+            'overs': str(sc.overs_bowled) if sc else '0',
+            'runs': sc.runs_given if sc else 0,
+            'wickets': sc.wickets if sc else 0,
+        }
+    bowler_stats = get_bowl_stats(current_bowler)
+    bowler_name  = current_bowler.player_name if current_bowler else ''
 
     return JsonResponse({
         'success': True,
@@ -789,6 +872,14 @@ def record_ball_view(request, match_id):
         'striker_name': current_striker.player_name if current_striker else '',
         'non_striker_name': current_non_striker.player_name if current_non_striker else '',
         'needs_new_batsman': needs_new_batsman,
+        'striker_runs': striker_stats['runs'],
+        'striker_balls': striker_stats['balls'],
+        'nonstriker_runs': nonstriker_stats['runs'],
+        'nonstriker_balls': nonstriker_stats['balls'],
+        'bowler_name': bowler_name,
+        'bowler_overs': bowler_stats['overs'],
+        'bowler_runs': bowler_stats['runs'],
+        'bowler_wickets': bowler_stats['wickets'],
     })
 
 
@@ -809,10 +900,193 @@ def select_new_batsman(request, match_id):
     new_batsman = get_object_or_404(PlayerDetails, id=new_batsman_id)
     request.session['striker_id'] = int(new_batsman_id)
 
+    # Return over_complete & innings_complete so JS knows whether to show bowler modal
+    innings_id = request.session.get('innings_id')
+    over_id    = request.session.get('over_id')
+    innings    = Innings.objects.filter(id=innings_id).first()
+    over       = Over.objects.filter(id=over_id).first()
+
+    over_complete     = bool(over and over.is_completed)
+    innings_complete  = bool(innings and innings.status == 'COMPLETED')
+
+    # Build fresh available_batsmen list (server-authoritative)
+    striker_id     = request.session.get('striker_id')
+    non_striker_id = request.session.get('non_striker_id')
+    fresh_available = []
+    if innings:
+        dismissed_ids = list(
+            BattingScorecard.objects.filter(innings=innings)
+            .exclude(status='NOT_OUT')
+            .values_list('batsman_id', flat=True)
+        )
+        match_obj  = innings.match
+        batting_tt = TournamentTeam.objects.filter(
+            tournament=match_obj.tournament, team=innings.batting_team
+        ).first()
+        currently_in = []
+        if striker_id:    currently_in.append(int(striker_id))
+        if non_striker_id: currently_in.append(int(non_striker_id))
+        excluded = list(set(dismissed_ids + currently_in))
+        if batting_tt:
+            qs = (
+                PlayerDetails.objects.filter(tournament_rosters__tournament_team=batting_tt)
+                .exclude(id__in=excluded)
+                .distinct()
+                .order_by('player_name')
+            )
+            fresh_available = [{'id': p.id, 'name': p.player_name} for p in qs]
+
     return JsonResponse({
         'success': True,
         'new_striker_id': int(new_batsman_id),
         'new_striker_name': new_batsman.player_name,
+        'over_complete': over_complete,
+        'innings_complete': innings_complete,
+        'available_batsmen': fresh_available,
+    })
+
+
+
+# ── UNDO LAST BALL ──
+
+@admin_required
+@require_POST
+def undo_ball_view(request, match_id):
+    innings_id = request.session.get('innings_id')
+    if not innings_id:
+        return JsonResponse({'error': 'Session expired.'}, status=400)
+
+    innings = get_object_or_404(Innings, id=innings_id)
+    if innings.status == 'COMPLETED':
+        return JsonResponse({'error': 'Cannot undo — innings already completed.'}, status=400)
+
+    # Capture current session state BEFORE undo
+    cur_striker_id    = request.session.get('striker_id')
+    cur_nonstriker_id = request.session.get('non_striker_id')
+
+    result = undo_last_ball(innings)
+    if result is None:
+        return JsonResponse({'error': 'No balls to undo.'}, status=400)
+
+    # ────────────────────────────────────────────────
+    # RESTORE CORRECT STRIKER / NON-STRIKER IN SESSION
+    # ────────────────────────────────────────────────
+    # result['pre_ball_striker_id'] = whoever was ON STRIKE for the undone ball.
+    # After undo, that person must be on strike again.
+    #
+    # To find the non-striker we use: everyone currently batting except the striker.
+    # "Currently batting" = the two people who were at the crease during that ball.
+    #
+    # Strategy:
+    #   pre_striker = result['pre_ball_striker_id']
+    #   The non-striker at that ball time = whoever is NOT the pre_striker
+    #   among the two current session players AFTER accounting for any swaps.
+
+    pre_striker_id = result['pre_ball_striker_id']
+
+    if result['was_wicket']:
+        # Wicket of striker: dismissed player returns as striker
+        # non-striker stays as non-striker (current session non-striker is correct
+        # UNLESS the wicket ball had odd runs that caused a crossing first)
+        dismissed_id = result['dismissed_player_id']
+        if dismissed_id:
+            new_striker_id = dismissed_id
+        else:
+            new_striker_id = pre_striker_id
+
+        # The non-striker: if odd runs caused crossing before wicket fell,
+        # the non-striker in session right now is actually the pre-ball striker's end
+        if result['runs_caused_crossing']:
+            # batsmen crossed before wicket — so current_striker (post-ball) was actually
+            # the pre-ball NON-striker who ended up at striker end
+            new_nonstriker_id = cur_striker_id
+        else:
+            new_nonstriker_id = cur_nonstriker_id
+
+        # For run-out of non-striker: striker stays the same
+        if result['runout_nonstriker']:
+            new_striker_id    = cur_striker_id   # striker didn't change
+            new_nonstriker_id = result['runout_nonstriker_id']  # dismissed ns returns
+
+    else:
+        # No wicket — purely about run-crossing and end-of-over swap
+        # pre_ball_striker = ball.batsman (always correct)
+        new_striker_id = pre_striker_id
+
+        # The non-striker = whoever is NOT the pre_striker in the current pair
+        # Current pair is (cur_striker_id, cur_nonstriker_id)
+        if result['runs_caused_crossing']:
+            # Odd runs → batsmen crossed → current_striker is pre_ball NON-striker
+            # So non-striker after undo = current_striker
+            new_nonstriker_id = cur_striker_id
+        else:
+            # No crossing — non-striker unchanged
+            # current_nonstriker is still the non-striker
+            new_nonstriker_id = cur_nonstriker_id
+
+        # End-of-over swap: if the undone ball completed the over,
+        # the over-end swap also happened → un-swap on top of the above
+        if result['was_last_ball_of_over']:
+            new_striker_id, new_nonstriker_id = new_nonstriker_id, new_striker_id
+
+    request.session['striker_id']    = new_striker_id
+    request.session['non_striker_id'] = new_nonstriker_id
+    request.session.modified = True
+
+    # Sync over_id — re-open over if needed
+    innings.refresh_from_db()
+    current_over = innings.overs.filter(is_completed=False).order_by('-over_number').first()
+    if current_over:
+        request.session['over_id'] = current_over.id
+
+    # Build over-balls display list
+    current_over_balls_data = []
+    if current_over:
+        for b in current_over.balls.order_by('ball_number'):
+            if b.ball_type == 'WIDE':
+                current_over_balls_data.append({'type': 'Wd', 'css': 'ball-wide'})
+            elif b.ball_type == 'NO_BALL':
+                current_over_balls_data.append({'type': 'Nb', 'css': 'ball-nb'})
+            elif b.is_wicket:
+                current_over_balls_data.append({'type': 'W',  'css': 'ball-w'})
+            elif b.total_runs == 4:
+                current_over_balls_data.append({'type': '4',  'css': 'ball-4'})
+            elif b.total_runs == 6:
+                current_over_balls_data.append({'type': '6',  'css': 'ball-6'})
+            else:
+                current_over_balls_data.append({'type': str(b.total_runs), 'css': 'ball-runs'})
+
+    legal_count = current_over.balls.filter(is_legal_ball=True).count() if current_over else 0
+
+    striker     = PlayerDetails.objects.filter(id=new_striker_id).first()
+    non_striker = PlayerDetails.objects.filter(id=new_nonstriker_id).first()
+
+    def get_bat_stats(player):
+        if not player: return {'runs': 0, 'balls': 0}
+        sc = BattingScorecard.objects.filter(innings=innings, batsman=player).first()
+        return {'runs': sc.runs if sc else 0, 'balls': sc.balls_faced if sc else 0}
+
+    s_stats  = get_bat_stats(striker)
+    ns_stats = get_bat_stats(non_striker)
+
+    return JsonResponse({
+        'success': True,
+        'total_runs':    result['total_runs'],
+        'total_wickets': result['total_wickets'],
+        'overs':         result['overs'],
+        'total_balls':   result['total_balls'],
+        'legal_ball_count': legal_count,
+        'over_number':   result['over_number'],
+        'over_balls':    current_over_balls_data,
+        'striker_id':    new_striker_id,
+        'non_striker_id': new_nonstriker_id,
+        'striker_name':     striker.player_name    if striker     else '',
+        'non_striker_name': non_striker.player_name if non_striker else '',
+        'striker_runs':    s_stats['runs'],
+        'striker_balls':   s_stats['balls'],
+        'nonstriker_runs':  ns_stats['runs'],
+        'nonstriker_balls': ns_stats['balls'],
+        'was_wicket': result['was_wicket'],
     })
 
 
@@ -842,6 +1116,11 @@ def next_over_view(request, match_id):
         return JsonResponse({'error': 'No bowler selected.'}, status=400)
 
     bowler = get_object_or_404(PlayerDetails, id=bowler_id)
+
+    # Prevent same bowler bowling back-to-back overs
+    last_completed_over = innings.overs.filter(is_completed=True).order_by('-over_number').first()
+    if last_completed_over and last_completed_over.bowler_id == int(bowler_id):
+        return JsonResponse({'error': f'{bowler.player_name} just bowled the previous over. Choose a different bowler.'}, status=400)
 
     current_incomplete_over = innings.overs.filter(is_completed=False).first()
     if current_incomplete_over:
@@ -945,6 +1224,93 @@ def restart_match(request, match_id):
 
 
 # ── TOURNAMENT HISTORY ──
+
+
+# ── TOURNAMENT AWARDS PAGE ──
+
+def tournament_awards(request, tournament_id):
+    tournament = get_object_or_404(TournamentDetails, id=tournament_id)
+
+    # Try to compute awards if not yet done (covers already-completed tournaments)
+    award_tournament_awards(tournament_id)
+
+    awards = TournamentAward.objects.filter(tournament=tournament).select_related('player')
+    awards_dict = {a.award_type: a for a in awards}
+
+    mot  = awards_dict.get('MOT')
+    bbat = awards_dict.get('BBAT')
+    bbol = awards_dict.get('BBOL')
+
+    # Tournament champion (Final winner)
+    from knockout.models import KnockoutStage, KnockoutMatch
+    champion = None
+    final_stage = KnockoutStage.objects.filter(tournament=tournament, stage='F').first()
+    if final_stage:
+        final_match = KnockoutMatch.objects.filter(stage=final_stage, is_completed=True).first()
+        if final_match:
+            champion = final_match.winner
+
+    # Runner up
+    runner_up = None
+    if final_stage and champion:
+        fm = KnockoutMatch.objects.filter(stage=final_stage, is_completed=True).first()
+        if fm and fm.match:
+            runner_up = fm.match.team2 if fm.match.team1 == champion else fm.match.team1
+
+    # Top 5 run scorers
+    from django.db.models import Sum
+    top_batsmen = []
+    all_matches = CreateMatch.objects.filter(tournament=tournament)
+    completed_innings = Innings.objects.filter(
+        match__in=all_matches, innings_number__in=[1, 2]
+    ).filter(status='COMPLETED')
+
+    bat_agg = (
+        BattingScorecard.objects
+        .filter(innings__in=completed_innings)
+        .values('batsman__id', 'batsman__player_name')
+        .annotate(total_runs=Sum('runs'), total_balls=Sum('balls_faced'))
+        .order_by('-total_runs')[:5]
+    )
+    top_batsmen = list(bat_agg)
+
+    # Top 5 wicket takers
+    bowl_agg = (
+        BowlingScorecard.objects
+        .filter(innings__in=completed_innings)
+        .values('bowler__id', 'bowler__player_name')
+        .annotate(total_wickets=Sum('wickets'), total_runs=Sum('runs_given'))
+        .order_by('-total_wickets', 'total_runs')[:5]
+    )
+    top_bowlers = list(bowl_agg)
+
+    # All completed matches for the tournament
+    final_matches = []
+    for m in all_matches.order_by('match_date'):
+        inn2 = Innings.objects.filter(match=m, innings_number=2).first()
+        if inn2 and inn2.status == 'COMPLETED':
+            try:
+                mr = m.result
+                final_matches.append({'match': m, 'result': mr.result_summary})
+            except Exception:
+                pass
+
+    is_complete = _is_tournament_complete(tournament)
+
+    return render(request, 'tournament_awards.html', {
+        'tournament': tournament,
+        'mot': mot,
+        'bbat': bbat,
+        'bbol': bbol,
+        'champion': champion,
+        'runner_up': runner_up,
+        'top_batsmen': top_batsmen,
+        'top_bowlers': top_bowlers,
+        'final_matches': final_matches,
+        'is_complete': is_complete,
+        'awards_count': awards.count(),
+    })
+
 
 def tournament_history(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
@@ -1081,10 +1447,15 @@ def tournament_history(request, tournament_id):
     for i, entry in enumerate(leaderboard):
         entry['rank'] = i + 1
 
+    tournament_complete = _is_tournament_complete(tournament)
+    awards_exist = TournamentAward.objects.filter(tournament=tournament).exists()
+
     return render(request, 'tournament_history.html', {
         'tournament': tournament,
         'match_data': match_data,
         'leaderboard': leaderboard,
+        'tournament_complete': tournament_complete,
+        'awards_exist': awards_exist,
     })
 
 
@@ -1126,12 +1497,26 @@ def match_scorecard(request, match_id):
             else:
                 margin = "Tied"
 
+    # Backfill MOM for old matches that completed before this feature existed
+    if inn2 and inn2.status == 'COMPLETED':
+        try:
+            mom = match.man_of_the_match
+        except Exception:
+            award_man_of_the_match(match.id)
+            try:
+                mom = match.man_of_the_match
+            except Exception:
+                mom = None
+    else:
+        mom = None
+
     return render(request, 'match_scorecard.html', {
         'match': match,
         'sc1': sc1,
         'sc2': sc2,
         'winner': winner,
         'margin': margin,
+        'mom': mom,
     })
 
 
@@ -1215,6 +1600,7 @@ def player_login(request):
                     else:
                         guest = GuestUser(mobile_number=mobile)
                         guest.password = make_password(password)
+                        guest.is_mobile_verified = False
                         guest.save()
                         password_ok = True
 
@@ -1244,6 +1630,156 @@ def player_login(request):
     return render(request, 'player_login.html', {'error': error, 'next': next_param})
 
 
+def send_otp_sms(mobile, otp_code):
+    """
+    Send OTP via Twilio SMS.
+    Returns (True, None) on success or (False, error_message) on failure.
+    """
+    import requests as http_requests
+    from django.conf import settings
+    import logging
+    logger = logging.getLogger(__name__)
+
+    account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
+    auth_token  = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
+    from_number = getattr(settings, 'TWILIO_PHONE_NUMBER', None)
+
+    if not all([account_sid, auth_token, from_number]):
+        return False, "Twilio credentials not configured"
+
+    try:
+        # Make sure number has country code
+        number = mobile.strip().replace(' ', '')
+        if not number.startswith('+'):
+            number = '+91' + number  # default to India country code
+
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+
+        payload = {
+            "To": number,
+            "From": from_number,
+            "Body": f"Your StrikeZone login OTP is {otp_code}. Valid for 5 minutes. Do not share with anyone.",
+        }
+
+        response = http_requests.post(
+            url,
+            data=payload,
+            auth=(account_sid, auth_token),
+            timeout=10
+        )
+
+        logger.info(f"[Twilio] Status: {response.status_code} | Response: {response.text}")
+        data = response.json()
+
+        if response.status_code == 201:
+            return True, None
+        else:
+            error_msg = data.get('message', str(data))
+            logger.error(f"[Twilio] Failed: {data}")
+            return False, error_msg
+
+    except Exception as e:
+        logger.error(f"[Twilio] Exception: {e}")
+        return False, str(e)
+
+
+def player_request_otp(request):
+    if request.method == 'POST':
+        mobile = (request.POST.get('mobile', '') or '').strip()
+        if not mobile or len(mobile) < 10 or not mobile.replace("+", "").isdigit():
+            messages.error(request, "Enter a valid mobile number.")
+        else:
+            guest = GuestUser.objects.filter(mobile_number=mobile).first()
+            player = PlayerDetails.objects.filter(mobile_number=mobile).first()
+            if not guest and not player:
+                messages.error(request, "No account found with this mobile. Please ask admin to link your profile or register.")
+            else:
+                otp_code = f"{random.randint(100000, 999999):06d}"
+                request.session['otp_mobile'] = mobile
+                request.session['otp_code'] = otp_code
+                request.session['otp_expires_at'] = (timezone.now() + timedelta(minutes=5)).isoformat()
+                request.session['otp_attempts'] = 0
+
+                sms_sent, sms_error = send_otp_sms(mobile, otp_code)
+
+                if sms_sent:
+                    messages.success(request, f"OTP sent to {mobile}. Valid for 5 minutes.")
+                else:
+                    messages.error(request, f"Could not send OTP. Reason: {sms_error}")
+                    for key in ('otp_mobile', 'otp_code', 'otp_expires_at', 'otp_attempts'):
+                        request.session.pop(key, None)
+                    return render(request, 'player_request_otp.html')
+
+                return redirect('player_verify_otp')
+
+    return render(request, 'player_request_otp.html')
+
+
+def player_verify_otp(request):
+    mobile = request.session.get('otp_mobile')
+    code = request.session.get('otp_code')
+    expires_raw = request.session.get('otp_expires_at')
+    attempts = request.session.get('otp_attempts', 0)
+
+    if not mobile or not code or not expires_raw:
+        messages.error(request, "OTP session expired. Please request a new code.")
+        return redirect('player_request_otp')
+
+    try:
+        expires_at = datetime.fromisoformat(expires_raw)
+    except Exception:
+        expires_at = timezone.now() - timedelta(seconds=1)
+
+    if timezone.now() > expires_at:
+        for key in ('otp_mobile', 'otp_code', 'otp_expires_at', 'otp_attempts'):
+            request.session.pop(key, None)
+        messages.error(request, "OTP expired. Please request a new code.")
+        return redirect('player_request_otp')
+
+    if request.method == 'POST':
+        user_code = (request.POST.get('otp', '') or '').strip()
+        attempts += 1
+        request.session['otp_attempts'] = attempts
+
+        if attempts > 5:
+            for key in ('otp_mobile', 'otp_code', 'otp_expires_at', 'otp_attempts'):
+                request.session.pop(key, None)
+            messages.error(request, "Too many incorrect attempts. Please request a new code.")
+            return redirect('player_request_otp')
+
+        if user_code != code:
+            messages.error(request, "Incorrect OTP. Please try again.")
+        else:
+            for key in ('otp_mobile', 'otp_code', 'otp_expires_at', 'otp_attempts'):
+                request.session.pop(key, None)
+
+            guest, _ = GuestUser.objects.get_or_create(mobile_number=mobile)
+            if guest.password == "":
+                guest.password = make_password(f"otp-{mobile}")
+            guest.is_mobile_verified = True
+            guest.save()
+
+            if request.user.is_authenticated:
+                auth_logout(request)
+
+            request.session.cycle_key()
+
+            player = PlayerDetails.objects.filter(mobile_number=mobile).first()
+            if player:
+                request.session['player_id'] = player.id
+                request.session['player_name'] = player.player_name
+            else:
+                request.session['player_id'] = 'guest'
+                request.session['player_name'] = 'Guest'
+
+            request.session['player_mobile'] = mobile
+
+            messages.success(request, "Logged in successfully with OTP.")
+            return redirect('home')
+
+    return render(request, 'player_verify_otp.html', {'mobile': mobile})
+
+
 def player_register(request):
     if request.session.get('player_id'):
         return redirect('player_stats')
@@ -1269,8 +1805,9 @@ def player_register(request):
         else:
             guest = GuestUser(mobile_number=mobile)
             guest.password = make_password(password)
+            guest.is_mobile_verified = False
             guest.save()
-            success = "Account created! You can now login."
+            success = "Account created! You can now login with your password."
 
     return render(request, 'player_register.html', {'error': error, 'success': success})
 
@@ -1333,11 +1870,12 @@ def player_stats(request):
 
             # Keep GuestUser and session in sync when mobile changes
             old_mobile = request.session.get('player_mobile')
-            if old_mobile and old_mobile != new_mobile:
+            if old_mobile and new_mobile and old_mobile != new_mobile:
                 guest = GuestUser.objects.filter(mobile_number=old_mobile).first()
                 if guest:
                     guest.mobile_number = new_mobile or old_mobile
-                    guest.save(update_fields=['mobile_number'])
+                    guest.is_mobile_verified = False
+                    guest.save(update_fields=['mobile_number', 'is_mobile_verified'])
                 request.session['player_mobile'] = new_mobile or old_mobile
 
             request.session['player_name'] = player.player_name
@@ -1384,8 +1922,28 @@ def player_stats(request):
     bowling_economy     = round((total_runs_given * 6) / total_balls_bowled, 2) if total_balls_bowled > 0 else 0
     bowling_avg         = round(total_runs_given / total_wickets, 2) if total_wickets > 0 else 0
 
+    mom_count = ManOfTheMatch.objects.filter(player=player).count()
     recent_innings = batting_entries.order_by('-innings__match__match_date')[:5]
     recent_bowling = bowling_entries.order_by('-innings__match__match_date')[:5]
+
+    # Tournament awards for this player
+    tourn_awards = TournamentAward.objects.filter(player=player).select_related('tournament').order_by('-awarded_at')
+    mot_count  = tourn_awards.filter(award_type='MOT').count()
+    bbat_count = tourn_awards.filter(award_type='BBAT').count()
+    bbol_count = tourn_awards.filter(award_type='BBOL').count()
+
+    # Fielding stats
+    from scoring.models import Ball as ScoringBall
+    catches   = ScoringBall.objects.filter(fielder=player, wicket_type__in=['CAUGHT','CAUGHT_AND_BOWLED']).count()
+    run_outs  = ScoringBall.objects.filter(fielder=player, wicket_type='RUN_OUT').count()
+    stumpings = ScoringBall.objects.filter(fielder=player, wicket_type='STUMPED').count()
+    # Dismissals detail list (last 10)
+    recent_dismissals = (
+        ScoringBall.objects
+        .filter(fielder=player, is_wicket=True)
+        .select_related('player_dismissed', 'bowler', 'over__innings__match')
+        .order_by('-id')[:10]
+    )
 
     return render(request, 'player_stats.html', {
         'player': player,
@@ -1412,6 +1970,15 @@ def player_stats(request):
         'bowling_avg': bowling_avg,
         'recent_innings': recent_innings,
         'recent_bowling': recent_bowling,
+        'mom_count': mom_count,
+        'tourn_awards': tourn_awards,
+        'mot_count': mot_count,
+        'bbat_count': bbat_count,
+        'bbol_count': bbol_count,
+        'catches': catches,
+        'run_outs': run_outs,
+        'stumpings': stumpings,
+        'recent_dismissals': recent_dismissals,
     })
 
 
@@ -1468,6 +2035,7 @@ def player_stats_api(request, player_id):
         })
 
     photo_url = player.photo.url if player.photo else ''
+    mom_count = ManOfTheMatch.objects.filter(player=player).count()
 
     return JsonResponse({
         'photo_url': photo_url,
@@ -1488,6 +2056,7 @@ def player_stats_api(request, player_id):
         'total_wides': total_wides,
         'total_no_balls': total_no_balls,
         'recent_bowling': recent_bowling,
+        'mom_count': mom_count,
     })
 
 
@@ -1901,4 +2470,752 @@ def public_knockout_bracket(request, tournament_id):
     return render(request, 'public_knockout_bracket.html', {
         'tournament': tournament,
         'stages': stages,
+    })
+
+
+
+# ══════════════════════════════════════════════
+# TOURNAMENT AWARDS ENGINE
+# Best Batsman · Best Bowler · Man of the Tournament
+# ══════════════════════════════════════════════
+
+def _is_tournament_complete(tournament):
+    """
+    Returns True if the tournament has concluded:
+    - Has a Final knockout match that is completed, OR
+    - All created matches have completed innings (for round-robin only tournaments)
+    """
+    from knockout.models import KnockoutStage, KnockoutMatch
+    # Check for Final stage
+    final_stage = KnockoutStage.objects.filter(tournament=tournament, stage='F').first()
+    if final_stage:
+        final_matches = KnockoutMatch.objects.filter(stage=final_stage)
+        if final_matches.exists():
+            return all(m.is_completed for m in final_matches)
+        return False
+    # No knockout — all matches completed
+    all_matches = CreateMatch.objects.filter(tournament=tournament)
+    if not all_matches.exists():
+        return False
+    for m in all_matches:
+        inn2 = Innings.objects.filter(match=m, innings_number=2).first()
+        if not inn2 or inn2.status != 'COMPLETED':
+            return False
+    return True
+
+
+def _collect_player_stats(tournament):
+    """
+    Collect per-player aggregate batting + bowling stats across all
+    completed matches in the tournament.
+    Returns dict: {player_id: {...stats...}}
+    """
+    all_matches = CreateMatch.objects.filter(tournament=tournament)
+    player_stats = {}  # pid -> dict
+
+    def ensure(pid, player):
+        if pid not in player_stats:
+            player_stats[pid] = {
+                'player': player,
+                'matches': set(),
+                'innings_batted': 0,
+                'runs': 0,
+                'balls_faced': 0,
+                'fours': 0,
+                'sixes': 0,
+                'not_outs': 0,
+                'highest': 0,
+                'wickets': 0,
+                'runs_given': 0,
+                'balls_bowled': 0,
+                'wides': 0,
+                'no_balls': 0,
+                'best_w': 0,
+                'best_r': 9999,
+            }
+
+    for match in all_matches:
+        inn2 = Innings.objects.filter(match=match, innings_number=2).first()
+        if not inn2 or inn2.status != 'COMPLETED':
+            continue  # Only completed matches
+
+        innings_list = Innings.objects.filter(match=match)
+        for innings in innings_list:
+            # Batting
+            for bsc in BattingScorecard.objects.filter(innings=innings).select_related('batsman'):
+                pid = bsc.batsman_id
+                ensure(pid, bsc.batsman)
+                player_stats[pid]['matches'].add(match.id)
+                if bsc.status != 'DNB':
+                    player_stats[pid]['innings_batted'] += 1
+                    player_stats[pid]['runs'] += bsc.runs
+                    player_stats[pid]['balls_faced'] += bsc.balls_faced
+                    player_stats[pid]['fours'] += bsc.fours
+                    player_stats[pid]['sixes'] += bsc.sixes
+                    if bsc.status == 'NOT_OUT':
+                        player_stats[pid]['not_outs'] += 1
+                    if bsc.runs > player_stats[pid]['highest']:
+                        player_stats[pid]['highest'] = bsc.runs
+
+            # Bowling
+            for bwsc in BowlingScorecard.objects.filter(innings=innings).select_related('bowler'):
+                pid = bwsc.bowler_id
+                ensure(pid, bwsc.bowler)
+                player_stats[pid]['matches'].add(match.id)
+                player_stats[pid]['wickets'] += bwsc.wickets
+                player_stats[pid]['runs_given'] += bwsc.runs_given
+                player_stats[pid]['wides'] += bwsc.wides
+                player_stats[pid]['no_balls'] += bwsc.no_balls
+                # Convert overs_bowled (X.Y) to balls
+                ov = float(bwsc.overs_bowled)
+                full = int(ov)
+                extra = round((ov - full) * 10)
+                player_stats[pid]['balls_bowled'] += full * 6 + extra
+                # Best bowling
+                if (bwsc.wickets > player_stats[pid]['best_w'] or
+                   (bwsc.wickets == player_stats[pid]['best_w'] and bwsc.runs_given < player_stats[pid]['best_r'])):
+                    player_stats[pid]['best_w'] = bwsc.wickets
+                    player_stats[pid]['best_r'] = bwsc.runs_given
+
+    # Compute derived stats
+    for pid, s in player_stats.items():
+        s['matches_played'] = len(s['matches'])
+        dismissals = s['innings_batted'] - s['not_outs']
+        s['batting_avg'] = round(s['runs'] / dismissals, 2) if dismissals > 0 else float(s['runs'])
+        s['batting_sr']  = round((s['runs'] / s['balls_faced']) * 100, 2) if s['balls_faced'] > 0 else 0
+        s['bowling_avg'] = round(s['runs_given'] / s['wickets'], 2) if s['wickets'] > 0 else 0
+        s['bowling_econ'] = round((s['runs_given'] * 6) / s['balls_bowled'], 2) if s['balls_bowled'] > 0 else 0
+        if s['best_r'] == 9999:
+            s['best_r'] = 0
+
+    return player_stats
+
+
+def _best_batsman_score(s, tournament_avg_sr):
+    """
+    Best Batsman Index (BBI):
+      = (Runs / max_runs_in_tournament * 50)       -- volume: 50 pts max
+      + (batting_avg / max_avg * 30)                -- consistency: 30 pts max
+      + SR bonus: +5 for every 25% above tournament avg SR
+      + (matches_played / total_matches * 20)       -- presence: 20 pts max
+    Minimum 2 innings to qualify.
+    """
+    if s['innings_batted'] < 2:
+        return None
+    # Will be normalised against tournament peers in the caller
+    return {
+        'runs': s['runs'],
+        'avg': s['batting_avg'],
+        'sr': s['batting_sr'],
+        'hs': s['highest'],
+        'innings': s['innings_batted'],
+        'matches': s['matches_played'],
+        'tournament_avg_sr': tournament_avg_sr,
+    }
+
+
+def _best_bowler_score(s):
+    """
+    Best Bowler Index (BBI):
+      = (Wickets / max_wickets * 50)               -- wickets: 50 pts max
+      + Economy bonus: (10 - economy) * 3 (capped at 0)
+      + (1 / bowling_avg * 200) if wickets >= 2    -- avg quality
+      + (matches_played presence)
+    Minimum 2 wickets to qualify.
+    """
+    if s['wickets'] < 2:
+        return None
+    return {
+        'wickets': s['wickets'],
+        'avg': s['bowling_avg'],
+        'econ': s['bowling_econ'],
+        'best_w': s['best_w'],
+        'best_r': s['best_r'],
+        'matches': s['matches_played'],
+        'balls': s['balls_bowled'],
+    }
+
+
+def award_tournament_awards(tournament_id):
+    """
+    Main entry point. Safe to call multiple times (idempotent).
+    Awards: Best Batsman, Best Bowler, Man of the Tournament.
+    """
+    tournament = TournamentDetails.objects.filter(id=tournament_id).first()
+    if not tournament:
+        return
+
+    # If awards already exist, check if MOT is from champion team.
+    # If not, delete all and recompute with the corrected formula.
+    existing = TournamentAward.objects.filter(tournament=tournament)
+    if existing.count() >= 3:
+        mot_award = existing.filter(award_type='MOT').first()
+        if mot_award:
+            from knockout.models import KnockoutStage, KnockoutMatch as _KM
+            _final = KnockoutStage.objects.filter(tournament=tournament, stage='F').first()
+            if _final:
+                _fkm = _KM.objects.filter(stage=_final, is_completed=True).first()
+                if _fkm and _fkm.winner:
+                    from teams.models import TournamentTeam as _TT, TournamentRoster as _TR
+                    _ctt = _TT.objects.filter(tournament=tournament, team=_fkm.winner).first()
+                    if _ctt:
+                        _cpids = set(_TR.objects.filter(tournament_team=_ctt).values_list('player_id', flat=True))
+                        if mot_award.player_id in _cpids:
+                            return  # Already correct — MOT from champion team
+                        else:
+                            existing.delete()  # Wrong MOT — delete and recompute
+                    else:
+                        return
+                else:
+                    return
+            else:
+                return  # No final yet
+        else:
+            return
+
+    if not _is_tournament_complete(tournament):
+        return
+
+    pstats = _collect_player_stats(tournament)
+    if not pstats:
+        return
+
+    # ── Tournament-wide averages for normalisation ──
+    total_runs_all  = sum(s['runs'] for s in pstats.values())
+    total_balls_all = sum(s['balls_faced'] for s in pstats.values())
+    tournament_avg_sr = (total_runs_all / total_balls_all * 100) if total_balls_all > 0 else 100
+
+    max_runs    = max((s['runs']    for s in pstats.values()), default=1) or 1
+    max_avg_bat = max((s['batting_avg'] for s in pstats.values()), default=1) or 1
+    max_wickets = max((s['wickets'] for s in pstats.values()), default=1) or 1
+    total_matches = max((s['matches_played'] for s in pstats.values()), default=1) or 1
+
+    # ── BEST BATSMAN ──
+    best_bat_pid, best_bat_val = None, -1
+    for pid, s in pstats.items():
+        if s['innings_batted'] < 2:
+            continue
+        vol_pts    = (s['runs'] / max_runs) * 50
+        avg_pts    = (s['batting_avg'] / max_avg_bat) * 30
+        sr_diff    = ((s['batting_sr'] - tournament_avg_sr) / tournament_avg_sr * 100) if tournament_avg_sr > 0 else 0
+        sr_bonus   = max(0, (sr_diff / 25) * 5)
+        pres_pts   = (s['matches_played'] / total_matches) * 20
+        total = vol_pts + avg_pts + sr_bonus + pres_pts
+        if total > best_bat_val:
+            best_bat_val = total
+            best_bat_pid = pid
+
+    # ── BEST BOWLER ──
+    best_bowl_pid, best_bowl_val = None, -1
+    for pid, s in pstats.items():
+        if s['wickets'] < 2:
+            continue
+        wkt_pts  = (s['wickets'] / max_wickets) * 50
+        econ_pts = max(0, (10 - s['bowling_econ']) * 3)
+        avg_pts  = (1 / s['bowling_avg']) * 200 if s['bowling_avg'] > 0 else 0
+        avg_pts  = min(avg_pts, 30)   # cap at 30
+        pres_pts = (s['matches_played'] / total_matches) * 20
+        total = wkt_pts + econ_pts + avg_pts + pres_pts
+        if total > best_bowl_val:
+            best_bowl_val = total
+            best_bowl_pid = pid
+
+    # ── MAN OF THE TOURNAMENT ──
+    # RULE: MOT is ALWAYS from the champion (winning) team only.
+    # Among champion team players, pick the best performer.
+    mot_pid, mot_val = None, -1
+    mom_counts = {}
+    from matches.models import ManOfTheMatch
+    for mom in ManOfTheMatch.objects.filter(match__tournament=tournament):
+        mom_counts[mom.player_id] = mom_counts.get(mom.player_id, 0) + 1
+
+    max_mom = max(mom_counts.values()) if mom_counts else 1
+
+    # ── Find champion team ──
+    champion_team = None
+    from knockout.models import KnockoutStage, KnockoutMatch as KM
+    final_stage = KnockoutStage.objects.filter(tournament=tournament, stage='F').first()
+    if final_stage:
+        final_km = KM.objects.filter(stage=final_stage, is_completed=True).first()
+        if final_km and final_km.winner:
+            champion_team = final_km.winner
+    # Fallback for round-robin only tournaments — team with most wins
+    if not champion_team:
+        from collections import Counter
+        win_counts = Counter()
+        for match in CreateMatch.objects.filter(tournament=tournament):
+            try:
+                mr = match.result
+                if mr.winner:
+                    win_counts[mr.winner_id] += 1
+            except Exception:
+                pass
+        if win_counts:
+            top_team_id = win_counts.most_common(1)[0][0]
+            from teams.models import TeamDetails as TD
+            champion_team = TD.objects.filter(id=top_team_id).first()
+
+    # ── Get champion team player IDs ──
+    champion_player_ids = set()
+    if champion_team:
+        from teams.models import TournamentTeam as TT, TournamentRoster as TR
+        champ_tt = TT.objects.filter(tournament=tournament, team=champion_team).first()
+        if champ_tt:
+            champion_player_ids = set(
+                TR.objects.filter(tournament_team=champ_tt)
+                .values_list('player_id', flat=True)
+            )
+
+    # ── Score ONLY champion team players ──
+    for pid, s in pstats.items():
+        # Skip anyone NOT on the champion team
+        if pid not in champion_player_ids:
+            continue
+
+        # Batting component (0–50)
+        bat_component = (s['runs'] / max_runs) * 30 + (s['batting_avg'] / max_avg_bat) * 20
+
+        # Bowling component (0–50)
+        if s['wickets'] > 0:
+            bowl_component = (
+                (s['wickets'] / max_wickets) * 30
+                + min((1 / s['bowling_avg']) * 100 if s['bowling_avg'] > 0 else 0, 20)
+            )
+        else:
+            bowl_component = 0
+
+        # MOM bonus (0–15)
+        mom_bonus = (mom_counts.get(pid, 0) / max_mom) * 15
+
+        # Presence (0–5)
+        pres_pts = (s['matches_played'] / total_matches) * 5
+
+        total = bat_component + bowl_component + mom_bonus + pres_pts
+        if total > mot_val:
+            mot_val = total
+            mot_pid = pid
+
+    # ── Save awards ──
+    def save_award(award_type, pid, score_val):
+        if not pid:
+            return
+        s = pstats[pid]
+        TournamentAward.objects.update_or_create(
+            tournament=tournament,
+            award_type=award_type,
+            defaults={
+                'player_id': pid,
+                'score': round(score_val, 2),
+                'total_runs': s['runs'],
+                'total_balls_faced': s['balls_faced'],
+                'batting_avg': round(float(s['batting_avg']), 2),
+                'batting_sr': round(float(s['batting_sr']), 2),
+                'highest_score': s['highest'],
+                'total_wickets': s['wickets'],
+                'bowling_avg': round(float(s['bowling_avg']), 2),
+                'bowling_economy': round(float(s['bowling_econ']), 2),
+                'best_bowling': f"{s['best_w']}/{s['best_r']}",
+                'matches_played': s['matches_played'],
+            }
+        )
+
+    save_award('BBAT', best_bat_pid, best_bat_val)
+    save_award('BBOL', best_bowl_pid, best_bowl_val)
+    save_award('MOT',  mot_pid, mot_val)
+
+
+# ══════════════════════════════════════════════
+# UNIVERSAL IMPACT INDEX — MAN OF THE MATCH ENGINE
+# ══════════════════════════════════════════════
+
+def calculate_uii(match):
+    """
+    Calculates the Universal Impact Index (UII) for every player
+    who participated in the match and returns the best player.
+
+    Formula:
+      Batting  = (player_runs / team_total_runs) * 100
+               + SR_bonus  (+5 per 25% above match_avg_sr)
+      Bowling  = (player_wickets / total_wickets_fell) * 100
+               + pressure  = (dot_balls / balls_bowled) * 30
+      Finisher = +15 if NOT OUT in a successful run chase (2nd innings winner)
+      Partner  = +10 if a wicket taken was a batsman who scored >= 25% of team runs
+      Multiplier: winner * 1.1,  loser * 1.0
+    """
+    inn1 = Innings.objects.filter(match=match, innings_number=1).first()
+    inn2 = Innings.objects.filter(match=match, innings_number=2).first()
+    if not inn1 or not inn2:
+        return None
+
+    # --- Match-level aggregates ---
+    total_wickets_fell = inn1.total_wickets + inn2.total_wickets
+    if total_wickets_fell == 0:
+        total_wickets_fell = 1  # avoid divide-by-zero
+
+    # Match average SR (total runs off bat / total legal balls)
+    total_runs_all = inn1.total_runs + inn2.total_runs
+    total_legal_balls = inn1.total_balls + inn2.total_balls
+    match_avg_sr = (total_runs_all / total_legal_balls * 100) if total_legal_balls > 0 else 100
+
+    # Result
+    try:
+        result = match.result
+        winner_team = result.winner
+    except Exception:
+        winner_team = None
+
+    # Determine if 2nd innings was a successful run chase
+    chase_success = (inn2.total_runs >= inn1.total_runs and winner_team == inn2.batting_team)
+
+    # --- Collect all player IDs who participated ---
+    all_player_ids = set()
+    for sc in BattingScorecard.objects.filter(innings__match=match).values_list('batsman_id', flat=True):
+        all_player_ids.add(sc)
+    for sc in BowlingScorecard.objects.filter(innings__match=match).values_list('bowler_id', flat=True):
+        all_player_ids.add(sc)
+
+    best_player = None
+    best_uii = -999
+
+    for pid in all_player_ids:
+        player = PlayerDetails.objects.filter(id=pid).first()
+        if not player:
+            continue
+
+        uii = 0.0
+
+        # ── Which innings did this player bat/bowl in? ──
+        bat_sc = BattingScorecard.objects.filter(innings__match=match, batsman=player).first()
+        bowl_sc = BowlingScorecard.objects.filter(innings__match=match, bowler=player).first()
+
+        # Figure out which team this player is on
+        player_team = None
+        if bat_sc:
+            player_team = bat_sc.innings.batting_team
+        elif bowl_sc:
+            player_team = bowl_sc.innings.bowling_team
+
+        # ── 1. BATTING ──
+        if bat_sc and bat_sc.status != 'DNB':
+            team_total = bat_sc.innings.total_runs
+            if team_total > 0:
+                bat_pct = (bat_sc.runs / team_total) * 100
+            else:
+                bat_pct = 0
+
+            # SR bonus
+            if bat_sc.balls_faced > 0:
+                player_sr = (bat_sc.runs / bat_sc.balls_faced) * 100
+                sr_diff_pct = ((player_sr - match_avg_sr) / match_avg_sr) * 100 if match_avg_sr > 0 else 0
+                sr_bonus = max(0, (sr_diff_pct / 25) * 5)
+            else:
+                sr_bonus = 0
+
+            uii += bat_pct + sr_bonus
+
+        # ── 2. BOWLING ──
+        if bowl_sc and bowl_sc.wickets > 0 or (bowl_sc and float(bowl_sc.overs_bowled) > 0):
+            if bowl_sc:
+                wicket_pct = (bowl_sc.wickets / total_wickets_fell) * 100
+
+                # Dot ball pressure factor
+                overs_val = float(bowl_sc.overs_bowled)
+                full = int(overs_val)
+                extra = round((overs_val - full) * 10)
+                balls_bowled = full * 6 + extra
+
+                # Count dot balls bowled by this player
+                dot_balls = Ball.objects.filter(
+                    over__innings__match=match,
+                    bowler=player,
+                    runs_off_bat=0,
+                    extra_runs=0,
+                    is_legal_ball=True,
+                ).count()
+
+                pressure = (dot_balls / balls_bowled * 30) if balls_bowled > 0 else 0
+                uii += wicket_pct + pressure
+
+                # Partnership Breaker bonus
+                for ball in Ball.objects.filter(over__innings__match=match, bowler=player, is_wicket=True).select_related('player_dismissed'):
+                    if ball.player_dismissed:
+                        dismissed_sc = BattingScorecard.objects.filter(
+                            innings__match=match,
+                            batsman=ball.player_dismissed
+                        ).first()
+                        if dismissed_sc:
+                            t = dismissed_sc.innings.total_runs
+                            if t > 0 and dismissed_sc.runs >= (t * 0.25):
+                                uii += 10
+
+        # ── 3. FINISHER BONUS ──
+        if chase_success and bat_sc and bat_sc.status == 'NOT_OUT' and bat_sc.innings == inn2:
+            uii += 15
+
+        # ── 4. RESULT MULTIPLIER ──
+        if winner_team and player_team == winner_team:
+            uii *= 1.1
+
+        if uii > best_uii:
+            best_uii = uii
+            best_player = player
+
+    return best_player, best_uii if best_player else (None, 0)
+
+
+def award_man_of_the_match(match_id):
+    """Award MOM for a completed match. Safe to call multiple times (idempotent)."""
+    from matches.models import ManOfTheMatch
+    match = CreateMatch.objects.filter(id=match_id).first()
+    if not match:
+        return
+
+    # Already awarded
+    if ManOfTheMatch.objects.filter(match=match).exists():
+        return
+
+    result = calculate_uii(match)
+    if not result or not result[0]:
+        return
+
+    best_player, best_uii = result
+
+    # Snapshot batting + bowling stats
+    bat_sc   = BattingScorecard.objects.filter(innings__match=match, batsman=best_player).first()
+    bowl_sc  = BowlingScorecard.objects.filter(innings__match=match, bowler=best_player).first()
+
+    ManOfTheMatch.objects.create(
+        match=match,
+        player=best_player,
+        uii_score=round(best_uii, 2),
+        bat_runs=bat_sc.runs if bat_sc else 0,
+        bat_balls=bat_sc.balls_faced if bat_sc else 0,
+        bat_fours=bat_sc.fours if bat_sc else 0,
+        bat_sixes=bat_sc.sixes if bat_sc else 0,
+        bowl_wickets=bowl_sc.wickets if bowl_sc else 0,
+        bowl_runs=bowl_sc.runs_given if bowl_sc else 0,
+        bowl_overs=str(bowl_sc.overs_bowled) if bowl_sc else '0',
+    )
+
+
+# ── LIVE SCORE API (used by home page auto-refresh) ──
+
+def live_scores_api(request):
+    """Returns JSON with current scores of all live matches."""
+    from scoring.models import Innings
+
+    live_innings = Innings.objects.filter(status="IN_PROGRESS").select_related(
+        'match', 'batting_team', 'bowling_team'
+    )
+
+    # Get unique live matches
+    match_ids = list(set(i.match_id for i in live_innings))
+
+    data = []
+    for match_id in match_ids:
+        inn1 = Innings.objects.filter(match_id=match_id, innings_number=1).first()
+        inn2 = Innings.objects.filter(match_id=match_id, innings_number=2).first()
+
+        entry = {
+            'match_id': match_id,
+            'inn1': None,
+            'inn2': None,
+        }
+
+        if inn1:
+            entry['inn1'] = {
+                'runs': inn1.total_runs,
+                'wickets': inn1.total_wickets,
+                'overs': str(inn1.overs_completed),
+                'team': str(inn1.batting_team),
+            }
+        if inn2:
+            entry['inn2'] = {
+                'runs': inn2.total_runs,
+                'wickets': inn2.total_wickets,
+                'overs': str(inn2.overs_completed),
+                'team': str(inn2.batting_team),
+            }
+
+        data.append(entry)
+
+    return JsonResponse({'matches': data})
+
+
+# ── PUBLIC LIVE SCORECARD PAGE ──
+
+def public_live_scorecard(request, match_id):
+    """Public page anyone can view - shows live scoring with full data."""
+    match = get_object_or_404(CreateMatch, id=match_id)
+
+    inn1 = Innings.objects.filter(match=match, innings_number=1).first()
+    inn2 = Innings.objects.filter(match=match, innings_number=2).first()
+
+    # Determine current innings
+    current_innings = None
+    if inn2 and inn2.status == 'IN_PROGRESS':
+        current_innings = inn2
+    elif inn1 and inn1.status == 'IN_PROGRESS':
+        current_innings = inn1
+
+    # Current over balls
+    current_over = None
+    current_over_balls = []
+    if current_innings:
+        current_over = current_innings.overs.filter(is_completed=False).first()
+        if current_over:
+            current_over_balls = list(current_over.balls.all())
+
+    # Batting scorecard for each innings
+    batting_sc1 = BattingScorecard.objects.filter(innings=inn1).order_by('batting_position').select_related('batsman') if inn1 else []
+    bowling_sc1 = BowlingScorecard.objects.filter(innings=inn1).select_related('bowler') if inn1 else []
+    batting_sc2 = BattingScorecard.objects.filter(innings=inn2).order_by('batting_position').select_related('batsman') if inn2 else []
+    bowling_sc2 = BowlingScorecard.objects.filter(innings=inn2).select_related('bowler') if inn2 else []
+
+    # Full squad for "yet to bat"
+    batting_tt1 = TournamentTeam.objects.filter(tournament=match.tournament, team=match.team1).first() if inn1 else None
+    batting_tt2 = TournamentTeam.objects.filter(tournament=match.tournament, team=match.team2).first() if inn2 else None
+
+    # Players who batted in each innings
+    batted_ids1 = set(b.batsman_id for b in batting_sc1)
+    batted_ids2 = set(b.batsman_id for b in batting_sc2)
+
+    # Yet to bat
+    def get_yet_to_bat(tt, batted_ids):
+        if not tt:
+            return []
+        return list(
+            PlayerDetails.objects.filter(tournament_rosters__tournament_team=tt)
+            .exclude(id__in=batted_ids)
+            .distinct()
+            .order_by('player_name')
+        )
+
+    # Figure out which team bats in which innings
+    inn1_batting_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=inn1.batting_team).first() if inn1 else None
+    inn2_batting_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=inn2.batting_team).first() if inn2 else None
+
+    yet_to_bat1 = get_yet_to_bat(inn1_batting_tt, batted_ids1)
+    yet_to_bat2 = get_yet_to_bat(inn2_batting_tt, batted_ids2)
+
+    target = (inn1.total_runs + 1) if inn1 and inn2 else None
+
+    # Match result
+    result = None
+    try:
+        from matches.models import MatchResult
+        mr = match.result
+        result = mr.result_summary
+    except Exception:
+        pass
+
+    return render(request, 'public_live_scorecard.html', {
+        'match': match,
+        'inn1': inn1,
+        'inn2': inn2,
+        'current_innings': current_innings,
+        'current_over': current_over,
+        'current_over_balls': current_over_balls,
+        'batting_sc1': batting_sc1,
+        'bowling_sc1': bowling_sc1,
+        'batting_sc2': batting_sc2,
+        'bowling_sc2': bowling_sc2,
+        'yet_to_bat1': yet_to_bat1,
+        'yet_to_bat2': yet_to_bat2,
+        'target': target,
+        'result': result,
+    })
+
+
+# ── LIVE SCORECARD JSON API (for auto-refresh on public page) ──
+
+def live_scorecard_api(request, match_id):
+    """Returns full JSON data for the public live scorecard page."""
+    match = get_object_or_404(CreateMatch, id=match_id)
+
+    inn1 = Innings.objects.filter(match=match, innings_number=1).first()
+    inn2 = Innings.objects.filter(match=match, innings_number=2).first()
+
+    def innings_data(inn):
+        if not inn:
+            return None
+        batting = []
+        for b in BattingScorecard.objects.filter(innings=inn).order_by('batting_position').select_related('batsman'):
+            batting.append({
+                'name': b.batsman.player_name,
+                'runs': b.runs,
+                'balls': b.balls_faced,
+                'fours': b.fours,
+                'sixes': b.sixes,
+                'sr': str(b.strike_rate),
+                'status': b.status,
+                'dismissal': b.dismissal_info or b.status,
+            })
+        bowling = []
+        for b in BowlingScorecard.objects.filter(innings=inn).select_related('bowler'):
+            bowling.append({
+                'name': b.bowler.player_name,
+                'overs': str(b.overs_bowled),
+                'runs': b.runs_given,
+                'wickets': b.wickets,
+                'economy': str(b.economy),
+                'wides': b.wides,
+                'no_balls': b.no_balls,
+            })
+
+        # Current over balls
+        current_over = inn.overs.filter(is_completed=False).first()
+        over_balls = []
+        if current_over:
+            for ball in current_over.balls.all():
+                if ball.is_wicket:
+                    over_balls.append('W')
+                elif ball.ball_type == 'WIDE':
+                    over_balls.append('Wd')
+                elif ball.ball_type == 'NO_BALL':
+                    over_balls.append('Nb')
+                else:
+                    over_balls.append(str(ball.runs_off_bat))
+
+        # Yet to bat
+        batting_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=inn.batting_team).first()
+        batted_ids = set(b['name'] for b in batting)
+        yet_to_bat = []
+        if batting_tt:
+            for p in PlayerDetails.objects.filter(tournament_rosters__tournament_team=batting_tt).distinct():
+                if p.player_name not in batted_ids:
+                    yet_to_bat.append(p.player_name)
+
+        return {
+            'team': str(inn.batting_team),
+            'bowling_team': str(inn.bowling_team),
+            'total_runs': inn.total_runs,
+            'total_wickets': inn.total_wickets,
+            'overs': str(inn.overs_completed),
+            'extras': inn.extras,
+            'status': inn.status,
+            'batting': batting,
+            'bowling': bowling,
+            'over_balls': over_balls,
+            'current_over_num': current_over.over_number if current_over else None,
+            'current_bowler': current_over.bowler.player_name if current_over else None,
+            'yet_to_bat': yet_to_bat,
+        }
+
+    target = (inn1.total_runs + 1) if inn1 and inn2 else None
+
+    result_summary = None
+    try:
+        result_summary = match.result.result_summary
+    except Exception:
+        pass
+
+    return JsonResponse({
+        'match_id': match_id,
+        'team1': str(match.team1),
+        'team2': str(match.team2),
+        'inn1': innings_data(inn1),
+        'inn2': innings_data(inn2),
+        'target': target,
+        'result': result_summary,
     })

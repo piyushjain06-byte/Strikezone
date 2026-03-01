@@ -228,6 +228,9 @@
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <a href="{% url 'knockout_bracket' tournament.id %}" class="btn-back">🏆 Knockout Bracket</a>
+      {% if tournament_complete %}
+        <a href="{% url 'tournament_awards' tournament.id %}" class="btn-back" style="background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,191,36,0.05));border-color:rgba(251,191,36,0.4);color:#fbbf24;font-weight:600;">🥇 Tournament Honours</a>
+      {% endif %}
       <a href="{% url 'tournaments' %}" class="btn-back">← Tournaments</a>
     </div>
   </div>

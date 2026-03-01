@@ -74,3 +74,49 @@ class StartTournament(models.Model):
 
     def __str__(self):
         return f"{self.tournament.tournament_name} - Started: {self.is_started}"
+
+# ---------------------------------
+# Tournament Awards Model
+# ---------------------------------
+class TournamentAward(models.Model):
+
+    AWARD_TYPE = [
+        ('MOT',  'Man of the Tournament'),
+        ('BBAT', 'Best Batsman'),
+        ('BBOL', 'Best Bowler'),
+    ]
+
+    tournament = models.ForeignKey(
+        TournamentDetails,
+        on_delete=models.CASCADE,
+        related_name='awards'
+    )
+    award_type = models.CharField(max_length=10, choices=AWARD_TYPE)
+    player = models.ForeignKey(
+        'teams.PlayerDetails',
+        on_delete=models.CASCADE,
+        related_name='tournament_awards'
+    )
+    score = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    # Snapshot stats
+    total_runs = models.PositiveIntegerField(default=0)
+    total_balls_faced = models.PositiveIntegerField(default=0)
+    batting_avg = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    batting_sr = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    highest_score = models.PositiveIntegerField(default=0)
+    total_wickets = models.PositiveIntegerField(default=0)
+    bowling_avg = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    bowling_economy = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    best_bowling = models.CharField(max_length=10, default='0/0')
+    matches_played = models.PositiveIntegerField(default=0)
+
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('tournament', 'award_type')
+        verbose_name = 'Tournament Award'
+        verbose_name_plural = 'Tournament Awards'
+
+    def __str__(self):
+        return f"{self.get_award_type_display()} — {self.player.player_name} ({self.tournament})"

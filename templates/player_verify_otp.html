@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0f1e; --surface: #111827; --surface2: #1a2235;
+    --border: #1e2d45; --accent: #22c55e; --text: #e2e8f0; --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif;
+         min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+
+  .wrap { width:100%; max-width:360px; }
+  .card {
+    background: var(--surface);
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    padding: 26px 22px;
+  }
+  .title {
+    font-family:'Rajdhani',sans-serif;
+    font-size:22px; font-weight:700; margin-bottom:4px;
+  }
+  .sub { font-size:13px; color:var(--muted); margin-bottom:18px; }
+  .field { margin-bottom:16px; }
+  .field label {
+    display:block; font-size:11px; font-weight:700; letter-spacing:1px;
+    text-transform:uppercase; color:var(--muted); margin-bottom:6px;
+  }
+  .field input {
+    width:100%; background:var(--surface2); border-radius:10px;
+    border:1.5px solid var(--border); padding:11px 13px;
+    color:var(--text); font-size:14px; letter-spacing: 4px; text-align:center;
+  }
+  .field input:focus { outline:none; border-color:var(--accent); }
+  .btn {
+    width:100%; margin-top:4px;
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    border:none; border-radius:10px; color:#000;
+    font-size:15px; font-weight:700; padding:13px;
+    cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .resend {
+    margin-top:12px; font-size:12px; color:var(--muted);
+  }
+  .resend a { color:#60a5fa; text-decoration:none; font-weight:600; }
+</style>
+
+<div class="wrap">
+  <div class="card">
+    <div class="title">Enter OTP</div>
+    <div class="sub">
+      We have sent a 6‑digit code to <strong>{{ mobile }}</strong>.
+      Enter it below to continue.
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="field">
+        <label for="otp">One Time Password</label>
+        <input id="otp" type="text" name="otp" maxlength="6" pattern="[0-9]{6}" required autofocus>
+      </div>
+      <button type="submit" class="btn">Verify &amp; Login →</button>
+    </form>
+
+    <div class="resend">
+      Didn’t get the code? <a href="{% url 'player_request_otp' %}">Send a new OTP</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+

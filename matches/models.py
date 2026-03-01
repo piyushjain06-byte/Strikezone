@@ -175,3 +175,37 @@ class MatchResult(models.Model):
 
     def __str__(self):
         return self.result_summary
+
+# ---------------------------------
+# Man of the Match Model
+# ---------------------------------
+class ManOfTheMatch(models.Model):
+    match = models.OneToOneField(
+        CreateMatch,
+        on_delete=models.CASCADE,
+        related_name="man_of_the_match"
+    )
+    player = models.ForeignKey(
+        'teams.PlayerDetails',
+        on_delete=models.CASCADE,
+        related_name="mom_awards"
+    )
+    uii_score = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+
+    # Snapshot of performance for display
+    bat_runs = models.PositiveIntegerField(default=0)
+    bat_balls = models.PositiveIntegerField(default=0)
+    bat_fours = models.PositiveIntegerField(default=0)
+    bat_sixes = models.PositiveIntegerField(default=0)
+    bowl_wickets = models.PositiveIntegerField(default=0)
+    bowl_runs = models.PositiveIntegerField(default=0)
+    bowl_overs = models.CharField(max_length=10, default='0')
+
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Man of the Match"
+        verbose_name_plural = "Man of the Match Awards"
+
+    def __str__(self):
+        return f"MOM: {self.player.player_name} — {self.match}"

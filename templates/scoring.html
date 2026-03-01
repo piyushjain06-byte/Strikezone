@@ -216,6 +216,67 @@
     padding: 13px; cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px;
   }
   .btn-wicket:hover { background: linear-gradient(135deg, #2d1500, #4a1900); border-color: #b85e00; }
+  .btn-undo {
+    background: rgba(100,116,139,0.1); border: 1.5px solid rgba(100,116,139,0.3);
+    border-radius: 10px; color: #94a3b8;
+    font-size: 13px; font-weight: 700; padding: 13px 14px;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-undo:hover { background: rgba(100,116,139,0.2); border-color: #64748b; color: #e2e8f0; }
+  .btn-undo:active { transform: scale(0.97); }
+
+  /* ── WAGON WHEEL ── */
+  .wagon-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); z-index: 1050;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .wagon-overlay.show { display: flex; }
+  .wagon-box {
+    background: #0f1928; border: 1px solid #1e3a5f; border-radius: 18px;
+    width: 100%; max-width: 400px; padding: 20px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+    animation: slideUp 0.25s ease;
+  }
+  .wagon-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom:4px; }
+  .wagon-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+  .wagon-svg-wrap { position: relative; width: 280px; height: 280px; margin: 0 auto 16px; }
+  .wagon-svg-wrap svg { width: 100%; height: 100%; }
+  .wagon-sector { cursor: pointer; transition: opacity 0.15s; }
+  .wagon-sector:hover { opacity: 0.85; }
+  .wagon-sector.selected { stroke: #fff !important; stroke-width: 3 !important; }
+  .wagon-label { font-size: 9px; fill: #fff; font-weight: 700; pointer-events: none; text-anchor: middle; }
+  .wagon-runs-badge {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 60px; height: 60px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; pointer-events: none;
+  }
+  .wagon-runs-val { font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .wagon-runs-lbl { font-size: 9px; color: var(--muted); }
+  .wagon-dir-row { text-align: center; min-height: 22px; margin-bottom: 12px; }
+  .wagon-dir-name { font-size: 13px; color: #60a5fa; font-weight: 600; }
+  .wagon-skip { width: 100%; background: transparent; border: 1.5px solid var(--border); border-radius: 10px; color: var(--muted); font-size: 13px; font-weight: 600; padding: 11px; cursor: pointer; }
+  .wagon-skip:hover { border-color: #475569; color: #94a3b8; }
+
+  /* ── WICKET TYPE GRID ── */
+  .wkt-type-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+  .wkt-type-btn {
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 12px 6px 10px;
+    cursor: pointer; transition: all 0.15s; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .wkt-type-btn:hover { border-color: var(--accent); background: rgba(245,158,11,0.06); }
+  .wkt-type-btn.selected { border-color: var(--accent); background: rgba(245,158,11,0.12); }
+  .wkt-type-btn.selected .wkt-label { color: var(--accent); }
+  .wkt-icon { font-size: 22px; line-height: 1; }
+  .wkt-label { font-size: 11px; font-weight: 600; color: var(--muted); }
+  .fielder-section { margin-top: 4px; }
+  .fielder-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .wkt-step { display: none; }
+  .wkt-step.active { display: block; }
 
   /* ── SCORECARDS ── */
   .scorecard-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
@@ -479,7 +540,10 @@
       <button class="btn-wide" onclick="showExtraModal('WIDE')">Wide +1</button>
       <button class="btn-nb"   onclick="showExtraModal('NO_BALL')">No Ball +1</button>
     </div>
-    <button class="btn-wicket" onclick="showWicketModal()">🏏 &nbsp;Wicket!</button>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;">
+      <button class="btn-wicket" onclick="showWicketModal()">🏏 &nbsp;Wicket!</button>
+      <button class="btn-undo" onclick="undoBall()" title="Undo last ball">↩ Undo</button>
+    </div>
   </div>
 
   <!-- SCORECARDS -->
@@ -488,18 +552,18 @@
       <div class="card-label">Bowling</div>
       <table id="bowling-table">
         <thead><tr><th>Bowler</th><th>O</th><th>R</th><th>W</th></tr></thead>
-        <tbody>
+        <tbody id="bowling-scorecard-body">
           {% for b in bowling_scorecard %}
-          <tr>
+          <tr data-bowler-name="{{ b.bowler.player_name }}">
             <td class="player-name">
               <div class="player-cell-sc">
                 {% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-avatar" alt="">{% else %}<div class="sc-avatar-init">{{ b.bowler.player_name|first|upper }}</div>{% endif %}
                 {{ b.bowler.player_name }}
               </div>
             </td>
-            <td>{{ b.overs_bowled }}</td>
-            <td>{{ b.runs_given }}</td>
-            <td>{{ b.wickets }}</td>
+            <td class="bowl-overs">{{ b.overs_bowled }}</td>
+            <td class="bowl-runs">{{ b.runs_given }}</td>
+            <td class="bowl-wickets">{{ b.wickets }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -509,18 +573,18 @@
       <div class="card-label">Batting</div>
       <table id="batting-table">
         <thead><tr><th>Batsman</th><th>R</th><th>B</th><th>SR</th></tr></thead>
-        <tbody>
+        <tbody id="batting-scorecard-body">
           {% for b in batting_scorecard %}
-          <tr>
+          <tr data-batsman-name="{{ b.batsman.player_name }}">
             <td class="player-name">
               <div class="player-cell-sc">
                 {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-avatar" alt="">{% else %}<div class="sc-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
                 {{ b.batsman.player_name }}{% if b.status == 'NOT_OUT' %}<span class="out-marker">*</span>{% endif %}
               </div>
             </td>
-            <td>{{ b.runs }}</td>
-            <td>{{ b.balls_faced }}</td>
-            <td>{{ b.strike_rate }}</td>
+            <td class="bat-runs-sc">{{ b.runs }}</td>
+            <td class="bat-balls-sc">{{ b.balls_faced }}</td>
+            <td class="bat-sr-sc">{{ b.strike_rate }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -543,7 +607,7 @@
       <select class="form-select" id="next-bowler-select">
         <option value="">— Select Bowler —</option>
         {% for p in bowling_team_players %}
-          <option value="{{ p.id }}">{{ p.player_name }}</option>
+          <option value="{{ p.id }}"{% if over and over.is_completed and over.bowler == p %} disabled{% endif %}>{{ p.player_name }}{% if over and over.is_completed and over.bowler == p %} (prev over){% endif %}</option>
         {% endfor %}
       </select>
     </div>
@@ -579,28 +643,148 @@
 </div>
 
 
-<!-- ─── WICKET MODAL ─── -->
+<!-- ─── WICKET MODAL (multi-step) ─── -->
 <div class="modal-overlay" id="wicketModal">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:460px;">
     <div class="modal-box-header">
       <span class="modal-box-title">🏏 Wicket!</span>
       <button class="modal-close-btn" onclick="hideModal('wicketModal')">×</button>
     </div>
     <div class="modal-box-body">
-      <p class="modal-hint">Runs scored on this ball before the wicket?</p>
-      <div class="modal-run-grid">
-        <button class="modal-run-btn" onclick="setWicketRuns(0)">0</button>
-        <button class="modal-run-btn" onclick="setWicketRuns(1)">1</button>
-        <button class="modal-run-btn" onclick="setWicketRuns(2)">2</button>
-        <button class="modal-run-btn" onclick="setWicketRuns(3)">3</button>
-        <button class="modal-run-btn" onclick="setWicketRuns(4)">4</button>
+
+      <!-- STEP 1: Dismissal Type -->
+      <div class="wkt-step active" id="wkt-step-1">
+        <p class="modal-hint" style="margin-bottom:14px;">How was the batsman dismissed?</p>
+        <div class="wkt-type-grid">
+          <button class="wkt-type-btn" onclick="selectWicketType('BOWLED')">
+            <span class="wkt-icon">🎯</span><span class="wkt-label">Bowled</span>
+          </button>
+          <button class="wkt-type-btn" onclick="selectWicketType('CAUGHT')">
+            <span class="wkt-icon">🤲</span><span class="wkt-label">Caught</span>
+          </button>
+          <button class="wkt-type-btn" onclick="selectWicketType('LBW')">
+            <span class="wkt-icon">🦵</span><span class="wkt-label">LBW</span>
+          </button>
+          <button class="wkt-type-btn" onclick="selectWicketType('RUN_OUT')">
+            <span class="wkt-icon">🏃</span><span class="wkt-label">Run Out</span>
+          </button>
+          <button class="wkt-type-btn" onclick="selectWicketType('STUMPED')">
+            <span class="wkt-icon">🧤</span><span class="wkt-label">Stumped</span>
+          </button>
+          <button class="wkt-type-btn" onclick="selectWicketType('HIT_WICKET')">
+            <span class="wkt-icon">💥</span><span class="wkt-label">Hit Wicket</span>
+          </button>
+          <button class="wkt-type-btn" onclick="selectWicketType('CAUGHT_AND_BOWLED')">
+            <span class="wkt-icon">🙌</span><span class="wkt-label">C & B</span>
+          </button>
+          <button class="wkt-type-btn" onclick="selectWicketType('OBSTRUCTING')">
+            <span class="wkt-icon">🚫</span><span class="wkt-label">Obstruct</span>
+          </button>
+          <button class="wkt-type-btn" onclick="selectWicketType('RETIRED')">
+            <span class="wkt-icon">🚶</span><span class="wkt-label">Retired</span>
+          </button>
+        </div>
       </div>
-      <div class="wicket-runs-display">Runs on this ball: <b id="wicket-runs-display">0</b></div>
+
+      <!-- STEP 2: Dismissed batsman (for run-out) + Fielder + Runs -->
+      <div class="wkt-step" id="wkt-step-2">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;" onclick="goToStep(1)">
+          <span style="font-size:18px;" id="wkt-type-icon-display">🏏</span>
+          <span style="font-size:14px;font-weight:700;color:var(--accent);" id="wkt-type-label-display">—</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:auto;">← Change</span>
+        </div>
+
+        <!-- Dismissed batsman (shown for run-out only) -->
+        <div id="dismissed-batsman-section" style="display:none;margin-bottom:14px;">
+          <div class="fielder-label">Who was run out?</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button class="wkt-type-btn" id="runout-striker-btn" onclick="selectDismissedBatsman('striker')">
+              <span class="wkt-icon" style="font-size:16px;">🏏</span>
+              <span class="wkt-label" id="runout-striker-name">Striker</span>
+            </button>
+            <button class="wkt-type-btn" id="runout-ns-btn" onclick="selectDismissedBatsman('nonstriker')">
+              <span class="wkt-icon" style="font-size:16px;">🧍</span>
+              <span class="wkt-label" id="runout-ns-name">Non-Striker</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Fielder selector (catch / run-out / stumping) -->
+        <div class="fielder-section" id="fielder-section" style="display:none;margin-bottom:14px;">
+          <div class="fielder-label" id="fielder-label-txt">Who took the catch?</div>
+          <select class="form-select" id="fielder-select">
+            <option value="">— Select Fielder —</option>
+            {% for p in bowling_team_players %}
+              <option value="{{ p.id }}">{{ p.player_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Runs on this ball -->
+        <div class="modal-hint" style="margin-bottom:8px;">Runs scored before dismissal:</div>
+        <div class="modal-run-grid">
+          <button class="modal-run-btn" onclick="setWicketRuns(0)">0</button>
+          <button class="modal-run-btn" onclick="setWicketRuns(1)">1</button>
+          <button class="modal-run-btn" onclick="setWicketRuns(2)">2</button>
+          <button class="modal-run-btn" onclick="setWicketRuns(3)">3</button>
+          <button class="modal-run-btn" onclick="setWicketRuns(4)">4</button>
+        </div>
+        <div class="wicket-runs-display">Runs: <b id="wicket-runs-display">0</b></div>
+      </div>
+
     </div>
-    <div class="modal-box-footer">
-      <button class="btn-confirm" onclick="confirmWicket()">Confirm Wicket</button>
+    <div class="modal-box-footer" id="wkt-footer" style="display:none;">
+      <button class="btn-confirm" onclick="confirmWicket()">✅ Confirm Wicket</button>
       <button class="btn-cancel"  onclick="hideModal('wicketModal')">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- ─── WAGON WHEEL MODAL ─── -->
+<div class="wagon-overlay" id="wagonModal">
+  <div class="wagon-box">
+    <div class="wagon-title">🏏 Shot Direction</div>
+    <div class="wagon-sub">Tap the zone where the shot went. This is for analysis only.</div>
+    <div class="wagon-svg-wrap">
+      <!-- SVG wagon wheel with 12 zones -->
+      <svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="circle-clip"><circle cx="140" cy="140" r="138"/></clipPath>
+        </defs>
+        <!-- Outer ring sectors (12 zones) — angles starting from top, going clockwise -->
+        <!-- Zone angles: each 30deg. Labels positioned at midpoint of each sector -->
+        <!-- Fine Leg: 150–180 (leg side, fine) -->
+        <path class="wagon-sector" data-dir="FINE_LEG"      fill="#134e2e" stroke="#0a0f1e" stroke-width="1.5" d="M140,140 L140,2   A138,138 0 0,1 209,37  Z" onclick="selectWagonDir('FINE_LEG','Third Man')" />
+        <path class="wagon-sector" data-dir="THIRD_MAN"     fill="#134e2e" stroke="#0a0f1e" stroke-width="1.5" d="M140,140 L209,37  A138,138 0 0,1 278,140 Z" onclick="selectWagonDir('THIRD_MAN','Third Man')" />
+        <path class="wagon-sector" data-dir="POINT"         fill="#0c3148" stroke="#0a0f1e" stroke-width="1.5" d="M140,140 L278,140 A138,138 0 0,1 209,243 Z" onclick="selectWagonDir('POINT','Point')" />
+        <path class="wagon-sector" data-dir="COVER"         fill="#0c3148" stroke="#0a0f1e" stroke-width="1.5" d="M140,140 L209,243 A138,138 0 0,1 140,278 Z" onclick="selectWagonDir('COVER','Cover')" />
+        <path class="wagon-sector" data-dir="LONG_OFF"      fill="#3a2600" stroke="#0a0f1e" stroke-width="1.5" d="M140,140 L140,278 A138,138 0 0,1 71,243  Z" onclick="selectWagonDir('LONG_OFF','Long Off')" />
+        <path class="wagon-sector" data-dir="STRAIGHT"      fill="#3a2600" stroke="#0a0f1e" stroke-width="1.5" d="M140,140 L71,243  A138,138 0 0,1 2,140   Z" onclick="selectWagonDir('STRAIGHT','Straight')" />
+        <path class="wagon-sector" data-dir="LONG_ON"       fill="#1d3a5c" stroke="#0a0f1e" stroke-width="1.5" d="M140,140 L2,140   A138,138 0 0,1 71,37   Z" onclick="selectWagonDir('LONG_ON','Long On')" />
+        <path class="wagon-sector" data-dir="MID_WICKET"    fill="#1d3a5c" stroke="#0a0f1e" stroke-width="1.5" d="M140,140 L71,37   A138,138 0 0,1 140,2   Z" onclick="selectWagonDir('MID_WICKET','Mid Wicket')" />
+        <!-- Inner labels -->
+        <text class="wagon-label" x="175" y="30"  onclick="selectWagonDir('FINE_LEG','Fine Leg')">Fine Leg</text>
+        <text class="wagon-label" x="245" y="80"  onclick="selectWagonDir('THIRD_MAN','Third Man')">3rd Man</text>
+        <text class="wagon-label" x="252" y="180" onclick="selectWagonDir('POINT','Point')">Point</text>
+        <text class="wagon-label" x="210" y="255" onclick="selectWagonDir('COVER','Cover')">Cover</text>
+        <text class="wagon-label" x="140" y="270" onclick="selectWagonDir('LONG_OFF','Long Off')">Long Off</text>
+        <text class="wagon-label" x="55"  y="255" onclick="selectWagonDir('STRAIGHT','Straight')">Straight</text>
+        <text class="wagon-label" x="28"  y="180" onclick="selectWagonDir('LONG_ON','Long On')">Long On</text>
+        <text class="wagon-label" x="68"  y="80"  onclick="selectWagonDir('MID_WICKET','Mid Wicket')">Mid-Wkt</text>
+        <!-- Pitch rectangle in centre -->
+        <rect x="124" y="110" width="32" height="60" rx="4" fill="#5c4033" opacity="0.8"/>
+        <circle cx="140" cy="140" r="28" fill="#0f1928" stroke="#1e3a5f" stroke-width="1.5"/>
+        <!-- Off side / On side labels -->
+        <text x="248" y="148" style="font-size:9px;fill:#64748b;font-weight:700;text-anchor:middle;">OFF</text>
+        <text x="32"  y="148" style="font-size:9px;fill:#64748b;font-weight:700;text-anchor:middle;">ON</text>
+      </svg>
+      <div class="wagon-runs-badge">
+        <span class="wagon-runs-val" id="wagon-runs-val">0</span>
+        <span class="wagon-runs-lbl">RUNS</span>
+      </div>
+    </div>
+    <div class="wagon-dir-row"><span class="wagon-dir-name" id="wagon-dir-name">Select a zone</span></div>
+    <button class="wagon-skip" onclick="submitWithDirection(null)">Skip direction →</button>
   </div>
 </div>
 
@@ -669,6 +853,7 @@
   let currentExtraType    = null;
   let wicketRuns          = 0;
   let inningsComplete     = false;
+  let pendingOverComplete = false;  // set when wicket falls on last ball of over
   {% if innings.status == "COMPLETED" %}inningsComplete = true;{% endif %}
 
   let toastTimer = null;
@@ -690,14 +875,34 @@
     }
   }
 
-  // ── Record a normal ball ──
+  // ── Record a normal ball — show wagon wheel for run-scoring balls ──
+  let pendingBallRuns = 0;
+  let pendingBallType = 'NORMAL';
+
   function recordBall(runs, ballType) {
     if (inningsComplete) { showToast('Innings is complete!'); return; }
     if (!scoringBatsmanId) { showToast('Please select a batsman first!'); return; }
+
+    // For balls where runs > 0 (and not wide/noball), show wagon wheel first
+    if (ballType === 'NORMAL' && runs > 0) {
+      pendingBallRuns = runs;
+      pendingBallType = ballType;
+      showWagonWheel(runs);
+      return;
+    }
+    // Dot ball, wide, no-ball — record directly
+    submitBall(runs, ballType, null);
+  }
+
+  function submitBall(runs, ballType, shotDirection) {
     fetch(`/match/${MATCH_ID}/record-ball/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-      body: JSON.stringify({ runs, ball_type: ballType, scoring_batsman_id: scoringBatsmanId })
+      body: JSON.stringify({
+        runs, ball_type: ballType,
+        scoring_batsman_id: scoringBatsmanId,
+        shot_direction: shotDirection,
+      })
     })
     .then(r => r.json())
     .then(handleBallResponse)
@@ -753,6 +958,53 @@
     document.getElementById('striker-card').classList.add('active');
     document.getElementById('nonstriker-card').classList.remove('active');
 
+    // ── Update batsman runs/balls instantly ──
+    const strikerRunsEl  = document.getElementById('striker-runs');
+    const strikerBallsEl = document.getElementById('striker-balls');
+    const nsRunsEl       = document.getElementById('nonstriker-runs');
+    const nsBallsEl      = document.getElementById('nonstriker-balls');
+    if (strikerRunsEl)  strikerRunsEl.textContent  = data.striker_runs !== undefined ? data.striker_runs : strikerRunsEl.textContent;
+    if (strikerBallsEl) strikerBallsEl.textContent = data.striker_balls !== undefined ? data.striker_balls + 'b' : strikerBallsEl.textContent;
+    if (nsRunsEl)       nsRunsEl.textContent        = data.nonstriker_runs !== undefined ? data.nonstriker_runs : nsRunsEl.textContent;
+    if (nsBallsEl)      nsBallsEl.textContent       = data.nonstriker_balls !== undefined ? data.nonstriker_balls + 'b' : nsBallsEl.textContent;
+
+    // ── Update bowler stats instantly in scorecard table ──
+    if (data.bowler_name) {
+      const bowlerRow = document.querySelector(`#bowling-scorecard-body tr[data-bowler-name="${data.bowler_name}"]`);
+      if (bowlerRow) {
+        const o = bowlerRow.querySelector('.bowl-overs');
+        const r = bowlerRow.querySelector('.bowl-runs');
+        const w = bowlerRow.querySelector('.bowl-wickets');
+        if (o) o.textContent = data.bowler_overs;
+        if (r) r.textContent = data.bowler_runs;
+        if (w) w.textContent = data.bowler_wickets;
+      }
+    }
+
+    // ── Update batting scorecard table instantly ──
+    if (data.striker_name) {
+      const strikerRow = document.querySelector(`#batting-scorecard-body tr[data-batsman-name="${data.striker_name}"]`);
+      if (strikerRow) {
+        const r = strikerRow.querySelector('.bat-runs-sc');
+        const b = strikerRow.querySelector('.bat-balls-sc');
+        const sr = strikerRow.querySelector('.bat-sr-sc');
+        if (r) r.textContent = data.striker_runs;
+        if (b) b.textContent = data.striker_balls;
+        if (sr && data.striker_balls > 0) sr.textContent = ((data.striker_runs / data.striker_balls) * 100).toFixed(1);
+      }
+    }
+    if (data.non_striker_name) {
+      const nsRow = document.querySelector(`#batting-scorecard-body tr[data-batsman-name="${data.non_striker_name}"]`);
+      if (nsRow) {
+        const r = nsRow.querySelector('.bat-runs-sc');
+        const b = nsRow.querySelector('.bat-balls-sc');
+        const sr = nsRow.querySelector('.bat-sr-sc');
+        if (r) r.textContent = data.nonstriker_runs;
+        if (b) b.textContent = data.nonstriker_balls;
+        if (sr && data.nonstriker_balls > 0) sr.textContent = ((data.nonstriker_runs / data.nonstriker_balls) * 100).toFixed(1);
+      }
+    }
+
     // Toast
     const isWicket = (data.ball_runs === -1);
     const msg =
@@ -764,8 +1016,10 @@
 
     // After a wicket, show the new batsman picker (unless innings is over)
     if (data.needs_new_batsman) {
+      // Remember if the over also ended on this wicket ball
+      pendingOverComplete = data.over_complete || false;
       setTimeout(() => showModal('newBatsmanModal'), 400);
-      return;
+      return;  // Don't show bowler modal yet — wait until batsman is confirmed
     }
 
     if (data.innings_complete) {
@@ -841,16 +1095,95 @@
       type === 'WIDE' ? '⚪ Wide' : '🔴 No Ball';
     showModal('extraModal');
   }
-  function confirmExtra(runs) { hideModal('extraModal'); recordBall(runs, currentExtraType); }
+  function confirmExtra(runs) { hideModal('extraModal'); submitBall(runs, currentExtraType, null); }
 
-  // ── Wicket ──
+  // ── WICKET — multi-step ──
+  let selectedWicketType    = null;
+  let selectedFielderId     = null;
+  let selectedDismissedWho  = 'striker'; // 'striker' or 'nonstriker' (for run-out)
+  wicketRuns = 0;
+
   function showWicketModal() {
     if (inningsComplete) return;
+    // Reset state
+    selectedWicketType   = null;
+    selectedFielderId    = null;
+    selectedDismissedWho = 'striker';
     wicketRuns = 0;
     document.getElementById('wicket-runs-display').textContent = '0';
     document.querySelectorAll('#wicketModal .modal-run-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.wkt-type-btn').forEach(b => b.classList.remove('selected'));
+    goToStep(1);
     showModal('wicketModal');
   }
+
+  const WICKET_META = {
+    'BOWLED':           { icon:'🎯', label:'Bowled',       fielder: false },
+    'CAUGHT':           { icon:'🤲', label:'Caught',       fielder: true,  fielderLabel:'Who took the catch?' },
+    'LBW':              { icon:'🦵', label:'LBW',          fielder: false },
+    'RUN_OUT':          { icon:'🏃', label:'Run Out',      fielder: true,  fielderLabel:'Who effected the run-out?' },
+    'STUMPED':          { icon:'🧤', label:'Stumped',      fielder: true,  fielderLabel:'Wicket-keeper (stumping)' },
+    'HIT_WICKET':       { icon:'💥', label:'Hit Wicket',   fielder: false },
+    'CAUGHT_AND_BOWLED':{ icon:'🙌', label:'C & B',        fielder: false },
+    'OBSTRUCTING':      { icon:'🚫', label:'Obstruct',     fielder: false },
+    'RETIRED':          { icon:'🚶', label:'Retired',      fielder: false },
+  };
+
+  function selectWicketType(wtype) {
+    selectedWicketType = wtype;
+    const meta = WICKET_META[wtype];
+
+    // Update header display
+    document.getElementById('wkt-type-icon-display').textContent  = meta.icon;
+    document.getElementById('wkt-type-label-display').textContent = meta.label;
+
+    // Highlight selected button
+    document.querySelectorAll('.wkt-type-btn').forEach(b => b.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+
+    // Show/hide fielder section
+    const fieldSec = document.getElementById('fielder-section');
+    const dismSec  = document.getElementById('dismissed-batsman-section');
+
+    if (meta.fielder) {
+      fieldSec.style.display  = 'block';
+      document.getElementById('fielder-label-txt').textContent = meta.fielderLabel;
+    } else {
+      fieldSec.style.display  = 'none';
+    }
+
+    // Run-out: show which batsman is out
+    if (wtype === 'RUN_OUT') {
+      dismSec.style.display = 'block';
+      document.getElementById('runout-striker-name').textContent  =
+        document.getElementById('striker-name').textContent;
+      document.getElementById('runout-ns-name').textContent =
+        document.getElementById('nonstriker-name').textContent;
+      // Default to striker
+      selectDismissedBatsman('striker');
+    } else {
+      dismSec.style.display   = 'none';
+      selectedDismissedWho    = 'striker';
+    }
+
+    goToStep(2);
+  }
+
+  function selectDismissedBatsman(who) {
+    selectedDismissedWho = who;
+    document.getElementById('runout-striker-btn').classList.toggle('selected', who === 'striker');
+    document.getElementById('runout-ns-btn').classList.toggle('selected', who === 'nonstriker');
+  }
+
+  function goToStep(n) {
+    document.querySelectorAll('.wkt-step').forEach((s,i) => {
+      s.classList.toggle('active', i+1 === n);
+    });
+    document.getElementById('wkt-footer').style.display = n === 2 ? 'flex' : 'none';
+    document.getElementById('wkt-footer').style.flexDirection = 'column';
+    document.getElementById('wkt-footer').style.gap = '8px';
+  }
+
   function setWicketRuns(r) {
     wicketRuns = r;
     document.getElementById('wicket-runs-display').textContent = r;
@@ -858,16 +1191,30 @@
       b.classList.toggle('active', parseInt(b.textContent) === r);
     });
   }
+
   function confirmWicket() {
+    if (!selectedWicketType) { showToast('Please select dismissal type!'); return; }
+    selectedFielderId = document.getElementById('fielder-select').value || null;
+
+    // Determine dismissed batsman ID
+    let dismissedId = scoringBatsmanId; // default = striker (who is on strike)
+    if (selectedWicketType === 'RUN_OUT' && selectedDismissedWho === 'nonstriker') {
+      dismissedId = currentNonStrikerId;
+    }
+
     hideModal('wicketModal');
-    if (!scoringBatsmanId) { showToast('Select the batsman who got out!'); return; }
+
     fetch(`/match/${MATCH_ID}/record-ball/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
       body: JSON.stringify({
-        runs: wicketRuns, ball_type: 'NORMAL',
+        runs: wicketRuns,
+        ball_type: 'NORMAL',
         scoring_batsman_id: scoringBatsmanId,
-        is_wicket: true, wicket_type: 'BOWLED',
+        is_wicket: true,
+        wicket_type: selectedWicketType,
+        fielder_id: selectedFielderId,
+        dismissed_batsman_id: dismissedId,
       })
     })
     .then(r => r.json())
@@ -879,6 +1226,101 @@
     .catch(() => showToast('Network error — please try again.'));
   }
 
+  // ── WAGON WHEEL ──
+  let selectedWagonDir = null;
+
+  function showWagonWheel(runs) {
+    selectedWagonDir = null;
+    document.getElementById('wagon-runs-val').textContent = runs;
+    document.getElementById('wagon-dir-name').textContent = 'Select a zone';
+    document.querySelectorAll('.wagon-sector').forEach(s => s.classList.remove('selected'));
+    document.querySelector('.wagon-overlay').classList.add('show');
+  }
+
+  function selectWagonDir(dir, label) {
+    selectedWagonDir = dir;
+    document.getElementById('wagon-dir-name').textContent = label;
+    document.querySelectorAll('.wagon-sector').forEach(s => {
+      s.classList.toggle('selected', s.dataset.dir === dir);
+    });
+    // Auto-submit after short delay
+    setTimeout(() => submitWithDirection(dir), 300);
+  }
+
+  function submitWithDirection(dir) {
+    document.querySelector('.wagon-overlay').classList.remove('show');
+    submitBall(pendingBallRuns, pendingBallType, dir);
+  }
+
+  // ── UNDO LAST BALL ──
+  function undoBall() {
+    if (inningsComplete) { showToast('Cannot undo — innings complete.'); return; }
+
+    fetch(`/match/${MATCH_ID}/undo-ball/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({})
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { showToast('⚠ ' + data.error); return; }
+
+      // Update scoreboard
+      document.getElementById('score-display').innerHTML =
+        `${data.total_runs}<span>/${data.total_wickets}</span>`;
+      document.getElementById('overs-display').textContent = data.overs;
+      document.getElementById('over-info').textContent =
+        `Over ${data.over_number} of ${MAX_OVERS}`;
+
+      // Rebuild this-over ball badges
+      const row = document.getElementById('balls-row');
+      row.innerHTML = '';
+      if (data.over_balls && data.over_balls.length > 0) {
+        data.over_balls.forEach(b => {
+          const div = document.createElement('div');
+          div.className = 'ball-badge ' + b.css;
+          div.textContent = b.type;
+          row.appendChild(div);
+        });
+      }
+      // Refill empty dots
+      const needed = 6 - data.legal_ball_count;
+      for (let i = 0; i < needed; i++) {
+        const e = document.createElement('div');
+        e.className = 'ball-badge ball-dot ball-empty';
+        e.textContent = '·';
+        row.appendChild(e);
+      }
+      legalBallCount = data.legal_ball_count;
+
+      // Update batsmen names & scores
+      currentStrikerId    = data.striker_id;
+      currentNonStrikerId = data.non_striker_id;
+      scoringBatsmanId    = currentStrikerId;
+      if (data.striker_name)     document.getElementById('striker-name').textContent    = data.striker_name;
+      if (data.non_striker_name) document.getElementById('nonstriker-name').textContent = data.non_striker_name;
+
+      const srEl = document.getElementById('striker-runs');
+      const sbEl = document.getElementById('striker-balls');
+      const nrEl = document.getElementById('nonstriker-runs');
+      const nbEl = document.getElementById('nonstriker-balls');
+      if (srEl) srEl.textContent = data.striker_runs;
+      if (sbEl) sbEl.textContent = data.striker_balls + 'b';
+      if (nrEl) nrEl.textContent = data.nonstriker_runs;
+      if (nbEl) nbEl.textContent = data.nonstriker_balls + 'b';
+
+      // Show change-bowler button if over was re-opened at ball 0
+      const cbBtn = document.getElementById('change-bowler-btn');
+      if (cbBtn) cbBtn.style.display = data.legal_ball_count === 0 ? 'inline-block' : 'none';
+
+      showToast('↩ Ball undone!');
+    })
+    .catch(() => showToast('Network error.'));
+  }
+
+  // Track who bowled last over so we can block them in the dropdown
+  let lastOverBowlerName = '';
+
   // ── Change Bowler (manual trigger) ──
   function openChangeBowler() {
     if (inningsComplete) return;
@@ -889,8 +1331,16 @@
 
   // ── Confirm bowler selection (next over or mid-over change) ──
   function startNextOver() {
-    const bowlerId = document.getElementById('next-bowler-select').value;
+    const sel = document.getElementById('next-bowler-select');
+    const bowlerId = sel.value;
     if (!bowlerId) { showToast('Please select a bowler'); return; }
+
+    // Client-side guard: block same bowler back-to-back
+    const selectedName = sel.options[sel.selectedIndex]?.text || '';
+    if (lastOverBowlerName && selectedName.includes(lastOverBowlerName.split(' ')[0])) {
+      // Let server decide — don't block here, server will respond with error
+    }
+
     fetch(`/match/${MATCH_ID}/next-over/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
@@ -898,7 +1348,26 @@
     })
     .then(r => r.json())
     .then(data => {
-      if (data.error) { showToast(data.error); return; }
+      if (data.error) {
+        // Show error inside modal, not as fleeting toast
+        showToast('⚠ ' + data.error);
+        return;
+      }
+      // Mark this bowler as "last over bowler" and disable in dropdown
+      lastOverBowlerName = data.bowler;
+      // Disable the just-selected option and enable all others
+      Array.from(sel.options).forEach(opt => {
+        if (opt.value === bowlerId) {
+          opt.disabled = true;
+          opt.text = data.bowler + ' (prev over)';
+        } else {
+          opt.disabled = false;
+          // Remove "(prev over)" label from previously disabled option
+          opt.text = opt.text.replace(' (prev over)', '');
+        }
+      });
+      sel.value = '';
+
       hideModal('nextOverModal');
       document.getElementById('over-info').textContent =
         `Over ${data.over_number} of ${MAX_OVERS} · 🎳 ${data.bowler}`;
@@ -930,12 +1399,74 @@
       document.getElementById('striker-card').classList.add('active');
       document.getElementById('nonstriker-card').classList.remove('active');
 
+      // Refresh available_batsmen dropdown from server response (authoritative list)
       const sel = document.getElementById('new-batsman-select');
-      const opt = sel.querySelector(`option[value="${batsmanId}"]`);
-      if (opt) opt.remove();
+      sel.innerHTML = '<option value="">— Select Batsman —</option>';
+      if (data.available_batsmen && data.available_batsmen.length > 0) {
+        data.available_batsmen.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = p.name;
+          sel.appendChild(opt);
+        });
+      }
       sel.value = '';
 
       showToast(`${data.new_striker_name} is in!`);
+
+      // If innings is done (all out), handle that
+      if (data.innings_complete) {
+        inningsComplete = true;
+        const banner = document.getElementById('innings-complete-banner');
+        if (banner) banner.classList.remove('d-none');
+        document.getElementById('record-ball-card').style.display = 'none';
+        const cb = document.getElementById('change-bowler-btn');
+        if (cb) cb.style.display = 'none';
+        const wrap = document.getElementById('second-innings-btn-wrap');
+        if (wrap) {
+          if (INNINGS_NUM === 1) {
+            wrap.innerHTML = `<a href="/match/${MATCH_ID}/start-second-innings/" class="btn-start-2nd" style="margin-top:10px;display:inline-block;">▶ Start 2nd Innings</a>`;
+          } else {
+            wrap.innerHTML = `<div style="margin-top:10px;color:var(--accent);font-weight:700;font-size:15px;">🏆 Match Complete!</div><a href="/match/${MATCH_ID}/result/" class="btn-view-result" style="margin-top:10px;display:inline-block;">🏆 View Result</a>`;
+          }
+        }
+        return;
+      }
+
+      // KEY FIX: If the wicket was on the last ball of an over, NOW show the bowler modal
+      if (pendingOverComplete) {
+        pendingOverComplete = false;
+        // Rotate strike for end of over (non-striker faces next over)
+        const tmpS = currentStrikerId;
+        currentStrikerId    = currentNonStrikerId;
+        currentNonStrikerId = tmpS;
+        scoringBatsmanId    = currentStrikerId;
+        // Swap name display
+        const sName  = document.getElementById('striker-name').textContent;
+        const nsName = document.getElementById('nonstriker-name').textContent;
+        // The new batsman came in at striker end — but end of over means they swap
+        // Actually: new batsman is the one coming in at the wicket end
+        // The non-striker walks to the other end — so non-striker becomes striker for next over
+        // We already set striker to new batsman above, but for end-of-over the NON-STRIKER faces
+        // Re-swap: non_striker should face next over
+        const tmpId2 = currentStrikerId;
+        currentStrikerId = currentNonStrikerId;
+        currentNonStrikerId = tmpId2;
+        scoringBatsmanId = currentStrikerId;
+        const ns = document.getElementById('nonstriker-name').textContent;
+        document.getElementById('striker-name').textContent = ns;
+        document.getElementById('nonstriker-name').textContent = data.new_striker_name;
+        document.getElementById('striker-card').classList.add('active');
+        document.getElementById('nonstriker-card').classList.remove('active');
+
+        // Clear over balls display
+        const row = document.getElementById('balls-row');
+        row.innerHTML = '';
+        addEmptyDots(row, 6);
+        legalBallCount = 0;
+        document.getElementById('next-over-modal-title').textContent = 'Over Complete — Select Bowler';
+        setTimeout(() => showModal('nextOverModal'), 300);
+      }
     })
     .catch(() => showToast('Network error — please try again.'));
   }

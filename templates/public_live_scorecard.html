@@ -1,0 +1,681 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+  :root{--bg:#0a0f1e;--surface:#111827;--surface2:#1a2235;--border:#1e2d45;--accent:#f59e0b;--danger:#ef4444;--success:#10b981;--info:#3b82f6;--text:#e2e8f0;--muted:#64748b;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  .ls-wrap{max-width:700px;margin:0 auto;padding:16px 12px 60px;}
+
+  /* HERO */
+  .hero-board{background:linear-gradient(135deg,#0f2044,#0a1628);border:1px solid #1e3a5f;border-radius:18px;padding:20px 20px 16px;margin-bottom:14px;position:relative;overflow:hidden;}
+  .hero-board::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(245,158,11,0.08),transparent 70%);border-radius:50%;pointer-events:none;}
+  .hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;}
+  .hero-tournament{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:20px;padding:2px 10px;display:inline-block;margin-bottom:6px;}
+  .hero-teams{font-size:18px;font-weight:700;color:#fff;}
+  .hero-venue{font-size:12px;color:var(--muted);margin-top:3px;}
+  .live-pill{background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.35);color:var(--success);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;animation:livepulse 2s infinite;white-space:nowrap;flex-shrink:0;}
+  .completed-pill{background:rgba(100,116,139,0.15);border:1px solid rgba(100,116,139,0.3);color:var(--muted);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+  @keyframes livepulse{0%,100%{opacity:1}50%{opacity:0.6}}
+
+  /* INNINGS SCORE BLOCKS */
+  .innings-scores{display:flex;gap:10px;margin-bottom:14px;}
+  .inn-score-block{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;padding:14px 16px;position:relative;}
+  .inn-score-block.active-inn{border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.05);}
+  .inn-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;}
+  .inn-team{font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px;}
+  .inn-big-score{font-family:'Rajdhani',sans-serif;font-size:42px;font-weight:700;color:#fff;line-height:1;letter-spacing:-1px;}
+  .inn-big-score span{color:var(--accent);}
+  .inn-overs{font-size:12px;color:var(--muted);margin-top:4px;}
+  .inn-extras{font-size:11px;color:var(--muted);margin-top:2px;}
+  .inn-batting-tag{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;color:var(--success);background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);border-radius:20px;padding:2px 8px;}
+
+  /* TARGET / RESULT */
+  .target-banner{background:linear-gradient(90deg,rgba(59,130,246,0.12),rgba(59,130,246,0.06));border:1px solid rgba(59,130,246,0.25);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .target-main{font-size:14px;font-weight:600;color:#93c5fd;}
+  .target-sub{font-size:13px;color:var(--muted);}
+  .result-banner{background:linear-gradient(90deg,rgba(245,158,11,0.12),rgba(245,158,11,0.06));border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px 18px;margin-bottom:14px;text-align:center;}
+  .result-text{font-size:16px;font-weight:700;color:var(--accent);}
+
+  /* CURRENT OVER */
+  .over-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;}
+  .over-card-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px;}
+  .over-info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;}
+  .over-num{font-size:14px;font-weight:600;color:#fff;}
+  .bowler-tag{font-size:12px;color:var(--muted);}
+  .bowler-tag b{color:#93c5fd;}
+  .balls-row{display:flex;gap:7px;flex-wrap:wrap;}
+  .ball-badge{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
+  .ball-0{background:#1a2235;color:var(--muted);border:2px solid #2a3548;}
+  .ball-1,.ball-2,.ball-3{background:#134e2e;color:#34d399;border:2px solid #166534;}
+  .ball-4{background:#1e3a5f;color:#60a5fa;border:2px solid #2563eb;}
+  .ball-6{background:#3b1f6e;color:#c084fc;border:2px solid #7c3aed;}
+  .ball-W{background:#4a1900;color:#fb923c;border:2px solid #b45309;}
+  .ball-Wd,.ball-Nb{background:#2d1f00;color:var(--accent);border:2px solid rgba(245,158,11,0.4);font-size:10px;}
+
+  /* LIVE BATSMEN CARDS */
+  .batsmen-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .batsman-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 14px 12px;}
+  .batsman-card.on-strike{border-color:rgba(245,158,11,0.5);background:rgba(245,158,11,0.05);}
+  .bat-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .bat-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(245,158,11,0.4);}
+  .bat-avatar-init{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#78350f,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0;}
+  .bat-name{font-size:13px;font-weight:600;color:#fff;line-height:1.2;}
+  .strike-tag{font-size:10px;color:var(--accent);font-weight:700;}
+  .bat-stats{display:flex;gap:14px;}
+  .bat-stat{text-align:center;}
+  .bat-stat-val{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1;}
+  .bat-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+  .bat-sr-line{font-size:11px;color:var(--muted);margin-top:6px;}
+  .bat-sr-line b{color:#94a3b8;}
+
+  /* CRICBUZZ-STYLE INNINGS TABS */
+  .inn-tabs-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:0;}
+  .inn-tabs{display:flex;border-bottom:2px solid var(--border);}
+  .inn-tab{flex:1;padding:14px 10px;text-align:center;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s;user-select:none;}
+  .inn-tab.active{color:#fff;border-bottom-color:var(--accent);background:rgba(245,158,11,0.03);}
+  .inn-tab:hover:not(.active){color:#cbd5e1;}
+  .inn-tab-score{font-size:12px;display:block;margin-top:3px;color:var(--muted);}
+  .inn-tab.active .inn-tab-score{color:var(--accent);}
+  .inn-tab-panel{display:none;}
+  .inn-tab-panel.active{display:block;}
+
+  /* SCORECARD TABLES */
+  .sc-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:12px 14px 6px;background:rgba(255,255,255,0.015);border-bottom:1px solid var(--border);}
+  .sc-table{width:100%;border-collapse:collapse;}
+  .sc-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);padding:7px 12px;text-align:left;background:rgba(255,255,255,0.01);}
+  .sc-table th.r,.sc-table td.r{text-align:right;}
+  .sc-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid rgba(30,45,69,0.5);}
+  .sc-table tr:last-child td{border-bottom:none;}
+  .sc-table tr.not-out-row td{background:rgba(16,185,129,0.03);}
+  .player-cell{display:flex;align-items:center;gap:8px;}
+  .sc-av{width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+  .sc-av-init{width:26px;height:26px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#1e3a8a,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+  .sc-av-init.amber{background:linear-gradient(135deg,#78350f,#f59e0b);color:#000;}
+  .batting-name{font-weight:500;color:#e2e8f0;}
+  .dismissal-txt{font-size:11px;color:var(--muted);display:block;margin-top:1px;}
+  .not-out-txt{font-size:11px;color:var(--success);display:block;margin-top:1px;font-weight:600;}
+  .runs-bold{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;}
+  .wkts-bold{color:var(--danger);font-weight:700;}
+  .economy-txt{color:var(--muted);}
+  .total-row td{font-weight:700;color:#fff;border-top:2px solid var(--border)!important;background:rgba(255,255,255,0.025);}
+
+  /* YET TO BAT */
+  .ytb-section{padding:10px 14px 14px;}
+  .ytb-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .ytb-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .ytb-chip{font-size:12px;color:#94a3b8;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;padding:4px 12px;}
+
+  /* DIVIDER */
+  .sc-divider{height:1px;background:var(--border);margin:0;}
+
+  /* REFRESH BAR */
+  .refresh-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-bottom:12px;padding:8px 14px;background:var(--surface);border-radius:10px;border:1px solid var(--border);}
+  .refresh-dot{width:7px;height:7px;border-radius:50%;background:var(--success);animation:livepulse 2s infinite;flex-shrink:0;}
+  .last-updated{margin-left:auto;}
+
+  @media(max-width:500px){
+    .innings-scores{flex-direction:column;}
+    .batsmen-row{grid-template-columns:1fr;}
+    .inn-big-score{font-size:34px;}
+    .inn-tab{font-size:12px;padding:10px 6px;}
+  }
+</style>
+
+<div class="ls-wrap">
+
+{% if current_innings %}
+<div class="refresh-bar">
+  <div class="refresh-dot"></div>
+  <span>Live &middot; Auto-updating every 5s</span>
+  <span class="last-updated" id="last-updated">&mdash;</span>
+</div>
+{% endif %}
+
+<!-- HERO SCOREBOARD -->
+<div class="hero-board">
+  <div class="hero-top">
+    <div>
+      <div class="hero-tournament">{{ match.tournament.tournament_name }}</div>
+      <div class="hero-teams">{{ match.team1 }} vs {{ match.team2 }}</div>
+      <div class="hero-venue">{{ match.venue }} &middot; {{ match.match_date }}</div>
+    </div>
+    {% if current_innings %}
+      <div class="live-pill">&#9679; LIVE</div>
+    {% elif result %}
+      <div class="completed-pill">COMPLETED</div>
+    {% else %}
+      <div class="completed-pill">UPCOMING</div>
+    {% endif %}
+  </div>
+
+  <div class="innings-scores">
+    {% if inn1 %}
+    <div class="inn-score-block {% if current_innings and current_innings.innings_number == 1 %}active-inn{% endif %}">
+      <div class="inn-label">1st Innings</div>
+      <div class="inn-team">{{ inn1.batting_team }}</div>
+      <div class="inn-big-score" id="inn1-score">{{ inn1.total_runs }}<span>/{{ inn1.total_wickets }}</span></div>
+      <div class="inn-overs" id="inn1-overs">{{ inn1.overs_completed }} overs</div>
+      <div class="inn-extras" id="inn1-extras">Extras: {{ inn1.extras }}</div>
+      {% if current_innings and current_innings.innings_number == 1 %}<div class="inn-batting-tag">Batting</div>{% endif %}
+    </div>
+    {% endif %}
+    {% if inn2 %}
+    <div class="inn-score-block {% if current_innings and current_innings.innings_number == 2 %}active-inn{% endif %}">
+      <div class="inn-label">2nd Innings</div>
+      <div class="inn-team">{{ inn2.batting_team }}</div>
+      <div class="inn-big-score" id="inn2-score">{{ inn2.total_runs }}<span>/{{ inn2.total_wickets }}</span></div>
+      <div class="inn-overs" id="inn2-overs">{{ inn2.overs_completed }} overs</div>
+      <div class="inn-extras" id="inn2-extras">Extras: {{ inn2.extras }}</div>
+      {% if current_innings and current_innings.innings_number == 2 %}<div class="inn-batting-tag">Batting</div>{% endif %}
+    </div>
+    {% elif inn1 %}
+    <div class="inn-score-block" style="display:flex;align-items:center;justify-content:center;">
+      <div style="text-align:center;color:var(--muted);">
+        <div style="font-size:22px;margin-bottom:6px;">&#127955;</div>
+        <div style="font-size:12px;">2nd Innings<br>Not started</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- TARGET BANNER -->
+{% if target and current_innings and current_innings.innings_number == 2 and not result %}
+<div class="target-banner">
+  <div>
+    <div class="target-main">&#127919; {{ inn2.batting_team }} needs <strong id="runs-needed">{{ target }}</strong> runs</div>
+    <div class="target-sub">from <span id="balls-left">&mdash;</span> &middot; Req RR: <span id="req-rr">&mdash;</span></div>
+  </div>
+</div>
+{% endif %}
+
+<!-- RESULT BANNER -->
+{% if result %}
+<div class="result-banner">
+  <div style="font-size:28px;margin-bottom:6px;">&#127942;</div>
+  <div class="result-text">{{ result }}</div>
+</div>
+{% endif %}
+
+<!-- CURRENT OVER CARD -->
+{% if current_innings and current_over %}
+<div class="over-card">
+  <div class="over-card-title">Current Over</div>
+  <div class="over-info-row">
+    <div class="over-num" id="over-num">Over {{ current_over.over_number }} of {{ match.tournament.number_of_overs }}</div>
+    <div class="bowler-tag">&#127955; <b id="bowler-name">{{ current_over.bowler }}</b></div>
+  </div>
+  <div class="balls-row" id="balls-row">
+    {% for ball in current_over_balls %}
+      {% if ball.is_wicket %}<div class="ball-badge ball-W">W</div>
+      {% elif ball.ball_type == 'WIDE' %}<div class="ball-badge ball-Wd">Wd</div>
+      {% elif ball.ball_type == 'NO_BALL' %}<div class="ball-badge ball-Nb">Nb</div>
+      {% elif ball.runs_off_bat == 4 %}<div class="ball-badge ball-4">4</div>
+      {% elif ball.runs_off_bat == 6 %}<div class="ball-badge ball-6">6</div>
+      {% elif ball.runs_off_bat == 0 %}<div class="ball-badge ball-0">&bull;</div>
+      {% else %}<div class="ball-badge ball-{{ ball.runs_off_bat }}">{{ ball.runs_off_bat }}</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- LIVE BATSMEN CARDS (only shown during live innings) -->
+{% if current_innings %}
+<div class="batsmen-row" id="batsmen-row">
+  {% for b in batting_sc1 %}{% if b.status == 'NOT_OUT' %}
+  <div class="batsman-card on-strike">
+    <div class="bat-header">
+      {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="bat-avatar">
+      {% else %}<div class="bat-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+      <div><div class="bat-name">{{ b.batsman.player_name }}</div><div class="strike-tag">&#127955; Batting</div></div>
+    </div>
+    <div class="bat-stats">
+      <div class="bat-stat"><div class="bat-stat-val">{{ b.runs }}</div><div class="bat-stat-lbl">Runs</div></div>
+      <div class="bat-stat"><div class="bat-stat-val">{{ b.balls_faced }}</div><div class="bat-stat-lbl">Balls</div></div>
+      <div class="bat-stat"><div class="bat-stat-val" style="color:#60a5fa;">{{ b.fours }}</div><div class="bat-stat-lbl">4s</div></div>
+      <div class="bat-stat"><div class="bat-stat-val" style="color:#c084fc;">{{ b.sixes }}</div><div class="bat-stat-lbl">6s</div></div>
+    </div>
+    <div class="bat-sr-line">SR: <b>{{ b.strike_rate }}</b></div>
+  </div>
+  {% endif %}{% endfor %}
+  {% for b in batting_sc2 %}{% if b.status == 'NOT_OUT' %}
+  <div class="batsman-card on-strike">
+    <div class="bat-header">
+      {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="bat-avatar">
+      {% else %}<div class="bat-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+      <div><div class="bat-name">{{ b.batsman.player_name }}</div><div class="strike-tag">&#127955; Batting</div></div>
+    </div>
+    <div class="bat-stats">
+      <div class="bat-stat"><div class="bat-stat-val">{{ b.runs }}</div><div class="bat-stat-lbl">Runs</div></div>
+      <div class="bat-stat"><div class="bat-stat-val">{{ b.balls_faced }}</div><div class="bat-stat-lbl">Balls</div></div>
+      <div class="bat-stat"><div class="bat-stat-val" style="color:#60a5fa;">{{ b.fours }}</div><div class="bat-stat-lbl">4s</div></div>
+      <div class="bat-stat"><div class="bat-stat-val" style="color:#c084fc;">{{ b.sixes }}</div><div class="bat-stat-lbl">6s</div></div>
+    </div>
+    <div class="bat-sr-line">SR: <b>{{ b.strike_rate }}</b></div>
+  </div>
+  {% endif %}{% endfor %}
+</div>
+{% endif %}
+
+<!-- CRICBUZZ-STYLE INNINGS TABS -->
+<div class="inn-tabs-wrap">
+  <div class="inn-tabs">
+    {% if inn1 %}
+    <div class="inn-tab active" id="tab-btn-inn1" onclick="switchInnTab('inn1')">
+      {{ inn1.batting_team }}
+      <span class="inn-tab-score" id="tab-score-inn1">{{ inn1.total_runs }}/{{ inn1.total_wickets }}</span>
+    </div>
+    {% endif %}
+    {% if inn2 %}
+    <div class="inn-tab" id="tab-btn-inn2" onclick="switchInnTab('inn2')">
+      {{ inn2.batting_team }}
+      <span class="inn-tab-score" id="tab-score-inn2">{{ inn2.total_runs }}/{{ inn2.total_wickets }}</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- INN1 PANEL -->
+  {% if inn1 %}
+  <div class="inn-tab-panel active" id="panel-inn1">
+
+    <div class="sc-section-label">Batting</div>
+    <table class="sc-table">
+      <thead><tr>
+        <th>Batsman</th><th></th>
+        <th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">S/R</th>
+      </tr></thead>
+      <!-- NOT OUT rows appear FIRST (top) -->
+      <tbody id="bat-body-inn1-notout">
+        {% for b in batting_sc1 %}{% if b.status == 'NOT_OUT' %}
+        <tr class="not-out-row" data-batsman="{{ b.batsman.player_name }}" data-status="NOT_OUT">
+          <td><div class="player-cell">
+            {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av">
+            {% else %}<div class="sc-av-init amber">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+            <div><span class="batting-name">{{ b.batsman.player_name }}</span><span class="not-out-txt">not out</span></div>
+          </div></td>
+          <td></td>
+          <td class="r"><span class="runs-bold bat-r">{{ b.runs }}</span></td>
+          <td class="r"><span class="bat-b">{{ b.balls_faced }}</span></td>
+          <td class="r bat-4s">{{ b.fours }}</td>
+          <td class="r bat-6s">{{ b.sixes }}</td>
+          <td class="r"><span class="bat-sr-val">{{ b.strike_rate }}</span></td>
+        </tr>
+        {% endif %}{% endfor %}
+      </tbody>
+      <!-- OUT rows appear BELOW -->
+      <tbody id="bat-body-inn1-out">
+        {% for b in batting_sc1 %}{% if b.status != 'NOT_OUT' %}
+        <tr data-batsman="{{ b.batsman.player_name }}" data-status="{{ b.status }}">
+          <td><div class="player-cell">
+            {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av">
+            {% else %}<div class="sc-av-init amber">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+            <span class="batting-name">{{ b.batsman.player_name }}</span>
+          </div></td>
+          <td><span class="dismissal-txt">{% if b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.get_status_display }}{% endif %}</span></td>
+          <td class="r"><span class="runs-bold bat-r">{{ b.runs }}</span></td>
+          <td class="r"><span class="bat-b">{{ b.balls_faced }}</span></td>
+          <td class="r bat-4s">{{ b.fours }}</td>
+          <td class="r bat-6s">{{ b.sixes }}</td>
+          <td class="r"><span class="bat-sr-val">{{ b.strike_rate }}</span></td>
+        </tr>
+        {% endif %}{% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="2">Total</td>
+          <td class="r" id="inn1-total-r">{{ inn1.total_runs }}</td>
+          <td class="r" colspan="3">{{ inn1.overs_completed }} ov &middot; Extras: {{ inn1.extras }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    {% if yet_to_bat1 %}
+    <div class="sc-divider"></div>
+    <div class="ytb-section">
+      <div class="ytb-title">Yet to Bat</div>
+      <div class="ytb-chips">
+        {% for p in yet_to_bat1 %}<span class="ytb-chip">{{ p.player_name }}</span>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="sc-divider"></div>
+    <div class="sc-section-label">Bowling</div>
+    <table class="sc-table">
+      <thead><tr>
+        <th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Eco</th><th class="r">Wd</th><th class="r">Nb</th>
+      </tr></thead>
+      <tbody id="bowl-body-inn1">
+        {% for b in bowling_sc1 %}
+        <tr data-bowler="{{ b.bowler.player_name }}">
+          <td><div class="player-cell">
+            {% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av">
+            {% else %}<div class="sc-av-init">{{ b.bowler.player_name|first|upper }}</div>{% endif %}
+            <span>{{ b.bowler.player_name }}</span>
+          </div></td>
+          <td class="r bowl-o">{{ b.overs_bowled }}</td>
+          <td class="r bowl-r">{{ b.runs_given }}</td>
+          <td class="r bowl-w"><span class="wkts-bold">{{ b.wickets }}</span></td>
+          <td class="r bowl-eco"><span class="economy-txt">{{ b.economy }}</span></td>
+          <td class="r bowl-wd">{{ b.wides }}</td>
+          <td class="r bowl-nb">{{ b.no_balls }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- INN2 PANEL -->
+  {% if inn2 %}
+  <div class="inn-tab-panel" id="panel-inn2">
+
+    <div class="sc-section-label">Batting</div>
+    <table class="sc-table">
+      <thead><tr>
+        <th>Batsman</th><th></th>
+        <th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">S/R</th>
+      </tr></thead>
+      <tbody id="bat-body-inn2-notout">
+        {% for b in batting_sc2 %}{% if b.status == 'NOT_OUT' %}
+        <tr class="not-out-row" data-batsman="{{ b.batsman.player_name }}" data-status="NOT_OUT">
+          <td><div class="player-cell">
+            {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av">
+            {% else %}<div class="sc-av-init amber">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+            <div><span class="batting-name">{{ b.batsman.player_name }}</span><span class="not-out-txt">not out</span></div>
+          </div></td>
+          <td></td>
+          <td class="r"><span class="runs-bold bat-r">{{ b.runs }}</span></td>
+          <td class="r"><span class="bat-b">{{ b.balls_faced }}</span></td>
+          <td class="r bat-4s">{{ b.fours }}</td>
+          <td class="r bat-6s">{{ b.sixes }}</td>
+          <td class="r"><span class="bat-sr-val">{{ b.strike_rate }}</span></td>
+        </tr>
+        {% endif %}{% endfor %}
+      </tbody>
+      <tbody id="bat-body-inn2-out">
+        {% for b in batting_sc2 %}{% if b.status != 'NOT_OUT' %}
+        <tr data-batsman="{{ b.batsman.player_name }}" data-status="{{ b.status }}">
+          <td><div class="player-cell">
+            {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av">
+            {% else %}<div class="sc-av-init amber">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+            <span class="batting-name">{{ b.batsman.player_name }}</span>
+          </div></td>
+          <td><span class="dismissal-txt">{% if b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.get_status_display }}{% endif %}</span></td>
+          <td class="r"><span class="runs-bold bat-r">{{ b.runs }}</span></td>
+          <td class="r"><span class="bat-b">{{ b.balls_faced }}</span></td>
+          <td class="r bat-4s">{{ b.fours }}</td>
+          <td class="r bat-6s">{{ b.sixes }}</td>
+          <td class="r"><span class="bat-sr-val">{{ b.strike_rate }}</span></td>
+        </tr>
+        {% endif %}{% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="2">Total</td>
+          <td class="r" id="inn2-total-r">{{ inn2.total_runs }}</td>
+          <td class="r" colspan="3">{{ inn2.overs_completed }} ov &middot; Extras: {{ inn2.extras }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    {% if yet_to_bat2 %}
+    <div class="sc-divider"></div>
+    <div class="ytb-section">
+      <div class="ytb-title">Yet to Bat</div>
+      <div class="ytb-chips">
+        {% for p in yet_to_bat2 %}<span class="ytb-chip">{{ p.player_name }}</span>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="sc-divider"></div>
+    <div class="sc-section-label">Bowling</div>
+    <table class="sc-table">
+      <thead><tr>
+        <th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Eco</th><th class="r">Wd</th><th class="r">Nb</th>
+      </tr></thead>
+      <tbody id="bowl-body-inn2">
+        {% for b in bowling_sc2 %}
+        <tr data-bowler="{{ b.bowler.player_name }}">
+          <td><div class="player-cell">
+            {% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av">
+            {% else %}<div class="sc-av-init">{{ b.bowler.player_name|first|upper }}</div>{% endif %}
+            <span>{{ b.bowler.player_name }}</span>
+          </div></td>
+          <td class="r bowl-o">{{ b.overs_bowled }}</td>
+          <td class="r bowl-r">{{ b.runs_given }}</td>
+          <td class="r bowl-w"><span class="wkts-bold">{{ b.wickets }}</span></td>
+          <td class="r bowl-eco"><span class="economy-txt">{{ b.economy }}</span></td>
+          <td class="r bowl-wd">{{ b.wides }}</td>
+          <td class="r bowl-nb">{{ b.no_balls }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div><!-- /inn-tabs-wrap -->
+</div><!-- /ls-wrap -->
+
+<script>
+const MATCH_ID = {{ match.id }};
+const IS_LIVE  = {{ current_innings|yesno:"true,false" }};
+const MAX_OVERS = {{ match.tournament.number_of_overs }};
+
+// Auto-switch to active innings tab on load
+{% if current_innings and current_innings.innings_number == 2 %}
+document.addEventListener('DOMContentLoaded', () => switchInnTab('inn2'));
+{% endif %}
+
+function switchInnTab(inn) {
+  ['inn1', 'inn2'].forEach(i => {
+    const panel = document.getElementById('panel-' + i);
+    const btn   = document.getElementById('tab-btn-' + i);
+    if (panel) panel.classList.toggle('active', i === inn);
+    if (btn)   btn.classList.toggle('active',   i === inn);
+  });
+}
+
+function ballHTML(v) {
+  let c = 'ball-0', t = v;
+  if      (v === 'W')  { c = 'ball-W';  t = 'W'; }
+  else if (v === 'Wd') { c = 'ball-Wd'; t = 'Wd'; }
+  else if (v === 'Nb') { c = 'ball-Nb'; t = 'Nb'; }
+  else if (v === '4')  { c = 'ball-4'; }
+  else if (v === '6')  { c = 'ball-6'; }
+  else if (v === '0')  { t = '&bull;'; }
+  return '<div class="ball-badge ' + c + '">' + t + '</div>';
+}
+
+// Render batting: NOT OUT rows stay on top, OUT rows go to bottom tbody
+function renderBatting(innId, arr) {
+  const notOutBody = document.getElementById('bat-body-' + innId + '-notout');
+  const outBody    = document.getElementById('bat-body-' + innId + '-out');
+  if (!notOutBody || !outBody) return;
+
+  arr.forEach(b => {
+    const isNotOut = b.status === 'NOT_OUT';
+    // Find row in either tbody
+    let row = notOutBody.querySelector('tr[data-batsman="' + b.name + '"]')
+           || outBody.querySelector('tr[data-batsman="' + b.name + '"]');
+
+    if (row) {
+      // Update stats
+      const rEl  = row.querySelector('.bat-r');
+      const bEl  = row.querySelector('.bat-b');
+      const srEl = row.querySelector('.bat-sr-val');
+      const f4   = row.querySelector('.bat-4s');
+      const f6   = row.querySelector('.bat-6s');
+      if (rEl)  rEl.textContent  = b.runs;
+      if (bEl)  bEl.textContent  = b.balls;
+      if (srEl) srEl.textContent = b.sr;
+      if (f4)   f4.textContent   = b.fours;
+      if (f6)   f6.textContent   = b.sixes;
+
+      // If player was not-out but now got out — move row down to out tbody
+      if (!isNotOut && row.parentElement === notOutBody) {
+        notOutBody.removeChild(row);
+        row.classList.remove('not-out-row');
+        row.setAttribute('data-status', 'OUT');
+        // Remove "not out" green text
+        const notOutSpan = row.querySelector('.not-out-txt');
+        if (notOutSpan) notOutSpan.remove();
+        // Add dismissal text in 2nd column
+        const td2 = row.querySelectorAll('td')[1];
+        if (td2) td2.innerHTML = '<span class="dismissal-txt">' + (b.dismissal || 'out') + '</span>';
+        outBody.appendChild(row);
+      }
+    } else {
+      // New row — create it
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-batsman', b.name);
+      tr.setAttribute('data-status', b.status);
+      if (isNotOut) tr.classList.add('not-out-row');
+
+      tr.innerHTML =
+        '<td><div class="player-cell">' +
+          '<div class="sc-av-init amber">' + b.name[0].toUpperCase() + '</div>' +
+          '<div>' +
+            '<span class="batting-name">' + b.name + '</span>' +
+            (isNotOut ? '<span class="not-out-txt">not out</span>' : '') +
+          '</div>' +
+        '</div></td>' +
+        '<td>' + (isNotOut ? '' : '<span class="dismissal-txt">' + (b.dismissal || 'out') + '</span>') + '</td>' +
+        '<td class="r"><span class="runs-bold bat-r">' + b.runs + '</span></td>' +
+        '<td class="r"><span class="bat-b">' + b.balls + '</span></td>' +
+        '<td class="r bat-4s">' + b.fours + '</td>' +
+        '<td class="r bat-6s">' + b.sixes + '</td>' +
+        '<td class="r"><span class="bat-sr-val">' + b.sr + '</span></td>';
+
+      (isNotOut ? notOutBody : outBody).appendChild(tr);
+    }
+  });
+}
+
+function renderBowling(innId, arr) {
+  const body = document.getElementById('bowl-body-' + innId);
+  if (!body) return;
+  arr.forEach(b => {
+    let row = body.querySelector('tr[data-bowler="' + b.name + '"]');
+    if (row) {
+      const o   = row.querySelector('.bowl-o');
+      const r   = row.querySelector('.bowl-r');
+      const w   = row.querySelector('.bowl-w');
+      const eco = row.querySelector('.bowl-eco');
+      const wd  = row.querySelector('.bowl-wd');
+      const nb  = row.querySelector('.bowl-nb');
+      if (o)   o.textContent  = b.overs;
+      if (r)   r.textContent  = b.runs;
+      if (w)   w.innerHTML    = '<span class="wkts-bold">' + b.wickets + '</span>';
+      if (eco) eco.innerHTML  = '<span class="economy-txt">' + b.economy + '</span>';
+      if (wd)  wd.textContent = b.wides;
+      if (nb)  nb.textContent = b.no_balls;
+    } else {
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-bowler', b.name);
+      tr.innerHTML =
+        '<td><div class="player-cell">' +
+          '<div class="sc-av-init">' + b.name[0].toUpperCase() + '</div>' +
+          '<span>' + b.name + '</span>' +
+        '</div></td>' +
+        '<td class="r bowl-o">' + b.overs + '</td>' +
+        '<td class="r bowl-r">' + b.runs + '</td>' +
+        '<td class="r bowl-w"><span class="wkts-bold">' + b.wickets + '</span></td>' +
+        '<td class="r bowl-eco"><span class="economy-txt">' + b.economy + '</span></td>' +
+        '<td class="r bowl-wd">' + b.wides + '</td>' +
+        '<td class="r bowl-nb">' + b.no_balls + '</td>';
+      body.appendChild(tr);
+    }
+  });
+}
+
+function updateBatsmenCards(arr) {
+  arr.forEach(b => {
+    if (b.status !== 'NOT_OUT') return;
+    document.querySelectorAll('.batsman-card').forEach(card => {
+      const nameEl = card.querySelector('.bat-name');
+      if (nameEl && nameEl.textContent.trim() === b.name) {
+        const vals = card.querySelectorAll('.bat-stat-val');
+        if (vals[0]) vals[0].textContent = b.runs;
+        if (vals[1]) vals[1].textContent = b.balls;
+        if (vals[2]) vals[2].textContent = b.fours;
+        if (vals[3]) vals[3].textContent = b.sixes;
+        const srEl = card.querySelector('.bat-sr-line b');
+        if (srEl) srEl.textContent = b.sr;
+      }
+    });
+  });
+}
+
+function fetchLive() {
+  fetch('/api/match/' + MATCH_ID + '/live/')
+    .then(r => r.json())
+    .then(data => {
+      const u = document.getElementById('last-updated');
+      if (u) u.textContent = 'Updated ' + new Date().toLocaleTimeString();
+      if (data.inn1) updateInn('inn1', data.inn1);
+      if (data.inn2) updateInn('inn2', data.inn2);
+      if (data.inn1 && data.inn2 && data.target) updateTarget(data);
+    })
+    .catch(e => console.log('Live fetch error:', e));
+}
+
+function updateInn(id, d) {
+  // Hero scores
+  const s = document.getElementById(id + '-score');
+  if (s) s.innerHTML = d.total_runs + '<span>/' + d.total_wickets + '</span>';
+  const o = document.getElementById(id + '-overs');
+  if (o) o.textContent = d.overs + ' overs';
+  const e = document.getElementById(id + '-extras');
+  if (e) e.textContent = 'Extras: ' + d.extras;
+
+  // Tab score badges
+  const ts = document.getElementById('tab-score-' + id);
+  if (ts) ts.textContent = d.total_runs + '/' + d.total_wickets;
+
+  // Current over balls
+  if (d.over_balls !== undefined && d.current_bowler) {
+    const br = document.getElementById('balls-row');
+    if (br) br.innerHTML = d.over_balls.map(ballHTML).join('');
+    const bn = document.getElementById('bowler-name');
+    if (bn) bn.textContent = d.current_bowler;
+    const on = document.getElementById('over-num');
+    if (on && d.current_over_num) on.textContent = 'Over ' + d.current_over_num + ' of ' + MAX_OVERS;
+  }
+
+  // Batting table
+  if (d.batting && d.batting.length) {
+    renderBatting(id, d.batting);
+    updateBatsmenCards(d.batting);
+  }
+
+  // Bowling table
+  if (d.bowling && d.bowling.length) renderBowling(id, d.bowling);
+}
+
+function updateTarget(data) {
+  const inn2 = data.inn2;
+  if (!inn2 || !data.target) return;
+  const left  = data.target - inn2.total_runs;
+  const parts = String(inn2.overs || '0').split('.');
+  const bd    = parseInt(parts[0]) * 6 + (parts[1] ? parseInt(parts[1]) : 0);
+  const bl    = MAX_OVERS * 6 - bd;
+  const ov    = Math.floor(bl / 6) + '.' + (bl % 6);
+  const rr    = bl > 0 ? ((left / bl) * 6).toFixed(2) : '---';
+  const rn = document.getElementById('runs-needed'); if (rn) rn.textContent = left > 0 ? left : 0;
+  const ble = document.getElementById('balls-left'); if (ble) ble.textContent = ov + ' ov';
+  const rre = document.getElementById('req-rr');     if (rre) rre.textContent = rr;
+}
+
+if (IS_LIVE) {
+  fetchLive();
+  setInterval(fetchLive, 5000);
+}
+</script>
+{% endblock %}

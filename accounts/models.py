@@ -13,6 +13,7 @@ class GuestUser(models.Model):
     # Stores a Django password hash (PBKDF2 by default). Older rows may still contain
     # a legacy plain-text value; login code upgrades those on successful auth.
     password = models.CharField(max_length=128)
+    is_mobile_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

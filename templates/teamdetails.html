@@ -444,6 +444,11 @@
   }
 
   function populateStats(d) {
+    // MOM badge
+    const badgesEl = document.getElementById('modal-badges');
+    if (d.mom_count && d.mom_count > 0) {
+      badgesEl.innerHTML = `<span style="font-size:11px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:2px 9px;">🏅 ${d.mom_count} MOM</span>`;
+    } else { badgesEl.innerHTML = ''; }
     // Batting
     document.getElementById('bat-runs').textContent = d.total_runs ?? '0';
     document.getElementById('bat-avg').textContent  = d.batting_avg ?? '0';

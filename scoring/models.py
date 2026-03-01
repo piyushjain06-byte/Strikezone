@@ -184,6 +184,27 @@ class Ball(models.Model):
         related_name="fielding_dismissals"
     )
 
+    # Wagon wheel — shot direction (for ML, not shown to players)
+    SHOT_DIRECTION_CHOICES = [
+        ('FINE_LEG',       'Fine Leg'),
+        ('SQUARE_LEG',     'Square Leg'),
+        ('MID_WICKET',     'Mid Wicket'),
+        ('MID_ON',         'Mid On'),
+        ('STRAIGHT',       'Straight'),
+        ('MID_OFF',        'Mid Off'),
+        ('COVER',          'Cover'),
+        ('POINT',          'Point'),
+        ('THIRD_MAN',      'Third Man'),
+        ('LONG_ON',        'Long On'),
+        ('LONG_OFF',       'Long Off'),
+        ('FINE_LEG_DEEP',  'Fine Leg Deep'),
+    ]
+    shot_direction = models.CharField(
+        max_length=20,
+        choices=SHOT_DIRECTION_CHOICES,
+        null=True, blank=True
+    )
+
     is_legal_ball = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0f1e; --surface: #111827; --surface2: #1a2235;
+    --border: #1e2d45; --accent: #22c55e; --text: #e2e8f0; --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif;
+         min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+
+  .wrap { width:100%; max-width:380px; }
+  .card {
+    background: var(--surface);
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    padding: 26px 22px;
+  }
+  .title {
+    font-family:'Rajdhani',sans-serif;
+    font-size:22px; font-weight:700; margin-bottom:4px;
+  }
+  .sub { font-size:13px; color:var(--muted); margin-bottom:18px; }
+  .field { margin-bottom:16px; }
+  .field label {
+    display:block; font-size:11px; font-weight:700; letter-spacing:1px;
+    text-transform:uppercase; color:var(--muted); margin-bottom:6px;
+  }
+  .field input {
+    width:100%; background:var(--surface2); border-radius:10px;
+    border:1.5px solid var(--border); padding:11px 13px;
+    color:var(--text); font-size:14px;
+  }
+  .field input:focus { outline:none; border-color:var(--accent); }
+  .btn {
+    width:100%; margin-top:4px;
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    border:none; border-radius:10px; color:#000;
+    font-size:15px; font-weight:700; padding:13px;
+    cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .info {
+    margin-top:12px; font-size:12px; color:var(--muted);
+  }
+</style>
+
+<div class="wrap">
+  <div class="card">
+    <div class="title">Login with OTP</div>
+    <div class="sub">Enter your mobile number and we will send you a one-time code.</div>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="field">
+        <label for="mobile">Mobile Number</label>
+        <input id="mobile" type="tel" name="mobile" placeholder="e.g. 9876543210" required autofocus>
+      </div>
+      <button type="submit" class="btn">Send OTP →</button>
+    </form>
+
+    <div class="info">
+      OTP will be sent to your registered mobile number. Valid for 5 minutes.
+    </div>
+  </div>
+</div>
+
+{% endblock %}

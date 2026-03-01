@@ -53,13 +53,17 @@ urlpatterns = [
     name='start_second_innings'
 ),
     path('match/<int:match_id>/select-new-batsman/', views.select_new_batsman, name='select_new_batsman'),
+    path('match/<int:match_id>/undo-ball/', views.undo_ball_view, name='undo_ball'),
     path('match/<int:match_id>/restart/', views.restart_match, name='restart_match'),
     
     path('tournament/<int:tournament_id>/history/', views.tournament_history, name='tournament_history'),
+    path('tournament/<int:tournament_id>/awards/', views.tournament_awards, name='tournament_awards'),
     path('match/<int:match_id>/scorecard/', views.match_scorecard, name='match_scorecard'),
     
     path('player/register/', views.player_register, name='player_register'),
     path('player/login/',  views.player_login,  name='player_login'),
+    path('player/login/otp/', views.player_request_otp, name='player_request_otp'),
+    path('player/login/otp/verify/', views.player_verify_otp, name='player_verify_otp'),
     path('player/logout/', views.player_logout, name='player_logout'),
     path('player/stats/',  views.player_stats,  name='player_stats'),
     path('player/matches/', views.player_matches, name='player_matches'),
@@ -75,4 +79,7 @@ path('tournament/<int:tournament_id>/knockout/setup/', views.setup_knockout_stag
 path('tournament/<int:tournament_id>/knockout/link/', views.link_knockout_matches, name='link_knockout_matches'),
 path('tournament/<int:tournament_id>/knockout/public/', views.public_knockout_bracket, name='public_knockout_bracket'),
 path('knockout-match/<int:knockout_match_id>/start/', views.start_knockout_match, name='start_knockout_match'),
+path('api/live-scores/', views.live_scores_api, name='live_scores_api'),
+path('match/<int:match_id>/live/', views.public_live_scorecard, name='public_live_scorecard'),
+path('api/match/<int:match_id>/live/', views.live_scorecard_api, name='live_scorecard_api'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
