@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1!eazvx6jdvk(ea16)s#*6eggf6h%cfxd44^a3g#wmn(7w3644'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -68,8 +73,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-             #  'firstcricketapp.context_processors.get_categories' ,
-                'tournaments.context_processors.get_categories'
+             #  'firstcricketapp.context_processors.get_categories',
+                'tournaments.context_processors.get_categories',
             ],
         },
     },
@@ -142,11 +147,9 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # ── SMS / OTP Configuration (Twilio) ──
-import os
-TWILIO_ACCOUNT_SID  = os.environ.get('TWILIO_ACCOUNT_SID',  'AC2ec47c0a8089ac515cc92d7cd0a85177')
-TWILIO_AUTH_TOKEN   = os.environ.get('TWILIO_AUTH_TOKEN',   '71119eaa67aa79511e5e2e4a1644fc38')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '+15096613947')
+TWILIO_ACCOUNT_SID  = os.environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN   = os.environ.get('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
 
-
-import os
-os.environ.setdefault("GROQ_API_KEY", "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")
+# ── Groq AI ──
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
