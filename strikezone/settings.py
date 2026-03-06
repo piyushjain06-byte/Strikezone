@@ -37,13 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'accounts',
     'tournaments',
     'teams',
     'matches',
     'scoring',
     'knockout',
-    
 ]
 
 MIDDLEWARE = [
@@ -76,6 +76,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'strikezone.wsgi.application'
+ASGI_APPLICATION  = 'strikezone.asgi.application'
+
+# ── Django Channels — InMemory layer (no Redis needed for development) ──
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 
 # Database
@@ -138,3 +146,7 @@ import os
 TWILIO_ACCOUNT_SID  = os.environ.get('TWILIO_ACCOUNT_SID',  'AC2ec47c0a8089ac515cc92d7cd0a85177')
 TWILIO_AUTH_TOKEN   = os.environ.get('TWILIO_AUTH_TOKEN',   '71119eaa67aa79511e5e2e4a1644fc38')
 TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '+15096613947')
+
+
+import os
+os.environ.setdefault("GROQ_API_KEY", "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")
