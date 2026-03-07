@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}CEO Dashboard — StrikeZone{% endblock %}
+
+{% block content %}
+<style>
+  .ceo-wrap { max-width: 1100px; margin: 32px auto; padding: 0 16px; }
+  .ceo-title { font-size: 26px; font-weight: 800; color: #f59e0b; margin-bottom: 4px; }
+  .ceo-sub { color: #64748b; font-size: 14px; margin-bottom: 28px; }
+  .nav-links { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+  .nav-link { padding: 8px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+  .nav-link.active { background: rgba(245,158,11,0.1); color: #f59e0b; border-color: rgba(245,158,11,0.3); }
+  .nav-link.django { background: rgba(16,185,129,0.1); color: #34d399; border-color: rgba(16,185,129,0.2); }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .stat-card { background: #1e293b; border-radius: 14px; padding: 20px 22px; border: 1px solid #334155; }
+  .stat-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .stat-value { font-size: 32px; font-weight: 800; color: #f1f5f9; }
+  .stat-value.yellow { color: #f59e0b; }
+  .stat-value.blue   { color: #60a5fa; }
+  .stat-value.purple { color: #a78bfa; }
+  .stat-value.green  { color: #34d399; }
+  .stat-value.orange { color: #fb923c; }
+  .section-title { font-size: 16px; font-weight: 700; color: #f1f5f9; margin: 28px 0 14px; }
+  .table-wrap { background: #1e293b; border-radius: 14px; border: 1px solid #334155; overflow: hidden; margin-bottom: 28px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #0f172a; padding: 12px 16px; font-size: 12px; color: #64748b; text-align: left; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 12px 16px; font-size: 14px; color: #cbd5e1; border-top: 1px solid #0f172a; vertical-align: middle; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-free      { background: rgba(148,163,184,0.15); color: #94a3b8; }
+  .badge-pro       { background: rgba(59,130,246,0.15);  color: #60a5fa; }
+  .badge-pro_plus  { background: rgba(139,92,246,0.15);  color: #a78bfa; }
+  .badge-employee  { background: rgba(245,158,11,0.15);  color: #f59e0b; }
+  .btn-demote { padding: 5px 14px; border-radius: 8px; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; }
+  .btn-demote:hover { background: rgba(239,68,68,0.2); }
+  .empty-state { text-align: center; padding: 32px; color: #475569; font-size: 14px; }
+  .revenue-highlight { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.2); border-radius: 14px; padding: 24px; margin-bottom: 28px; display: flex; align-items: center; gap: 20px; }
+  .revenue-highlight .amount { font-size: 48px; font-weight: 800; color: #f59e0b; }
+  .revenue-highlight .label { color: #94a3b8; font-size: 14px; }
+  .warning-text { color: #fbbf24; }
+</style>
+
+<div class="ceo-wrap">
+  <div class="ceo-title">👑 CEO Dashboard</div>
+  <div class="ceo-sub">Full control — users, employees, revenue, everything.</div>
+
+  <div class="nav-links">
+    <a href="{% url 'ceo_dashboard' %}" class="nav-link active">📊 Overview</a>
+    <a href="{% url 'ceo_users' %}" class="nav-link">👥 All Users</a>
+    <a href="/admin/" class="nav-link django">⚙️ Django Admin</a>
+  </div>
+
+  {% if messages %}
+    {% for m in messages %}
+      <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px 16px;color:#34d399;font-size:14px;margin-bottom:16px;">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- REVENUE HIGHLIGHT -->
+  <div class="revenue-highlight">
+    <div>
+      <div class="amount">₹{{ estimated_revenue }}</div>
+      <div class="label">Estimated Monthly Revenue</div>
+    </div>
+    <div style="margin-left:auto;display:flex;flex-direction:column;gap:8px;text-align:right;">
+      <div style="color:#94a3b8;font-size:13px;">{{ pro_count }} × ₹199 (Pro)</div>
+      <div style="color:#94a3b8;font-size:13px;">{{ proplus_count }} × ₹499 (Pro Plus)</div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value">{{ total_users }}</div></div>
+    <div class="stat-card"><div class="stat-label">Free</div><div class="stat-value">{{ free_count }}</div></div>
+    <div class="stat-card"><div class="stat-label">Pro</div><div class="stat-value blue">{{ pro_count }}</div></div>
+    <div class="stat-card"><div class="stat-label">Pro Plus</div><div class="stat-value purple">{{ proplus_count }}</div></div>
+    <div class="stat-card"><div class="stat-label">Employees</div><div class="stat-value yellow">{{ employee_count }}</div></div>
+  </div>
+
+  <!-- EMPLOYEES -->
+  <div class="section-title">👔 Employees ({{ employee_count }})</div>
+  <div class="table-wrap">
+    {% if employees %}
+    <table>
+      <thead><tr><th>Mobile</th><th>Plan</th><th>Joined</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for e in employees %}
+        <tr>
+          <td>{{ e.mobile_number }}</td>
+          <td><span class="badge badge-{{ e.plan }}">{{ e.get_plan_display }}</span></td>
+          <td>{{ e.created_at|date:"d M Y" }}</td>
+          <td>
+            <a href="{% url 'ceo_demote' e.id %}" class="btn-demote"
+               onclick="return confirm('Demote {{ e.mobile_number }} to regular user?')">
+              Demote
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">No employees yet. Promote users from the <a href="{% url 'ceo_users' %}" style="color:#f59e0b;">All Users</a> page.</div>
+    {% endif %}
+  </div>
+
+  <!-- EXPIRING SOON -->
+  <div class="section-title">⚠️ Plans Expiring This Week</div>
+  <div class="table-wrap">
+    {% if expiring_soon %}
+    <table>
+      <thead><tr><th>Mobile</th><th>Plan</th><th>Expires</th></tr></thead>
+      <tbody>
+        {% for u in expiring_soon %}
+        <tr><td class="warning-text">{{ u.mobile_number }}</td>
+            <td><span class="badge badge-{{ u.plan }}">{{ u.get_plan_display }}</span></td>
+            <td class="warning-text">{{ u.plan_expires_at|date:"d M Y, h:i A" }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">No plans expiring this week.</div>
+    {% endif %}
+  </div>
+
+  <!-- RECENTLY UPGRADED -->
+  <div class="section-title">🚀 Recently Upgraded</div>
+  <div class="table-wrap">
+    {% if recently_upgraded %}
+    <table>
+      <thead><tr><th>Mobile</th><th>Plan</th><th>Expires</th></tr></thead>
+      <tbody>
+        {% for u in recently_upgraded %}
+        <tr><td>{{ u.mobile_number }}</td>
+            <td><span class="badge badge-{{ u.plan }}">{{ u.get_plan_display }}</span></td>
+            <td>{{ u.plan_expires_at|date:"d M Y" }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">No recent upgrades.</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

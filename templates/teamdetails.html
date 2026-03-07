@@ -5,519 +5,424 @@
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
 
   :root {
-    --bg: #0a0f1e;
-    --surface: #111827;
-    --surface2: #1a2235;
-    --border: #1e2d45;
-    --accent: #f59e0b;
-    --success: #10b981;
-    --info: #3b82f6;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --radius: 14px;
+    --bg: #0a0f1e; --surface: #111827; --surface2: #1a2235;
+    --border: #1e2d45; --accent: #f59e0b; --success: #10b981;
+    --danger: #ef4444; --info: #3b82f6;
+    --text: #e2e8f0; --muted: #64748b; --radius: 14px;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
 
-  .team-wrap { max-width: 560px; margin: 0 auto; padding: 24px 14px 60px; }
+  .td-wrap { max-width: 640px; margin: 0 auto; padding: 20px 14px 60px; }
 
-  /* ── HEADER ── */
-  .team-header {
+  .td-header {
     background: linear-gradient(135deg, #1a2a4a 0%, #0f1f38 100%);
-    border: 1px solid #1e3a5f;
-    border-radius: var(--radius);
-    padding: 24px 20px;
-    margin-bottom: 14px;
-    position: relative; overflow: hidden;
+    border: 1px solid #1e3a5f; border-radius: var(--radius);
+    padding: 22px 20px; margin-bottom: 16px; position: relative; overflow: hidden;
   }
-  .team-header::before {
-    content: '';
-    position: absolute; top: -50px; right: -50px;
+  .td-header::before {
+    content: ''; position: absolute; top: -50px; right: -50px;
     width: 160px; height: 160px;
     background: radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 70%);
     border-radius: 50%; pointer-events: none;
   }
-  .team-tag {
+  .td-tag {
     font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--info); background: rgba(59,130,246,0.12);
-    border: 1px solid rgba(59,130,246,0.25);
-    border-radius: 20px; padding: 3px 12px;
-    display: inline-block; margin-bottom: 10px;
+    color: var(--accent); background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.25); border-radius: 20px;
+    padding: 3px 12px; display: inline-block; margin-bottom: 10px;
   }
-  .team-title {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 34px; font-weight: 700; color: #fff; line-height: 1.1; margin-bottom: 6px;
+  .td-title {
+    font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700;
+    color: #fff; line-height: 1.1; margin-bottom: 16px;
   }
-  .team-tournament {
-    font-size: 13px; color: var(--muted);
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .info-item {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px; padding: 10px 13px;
   }
-  .team-tournament span { color: #94a3b8; font-weight: 600; }
+  .info-label { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+  .info-value { font-size: 14px; font-weight: 600; color: #fff; }
 
-  /* ── SECTION TITLE ── */
-  .section-title {
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 1.5px; text-transform: uppercase;
-    color: var(--muted); margin-bottom: 10px;
-  }
-
-  /* ── PLAYERS LIST ── */
-  .players-list {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-  .player-row {
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer; transition: background 0.15s;
-  }
-  .player-row:last-child { border-bottom: none; }
-  .player-row:hover { background: var(--surface2); }
-
-  .player-num {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 18px; font-weight: 700; color: var(--muted); min-width: 28px;
-  }
-  .player-avatar {
-    width: 40px; height: 40px; border-radius: 50%;
-    background: linear-gradient(135deg, #1e3a5f, #0f2a45);
-    border: 1.5px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; color: var(--accent);
-    flex-shrink: 0;
-  }
-  .player-info { flex: 1; min-width: 0; }
-  .player-name { font-size: 15px; font-weight: 600; color: #fff; }
-  .player-meta { display: flex; gap: 8px; margin-top: 3px; flex-wrap: wrap; }
-  .player-role {
-    font-size: 11px; color: var(--muted);
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 20px; padding: 1px 8px;
-  }
-  .badge-c {
-    font-size: 10px; font-weight: 700; color: var(--accent);
-    background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);
-    border-radius: 20px; padding: 1px 7px;
-  }
-  .badge-vc {
-    font-size: 10px; font-weight: 700; color: #60a5fa;
-    background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3);
-    border-radius: 20px; padding: 1px 7px;
-  }
-  .jersey-num {
-    font-size: 11px; color: var(--muted);
-  }
-  .player-arrow { color: var(--muted); font-size: 18px; }
-  .player-row:hover .player-arrow { color: var(--accent); }
-
-  .empty-state {
-    padding: 32px; text-align: center; color: var(--muted); font-size: 14px;
-  }
-
-  /* ── MODAL ── */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7); z-index: 1040;
-    align-items: flex-end; justify-content: center;
-    padding: 0;
-  }
-  .modal-overlay.show { display: flex; }
-  .modal-box {
-    background: #0d1526;
-    border: 1px solid #1e3a5f;
-    border-radius: 20px 20px 0 0;
-    width: 100%; max-width: 560px;
-    max-height: 90vh; overflow-y: auto;
-    box-shadow: 0 -20px 60px rgba(0,0,0,0.6);
-    animation: slideUp 0.3s ease;
-    padding-bottom: 30px;
-  }
-  @keyframes slideUp {
-    from { transform: translateY(100%); opacity: 0; }
-    to   { transform: translateY(0);    opacity: 1; }
-  }
-
-  .modal-handle {
-    width: 40px; height: 4px; border-radius: 2px;
-    background: var(--border); margin: 12px auto 0;
-  }
-  .modal-header {
-    padding: 16px 20px 14px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .modal-player-info { display: flex; align-items: center; gap: 14px; }
-  .modal-avatar {
-    width: 52px; height: 52px; border-radius: 50%;
-    background: linear-gradient(135deg, #1e3a5f, #0f2a45);
-    border: 2px solid var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; color: var(--accent);
-  }
-  .modal-player-name {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 24px; font-weight: 700; color: #fff;
-  }
-  .modal-player-role { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .modal-badges { display: flex; gap: 6px; margin-top: 4px; }
-  .modal-close {
-    background: none; border: none; color: var(--muted);
-    font-size: 26px; cursor: pointer; line-height: 1; padding: 4px;
-  }
-  .modal-close:hover { color: #fff; }
-
-  .modal-body { padding: 18px 20px 0; }
-
-  /* ── STATS TABS ── */
-  .stats-tabs {
-    display: flex; gap: 8px; margin-bottom: 16px;
+  /* TABS */
+  .tabs-bar {
+    display: flex; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin-bottom: 16px;
   }
   .tab-btn {
-    flex: 1; padding: 9px; border-radius: 10px;
-    background: var(--surface2); border: 1.5px solid var(--border);
-    color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer;
-    transition: all 0.15s; text-align: center;
+    flex: 1; padding: 11px 4px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.3px; text-transform: uppercase; text-align: center;
+    cursor: pointer; border: none; background: none; color: var(--muted);
+    transition: all 0.15s; position: relative; border-right: 1px solid var(--border);
+    font-family: 'Inter', sans-serif;
   }
-  .tab-btn.active {
-    background: rgba(245,158,11,0.12); border-color: var(--accent); color: var(--accent);
+  .tab-btn:last-child { border-right: none; }
+  .tab-btn.active { color: var(--accent); background: rgba(245,158,11,0.07); }
+  .tab-btn.active::after {
+    content: ''; position: absolute; bottom: 0; left: 10%; right: 10%;
+    height: 2px; background: var(--accent); border-radius: 2px 2px 0 0;
   }
+  .tab-count {
+    display: inline-block; margin-left: 3px; padding: 1px 5px;
+    border-radius: 10px; font-size: 9px; font-weight: 800;
+    background: rgba(255,255,255,0.08); color: var(--muted);
+  }
+  .tab-btn.active .tab-count { background: rgba(245,158,11,0.2); color: var(--accent); }
+  .tab-btn.live-tab.has-live { color: var(--danger); }
+  .tab-btn.live-tab.has-live .tab-count { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .tab-btn.live-tab.has-live.active { background: rgba(239,68,68,0.07); }
+  .tab-btn.live-tab.has-live.active::after { background: var(--danger); }
 
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
-  /* ── STAT CARDS ── */
-  .stat-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+  /* POINTS TABLE */
+  .points-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 14px;
   }
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px;
-    text-align: center;
+  .points-header {
+    background: linear-gradient(90deg, rgba(245,158,11,0.1), transparent);
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--accent);
   }
-  .stat-value {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 30px; font-weight: 700; color: var(--accent); line-height: 1;
-  }
-  .stat-label {
+  .pts-table { width: 100%; border-collapse: collapse; }
+  .pts-table th {
     font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-    color: var(--muted); margin-top: 4px;
+    color: var(--muted); padding: 9px 12px; text-align: left;
+    border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);
   }
-  .stat-card.highlight { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.05); }
-  .stat-card.highlight .stat-value { color: var(--accent); }
-  .stat-card.blue .stat-value { color: #60a5fa; }
-  .stat-card.blue { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.05); }
-  .stat-card.green .stat-value { color: #34d399; }
-  .stat-card.green { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.05); }
+  .pts-table th:not(:first-child):not(:nth-child(2)) { text-align: center; }
+  .pts-table td { padding: 11px 12px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .pts-table td:not(:first-child):not(:nth-child(2)) { text-align: center; }
+  .pts-table tr:last-child td { border-bottom: none; }
+  .pts-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .pts-rank { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; color: var(--muted); }
+  .pts-rank.gold { color: #fbbf24; }
+  .pts-rank.silver { color: #94a3b8; }
+  .pts-rank.bronze { color: #d97706; }
+  .pts-pts { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; color: var(--accent); }
+  .pts-nrr { font-size: 12px; font-weight: 600; }
+  .pts-nrr.pos { color: #22c55e; }
+  .pts-nrr.neg { color: #ef4444; }
 
-  /* ── RECENT TABLE ── */
-  .recent-label {
+  /* MATCH CARDS */
+  .match-list { display: flex; flex-direction: column; gap: 10px; }
+  .match-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; transition: border-color 0.15s;
+  }
+  .match-card:hover { border-color: rgba(245,158,11,0.25); }
+  .mc-head { padding: 13px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .mc-teams { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .mc-meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+  .badge { font-size: 10px; font-weight: 700; border-radius: 20px; padding: 3px 10px; white-space: nowrap; flex-shrink: 0; }
+  .badge-live { color: var(--danger); background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); animation: blink 1.5s infinite; }
+  .badge-done { color: var(--muted); background: transparent; border: 1px solid var(--border); }
+  .badge-sched { color: var(--info); background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.5} }
+  .mc-scores { display: flex; border-top: 1px solid var(--border); }
+  .mc-score-half { flex: 1; padding: 10px 16px; }
+  .mc-score-half:first-child { border-right: 1px solid var(--border); }
+  .mc-team-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+  .mc-score-num { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; color: #fff; line-height: 1; }
+  .mc-wkts { color: var(--accent); }
+  .mc-overs { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .mc-result {
+    padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--success);
+    background: rgba(16,185,129,0.06); border-top: 1px solid rgba(16,185,129,0.1);
+  }
+  .mc-actions { padding: 9px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-action {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border-radius: 8px; font-size: 12px; font-weight: 700;
+    text-decoration: none; border: none; cursor: pointer; transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-live-watch { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+  .btn-live-watch:hover { background: rgba(239,68,68,0.2); }
+  .btn-scorecard { background: rgba(245,158,11,0.08); color: var(--accent); border: 1px solid rgba(245,158,11,0.2); }
+  .btn-scorecard:hover { background: rgba(245,158,11,0.18); }
+  .btn-start-match { background: rgba(16,185,129,0.1); color: var(--success); border: 1px solid rgba(16,185,129,0.25); }
+  .btn-start-match:hover { background: rgba(16,185,129,0.2); }
+  .btn-analysis { background: rgba(139,92,246,0.08); color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
+  .btn-analysis:hover { background: rgba(139,92,246,0.18); }
+
+  /* TEAMS */
+  .teams-list {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-top: 14px;
+  }
+  .teams-section-title {
     font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-    color: var(--muted); margin-bottom: 8px;
+    color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
   }
-  .recent-table {
-    width: 100%; border-collapse: collapse;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  .team-row {
+    display: flex; align-items: center; gap: 14px; padding: 12px 16px;
+    border-bottom: 1px solid var(--border); text-decoration: none; transition: background 0.15s;
   }
-  .recent-table th {
-    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-    color: var(--muted); padding: 10px 12px; text-align: left;
-    border-bottom: 1px solid var(--border); background: var(--surface2);
-  }
-  .recent-table th:not(:first-child) { text-align: right; }
-  .recent-table td {
-    font-size: 13px; padding: 10px 12px; color: #cbd5e1;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-  }
-  .recent-table td:not(:first-child) { text-align: right; }
-  .recent-table tr:last-child td { border-bottom: none; }
+  .team-row:last-child { border-bottom: none; }
+  .team-row:hover { background: var(--surface2); }
+  .team-num { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; color: var(--muted); min-width: 24px; }
+  .team-name { font-size: 14px; font-weight: 600; color: #fff; flex: 1; }
+  .team-arrow { color: var(--muted); font-size: 16px; }
+  .team-row:hover .team-arrow { color: var(--accent); }
 
-  /* ── LOADING ── */
-  .loading-state {
-    text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px;
+  .empty-state {
+    padding: 40px 24px; text-align: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   }
-  .spinner {
-    width: 32px; height: 32px; border-radius: 50%;
-    border: 3px solid var(--border); border-top-color: var(--accent);
-    animation: spin 0.7s linear infinite; margin: 0 auto 12px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-icon { font-size: 40px; display: block; margin-bottom: 10px; }
+  .empty-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; color: var(--muted); }
 
-  .no-stats { text-align: center; color: var(--muted); padding: 30px; font-size: 14px; }
+  .btn-history {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; background: linear-gradient(135deg, #b45309, #f59e0b);
+    border: none; border-radius: var(--radius); color: #000;
+    font-size: 14px; font-weight: 700; padding: 14px; text-decoration: none;
+    transition: opacity 0.15s; letter-spacing: 0.3px; margin-bottom: 10px;
+  }
+  .btn-history:hover { opacity: 0.88; }
 </style>
 
-
-<div class="team-wrap">
+<div class="td-wrap">
 
   <!-- HEADER -->
-  <div class="team-header">
-    <div class="team-tag">🏏 Team</div>
-    <div class="team-title">{{ team.team_name }}</div>
-    <div class="team-tournament" style="margin-top:6px;">Team ID: <span>{{ team.team_code }}</span></div>
-    <div class="team-tournament">Tournament: <span>{{ tournament.tournament_name }}</span></div>
+  <div class="td-header">
+    <div class="td-tag">🏏 Tournament</div>
+    <div class="td-title">{{ tournament.tournament_name }}</div>
+    <div class="info-grid">
+      <div class="info-item"><div class="info-label">Type</div><div class="info-value">{{ tournament.get_tournament_type_display }}</div></div>
+      <div class="info-item"><div class="info-label">Overs</div><div class="info-value">{{ tournament.number_of_overs }} ov</div></div>
+      <div class="info-item"><div class="info-label">Start Date</div><div class="info-value">{{ tournament.start_date|default:"TBD" }}</div></div>
+      <div class="info-item"><div class="info-label">End Date</div><div class="info-value">{{ tournament.end_date|default:"TBD" }}</div></div>
+    </div>
   </div>
 
-  <!-- PLAYERS -->
-  <div class="section-title">Players Squad</div>
-  <div class="players-list">
-    {% for r in roster %}
-    <div class="player-row" onclick="openPlayerStats({{ r.player.id }}, '{{ r.player.player_name }}', '{{ r.get_role_display }}')">
-      <div class="player-num">{{ forloop.counter }}</div>
-      {% if r.player.photo %}
-        <img src="{{ r.player.photo.url }}" class="player-avatar" style="object-fit:cover;" alt="{{ r.player.player_name }}">
-      {% else %}
-        <div class="player-avatar">{{ r.player.player_name|slice:":1"|upper }}</div>
-      {% endif %}
-      <div class="player-info">
-        <div class="player-name">{{ r.player.player_name }}</div>
-        <div class="player-meta">
-          <span class="player-role">{{ r.get_role_display }}</span>
-          {% if r.jersey_number %}<span class="jersey-num">#{{ r.jersey_number }}</span>{% endif %}
-          {% if r.is_captain %}<span class="badge-c">C</span>{% endif %}
-          {% if r.is_vice_captain %}<span class="badge-vc">VC</span>{% endif %}
+  <!-- TABS BAR -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('points',this)">Points<br><span class="tab-count">{{ leaderboard|length }}</span></button>
+    <button class="tab-btn live-tab {% if live_matches %}has-live{% endif %}" onclick="switchTab('live',this)">Live<br><span class="tab-count">{{ live_matches|length }}</span></button>
+    <button class="tab-btn" onclick="switchTab('upcoming',this)">Upcoming<br><span class="tab-count">{{ upcoming_matches|length }}</span></button>
+    <button class="tab-btn" onclick="switchTab('completed',this)">Completed<br><span class="tab-count">{{ completed_matches|length }}</span></button>
+    <button class="tab-btn" onclick="switchTab('history',this)">History</button>
+  </div>
+
+  <!-- POINTS TABLE TAB -->
+  <div class="tab-panel active" id="tab-points">
+    {% if leaderboard %}
+    <div class="points-card">
+      <div class="points-header">🏆 Points Table</div>
+      <table class="pts-table">
+        <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>L</th><th>Pts</th><th>NRR</th></tr></thead>
+        <tbody>
+          {% for entry in leaderboard %}
+          <tr>
+            <td><span class="pts-rank {% if entry.rank == 1 %}gold{% elif entry.rank == 2 %}silver{% elif entry.rank == 3 %}bronze{% endif %}">{{ entry.rank }}</span></td>
+            <td>
+              <a href="{% url 'teamdetails' tournament.id entry.team.id %}" style="color:#fff;text-decoration:none;font-weight:700;">{{ entry.team.team_name }}</a>
+              <div style="font-size:10px;color:var(--muted);">{{ entry.team.team_code }}</div>
+            </td>
+            <td style="color:var(--muted);font-weight:600;">{{ entry.played }}</td>
+            <td style="color:#22c55e;font-weight:700;">{{ entry.wins }}</td>
+            <td style="color:#ef4444;font-weight:700;">{{ entry.losses }}</td>
+            <td><span class="pts-pts">{{ entry.points }}</span></td>
+            <td><span class="pts-nrr {% if entry.nrr >= 0 %}pos{% else %}neg{% endif %}">{{ entry.nrr_display }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">📋</span>
+      <div class="empty-title">No Data Yet</div>
+      <div class="empty-sub">Points table will appear once matches begin.</div>
+    </div>
+    {% endif %}
+    <div class="teams-list">
+      <div class="teams-section-title">Participating Teams</div>
+      {% for team in teams %}
+      <a href="{% url 'teamdetails' tournament.id team.id %}" class="team-row">
+        <div class="team-num">{{ forloop.counter }}</div>
+        <div class="team-name">{{ team.team_name }} <span style="color:var(--muted);font-size:12px;">({{ team.team_code }})</span></div>
+        <div class="team-arrow">›</div>
+      </a>
+      {% empty %}
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">No teams added yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- LIVE TAB -->
+  <div class="tab-panel" id="tab-live">
+    {% if live_matches %}
+    <div class="match-list">
+      {% for lm in live_matches %}
+      <div class="match-card" style="border-color:rgba(239,68,68,0.25);">
+        <div class="mc-head">
+          <div>
+            <div class="mc-teams">{{ lm.match.team1.team_name }} vs {{ lm.match.team2.team_name }}</div>
+            <div class="mc-meta"><span>📍 {{ lm.match.venue }}</span><span>📅 {{ lm.match.match_date }}</span></div>
+          </div>
+          <span class="badge badge-live">● LIVE</span>
+        </div>
+        {% if lm.inn1 %}
+        <div class="mc-scores">
+          <div class="mc-score-half">
+            <div class="mc-team-lbl">{{ lm.inn1.batting_team }}</div>
+            <div class="mc-score-num">{{ lm.inn1.total_runs }}/<span class="mc-wkts">{{ lm.inn1.total_wickets }}</span></div>
+            <div class="mc-overs">{{ lm.inn1.overs_completed }} overs</div>
+          </div>
+          {% if lm.inn2 %}
+          <div class="mc-score-half">
+            <div class="mc-team-lbl">{{ lm.inn2.batting_team }}</div>
+            <div class="mc-score-num">{{ lm.inn2.total_runs }}/<span class="mc-wkts">{{ lm.inn2.total_wickets }}</span></div>
+            <div class="mc-overs">{{ lm.inn2.overs_completed }} ov · Target: {{ lm.inn2.target }}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+        <div class="mc-actions">
+          <a href="{% url 'public_live_scorecard' lm.match.id %}" class="btn-action btn-live-watch">🔴 Watch Live</a>
         </div>
       </div>
-      <div class="player-arrow">›</div>
+      {% endfor %}
     </div>
-    {% empty %}
-    <div class="empty-state">No players added yet.</div>
-    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">🔴</span>
+      <div class="empty-title">No Live Matches</div>
+      <div class="empty-sub">There are no matches in progress right now.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- UPCOMING TAB -->
+  <div class="tab-panel" id="tab-upcoming">
+    {% if upcoming_matches %}
+    <div class="match-list">
+      {% for um in upcoming_matches %}
+      <div class="match-card">
+        <div class="mc-head">
+          <div>
+            <div class="mc-teams">{{ um.match.team1.team_name }} vs {{ um.match.team2.team_name }}</div>
+            <div class="mc-meta"><span>📍 {{ um.match.venue }}</span><span>📅 {{ um.match.match_date }}</span></div>
+          </div>
+          <span class="badge badge-sched">Scheduled</span>
+        </div>
+        <div class="mc-actions">
+          {% if is_admin %}
+          <a href="{% url 'match_start' %}" class="btn-action btn-start-match">▶ Start Match</a>
+          {% else %}
+          <span style="font-size:12px;color:var(--muted);padding:4px 2px;">⏳ Awaiting kickoff</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">📋</span>
+      <div class="empty-title">No Upcoming Matches</div>
+      <div class="empty-sub">All scheduled matches have been played or are currently live.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- COMPLETED TAB -->
+  <div class="tab-panel" id="tab-completed">
+    {% if completed_matches %}
+    <div class="match-list">
+      {% for cm in completed_matches %}
+      <div class="match-card">
+        <div class="mc-head">
+          <div>
+            <div class="mc-teams">{{ cm.match.team1.team_name }} vs {{ cm.match.team2.team_name }}</div>
+            <div class="mc-meta"><span>📍 {{ cm.match.venue }}</span><span>📅 {{ cm.match.match_date }}</span></div>
+          </div>
+          <span class="badge badge-done">✔ Done</span>
+        </div>
+        {% if cm.inn1 %}
+        <div class="mc-scores">
+          <div class="mc-score-half">
+            <div class="mc-team-lbl">{{ cm.inn1.batting_team }}</div>
+            <div class="mc-score-num">{{ cm.inn1.total_runs }}/<span class="mc-wkts">{{ cm.inn1.total_wickets }}</span></div>
+            <div class="mc-overs">{{ cm.inn1.overs_completed }} overs</div>
+          </div>
+          {% if cm.inn2 %}
+          <div class="mc-score-half">
+            <div class="mc-team-lbl">{{ cm.inn2.batting_team }}</div>
+            <div class="mc-score-num">{{ cm.inn2.total_runs }}/<span class="mc-wkts">{{ cm.inn2.total_wickets }}</span></div>
+            <div class="mc-overs">{{ cm.inn2.overs_completed }} overs</div>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% if cm.margin %}
+        <div class="mc-result">🏆 {{ cm.margin }}</div>
+        {% endif %}
+        <div class="mc-actions">
+          <a href="{% url 'match_scorecard' cm.match.id %}" class="btn-action btn-scorecard">📊 View Scorecard</a>
+          <a href="{% url 'match_analysis_view' cm.match.id %}" class="btn-action btn-analysis">🤖 ML Analysis</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">✅</span>
+      <div class="empty-title">No Completed Matches</div>
+      <div class="empty-sub">Completed matches will appear here.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="tab-panel" id="tab-history">
+    <a href="{% url 'tournament_history' tournament.id %}" class="btn-history">
+      📊 &nbsp;View Full Tournament History & Points Table
+    </a>
+    {% if tournament_complete %}
+    <a href="{% url 'tournament_awards' tournament.id %}" class="btn-history" style="background:linear-gradient(135deg,rgba(251,191,36,0.18),rgba(251,191,36,0.06));border:1px solid rgba(251,191,36,0.4);color:#fbbf24;">
+      🏆 &nbsp;Tournament Honours & Awards
+    </a>
+    {% endif %}
+    <div class="empty-state" style="border-radius:var(--radius);">
+      <span class="empty-icon">📜</span>
+      <div class="empty-title">Tournament History</div>
+      <div class="empty-sub">Click the button above to view the full match-by-match history, leaderboard and NRR breakdown.</div>
+    </div>
   </div>
 
 </div>
-
-
-<!-- ── PLAYER STATS MODAL ── -->
-<div class="modal-overlay" id="playerModal">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-player-info">
-        <div class="modal-avatar" id="modal-avatar-wrap"><div id="modal-avatar" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1e3a5f,#0f2a45);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--accent);">?</div></div>
-        <div>
-          <div class="modal-player-name" id="modal-name">—</div>
-          <div class="modal-player-role" id="modal-role">—</div>
-          <div class="modal-badges" id="modal-badges"></div>
-        </div>
-      </div>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
-    <div class="modal-body">
-
-      <!-- TABS -->
-      <div class="stats-tabs">
-        <button class="tab-btn active" onclick="switchTab('batting')">🏏 Batting</button>
-        <button class="tab-btn"        onclick="switchTab('bowling')">🎳 Bowling</button>
-      </div>
-
-      <!-- LOADING -->
-      <div class="loading-state" id="stats-loading">
-        <div class="spinner"></div>
-        Loading stats...
-      </div>
-
-      <!-- BATTING TAB -->
-      <div class="tab-panel" id="tab-batting">
-        <div class="stat-grid">
-          <div class="stat-card highlight">
-            <div class="stat-value" id="bat-runs">—</div>
-            <div class="stat-label">Total Runs</div>
-          </div>
-          <div class="stat-card blue">
-            <div class="stat-value" id="bat-avg">—</div>
-            <div class="stat-label">Average</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="bat-sr">—</div>
-            <div class="stat-label">Strike Rate</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="bat-hs">—</div>
-            <div class="stat-label">Highest Score</div>
-          </div>
-          <div class="stat-card green">
-            <div class="stat-value" id="bat-50s">—</div>
-            <div class="stat-label">Fifties</div>
-          </div>
-          <div class="stat-card green">
-            <div class="stat-value" id="bat-100s">—</div>
-            <div class="stat-label">Hundreds</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="bat-4s">—</div>
-            <div class="stat-label">Fours</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="bat-6s">—</div>
-            <div class="stat-label">Sixes</div>
-          </div>
-        </div>
-        <div class="recent-label">Recent Innings</div>
-        <table class="recent-table" id="recent-batting-table">
-          <thead><tr><th>Match</th><th>R</th><th>B</th><th>SR</th></tr></thead>
-          <tbody id="recent-batting-body">
-            <tr><td colspan="4" class="no-stats">No innings yet.</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- BOWLING TAB -->
-      <div class="tab-panel" id="tab-bowling">
-        <div class="stat-grid">
-          <div class="stat-card highlight">
-            <div class="stat-value" id="bowl-wkts">—</div>
-            <div class="stat-label">Wickets</div>
-          </div>
-          <div class="stat-card blue">
-            <div class="stat-value" id="bowl-econ">—</div>
-            <div class="stat-label">Economy</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="bowl-avg">—</div>
-            <div class="stat-label">Average</div>
-          </div>
-          <div class="stat-card green">
-            <div class="stat-value" id="bowl-best">—</div>
-            <div class="stat-label">Best Figures</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="bowl-runs">—</div>
-            <div class="stat-label">Runs Given</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="bowl-wides">—</div>
-            <div class="stat-label">Wides</div>
-          </div>
-        </div>
-        <div class="recent-label">Recent Spells</div>
-        <table class="recent-table">
-          <thead><tr><th>Match</th><th>O</th><th>R</th><th>W</th></tr></thead>
-          <tbody id="recent-bowling-body">
-            <tr><td colspan="4" class="no-stats">No bowling yet.</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 
 <script>
-  let activeTab = 'batting';
-
-  function openPlayerStats(playerId, playerName, playerRole) {
-    // Reset UI
-    document.getElementById('modal-name').textContent = playerName;
-    document.getElementById('modal-role').textContent = playerRole;
-    // Avatar reset to initial while loading
-    document.getElementById('modal-avatar-wrap').innerHTML = `<div id="modal-avatar" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1e3a5f,#0f2a45);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--accent);">${playerName.charAt(0).toUpperCase()}</div>`;
-    document.getElementById('modal-badges').innerHTML = '';
-    document.getElementById('stats-loading').style.display = 'block';
-    document.getElementById('tab-batting').classList.remove('active');
-    document.getElementById('tab-bowling').classList.remove('active');
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-btn')[0].classList.add('active');
-    activeTab = 'batting';
-
-    document.getElementById('playerModal').classList.add('show');
-
-    // Fetch stats
-    fetch(`/player/${playerId}/stats-api/`)
-      .then(r => r.json())
-      .then(d => {
-        document.getElementById('stats-loading').style.display = 'none';
-        populateStats(d);
-        // Update avatar with actual photo if available
-        if (d.photo_url) {
-          document.getElementById('modal-avatar-wrap').innerHTML =
-            `<img src="${d.photo_url}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);" alt="">`;
-        }
-        document.getElementById('tab-batting').classList.add('active');
-      })
-      .catch(() => {
-        document.getElementById('stats-loading').innerHTML = '<div style="color:#f87171;padding:20px;text-align:center;">Failed to load stats.</div>';
-      });
-  }
-
-  function populateStats(d) {
-    // MOM badge
-    const badgesEl = document.getElementById('modal-badges');
-    if (d.mom_count && d.mom_count > 0) {
-      badgesEl.innerHTML = `<span style="font-size:11px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:2px 9px;">🏅 ${d.mom_count} MOM</span>`;
-    } else { badgesEl.innerHTML = ''; }
-    // Batting
-    document.getElementById('bat-runs').textContent = d.total_runs ?? '0';
-    document.getElementById('bat-avg').textContent  = d.batting_avg ?? '0';
-    document.getElementById('bat-sr').textContent   = d.batting_sr ?? '0';
-    document.getElementById('bat-hs').textContent   = d.highest_score ?? '0';
-    document.getElementById('bat-50s').textContent  = d.fifties ?? '0';
-    document.getElementById('bat-100s').textContent = d.hundreds ?? '0';
-    document.getElementById('bat-4s').textContent   = d.total_fours ?? '0';
-    document.getElementById('bat-6s').textContent   = d.total_sixes ?? '0';
-
-    // Recent batting
-    const batBody = document.getElementById('recent-batting-body');
-    batBody.innerHTML = '';
-    if (d.recent_innings && d.recent_innings.length > 0) {
-      d.recent_innings.forEach(inn => {
-        batBody.innerHTML += `
-          <tr>
-            <td>${inn.match}</td>
-            <td>${inn.runs}</td>
-            <td>${inn.balls_faced}</td>
-            <td>${inn.strike_rate}</td>
-          </tr>`;
-      });
-    } else {
-      batBody.innerHTML = '<tr><td colspan="4" class="no-stats" style="text-align:center;color:var(--muted);padding:16px;">No innings yet.</td></tr>';
-    }
-
-    // Bowling
-    document.getElementById('bowl-wkts').textContent  = d.total_wickets ?? '0';
-    document.getElementById('bowl-econ').textContent  = d.bowling_economy ?? '0';
-    document.getElementById('bowl-avg').textContent   = d.bowling_avg ?? '0';
-    document.getElementById('bowl-best').textContent  = d.best_bowling ?? '—';
-    document.getElementById('bowl-runs').textContent  = d.total_runs_given ?? '0';
-    document.getElementById('bowl-wides').textContent = d.total_wides ?? '0';
-
-    // Recent bowling
-    const bowlBody = document.getElementById('recent-bowling-body');
-    bowlBody.innerHTML = '';
-    if (d.recent_bowling && d.recent_bowling.length > 0) {
-      d.recent_bowling.forEach(spell => {
-        bowlBody.innerHTML += `
-          <tr>
-            <td>${spell.match}</td>
-            <td>${spell.overs_bowled}</td>
-            <td>${spell.runs_given}</td>
-            <td>${spell.wickets}</td>
-          </tr>`;
-      });
-    } else {
-      bowlBody.innerHTML = '<tr><td colspan="4" class="no-stats" style="text-align:center;color:var(--muted);padding:16px;">No bowling yet.</td></tr>';
-    }
-  }
-
-  function switchTab(tab) {
-    activeTab = tab;
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(`tab-${tab}`).classList.add('active');
-    event.target.classList.add('active');
-  }
-
-  function closeModal() {
-    document.getElementById('playerModal').classList.remove('show');
-  }
-
-  // Close on backdrop click
-  document.getElementById('playerModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  sessionStorage.setItem('td_tab_{{ tournament.id }}', name);
+}
+(function() {
+  const saved = sessionStorage.getItem('td_tab_{{ tournament.id }}');
+  if (saved) {
+    const btn = document.querySelector('.tab-btn[onclick*="\''+ saved +'\'"] ');
+    // fallback: match by tab name
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("\'" + saved + "\'")) {
+        switchTab(saved, b);
+      }
+    });
+  } {% if live_matches %} else {
+    const lb = document.querySelector('.tab-btn.live-tab');
+    if (lb) switchTab('live', lb);
+  } {% endif %}
+})();
 </script>
 
 {% endblock %}

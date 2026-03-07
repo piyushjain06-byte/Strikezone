@@ -1,0 +1,498 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  :root{
+    --bg:#0a0f1e;--surface:#111827;--surface2:#1a2235;
+    --border:#1e2d45;--accent:#f59e0b;--success:#10b981;
+    --danger:#ef4444;--info:#3b82f6;--text:#e2e8f0;--muted:#64748b;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+
+  /* ── HERO ── */
+  .pp-hero{
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#050e20 0%,#091528 50%,#050e1e 100%);
+    border-bottom:1px solid var(--border);
+    padding:52px 20px 44px;
+  }
+  .pp-hero::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse 60% 70% at 65% 50%,rgba(59,130,246,.09) 0%,transparent 65%);
+    pointer-events:none;
+  }
+  .pp-hero-inner{max-width:1280px;margin:0 auto;position:relative;display:flex;align-items:center;gap:30px;flex-wrap:wrap;}
+  .pp-photo{
+    width:96px;height:96px;border-radius:50%;object-fit:cover;flex-shrink:0;
+    border:3px solid rgba(245,158,11,.35);
+    box-shadow:0 0 0 6px rgba(245,158,11,.08),0 0 40px rgba(59,130,246,.2);
+  }
+  .pp-av-init{
+    width:96px;height:96px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,#1e3a8a,#3b82f6);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Rajdhani',sans-serif;font-size:42px;font-weight:700;color:#fff;
+    border:3px solid rgba(59,130,246,.35);
+    box-shadow:0 0 0 6px rgba(59,130,246,.08),0 0 40px rgba(59,130,246,.2);
+  }
+  .pp-text{}
+  .pp-tag{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--info);background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:20px;padding:3px 12px;display:inline-block;margin-bottom:10px;}
+  .pp-name{font-family:'Rajdhani',sans-serif;font-size:48px;font-weight:700;color:#fff;line-height:1;margin-bottom:10px;}
+  .pp-chips{display:flex;flex-wrap:wrap;gap:10px;}
+  .pp-chip{font-size:12px;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:5px 12px;display:flex;align-items:center;gap:5px;}
+  .pp-chip strong{color:#fff;}
+  .pp-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;transition:all .15s;position:absolute;top:0;right:0;}
+  .pp-back:hover{color:var(--accent);border-color:rgba(245,158,11,.3);}
+  .btn-player-analysis{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;padding:10px 18px;text-decoration:none;box-shadow:0 4px 16px rgba(124,58,237,0.35);transition:all .2s;margin-top:14px;}
+  .btn-player-analysis:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(124,58,237,0.5);color:#fff;}
+  .btn-player-analysis svg{flex-shrink:0;}
+
+  /* ── STAT ROW ── */
+  .stat-row{max-width:1280px;margin:0 auto;padding:24px 20px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px;text-align:center;position:relative;overflow:hidden;}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;}
+  .stat-card.amber::before{background:linear-gradient(90deg,#b45309,#f59e0b);}
+  .stat-card.green::before{background:linear-gradient(90deg,#047857,#10b981);}
+  .stat-card.blue::before{background:linear-gradient(90deg,#1d4ed8,#3b82f6);}
+  .stat-card.purple::before{background:linear-gradient(90deg,#6d28d9,#8b5cf6);}
+  .stat-card.red::before{background:linear-gradient(90deg,#991b1b,#ef4444);}
+  .stat-num{font-family:'Rajdhani',sans-serif;font-size:38px;font-weight:700;line-height:1;margin-bottom:4px;}
+  .stat-card.amber .stat-num{color:var(--accent);}
+  .stat-card.green .stat-num{color:var(--success);}
+  .stat-card.blue .stat-num{color:var(--info);}
+  .stat-card.purple .stat-num{color:#a78bfa;}
+  .stat-card.red .stat-num{color:var(--danger);}
+  .stat-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+  .stat-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+
+  /* ── BODY ── */
+  .pp-body{max-width:1280px;margin:0 auto;padding:26px 20px 60px;display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start;}
+  @media(max-width:900px){.pp-body{grid-template-columns:1fr;}}
+
+  /* ── SECTION ── */
+  .sec{margin-bottom:28px;}
+  .sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .sec-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:#fff;}
+  .sec-count{font-size:11px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;}
+
+  /* ── TABS ── */
+  .tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+  .tab-btn{padding:7px 18px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all .15s;}
+  .tab-btn:hover{color:var(--accent);border-color:rgba(245,158,11,.3);}
+  .tab-btn.active{background:linear-gradient(135deg,#92400e,#f59e0b);color:#000;border-color:transparent;font-weight:700;}
+  .tab-pane{display:none;}
+  .tab-pane.active{display:block;}
+
+  /* ── MATCH ROW ── */
+  .mr{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:border-color .15s;}
+  .mr:hover{border-color:rgba(59,130,246,.3);}
+  .mr-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px;}
+  .mr-vs{font-size:13px;font-weight:700;color:#fff;}
+  .mr-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .mr-stats{display:flex;gap:16px;padding:12px 16px;align-items:center;flex-wrap:wrap;}
+  .mr-stat{display:flex;flex-direction:column;align-items:center;}
+  .mr-stat-v{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--accent);}
+  .mr-stat-l{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+  .mr-divider{width:1px;height:36px;background:var(--border);}
+  .mr-dismissal{font-size:11px;color:var(--muted);font-style:italic;padding:0 16px 12px;margin-top:-4px;}
+
+  /* ── BADGE ── */
+  .badge{font-size:11px;font-weight:700;border-radius:20px;padding:3px 12px;white-space:nowrap;}
+  .badge-bat{color:var(--accent);background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);}
+  .badge-bowl{color:var(--success);background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);}
+  .badge-mom{color:#facc15;background:rgba(250,204,21,.12);border:1px solid rgba(250,204,21,.3);}
+
+  /* ── SIDEBAR ── */
+  .pp-sidebar{display:flex;flex-direction:column;gap:16px;position:sticky;top:80px;}
+  .sb-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .sb-title{font-size:12px;font-weight:700;color:#94a3b8;padding-bottom:9px;margin-bottom:14px;border-bottom:1px solid var(--border);}
+  .info-row{padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .info-row:last-child{border-bottom:none;}
+  .info-label{font-size:11px;color:var(--muted);}
+  .info-val{font-size:13px;font-weight:600;color:#fff;}
+
+  .tm-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+  .tm-row:last-child{border-bottom:none;}
+  .tm-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#92400e,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;flex-shrink:0;}
+  .tm-info{flex:1;min-width:0;}
+  .tm-name{font-size:13px;font-weight:600;color:#fff;}
+  .tm-tournament{font-size:10px;color:var(--muted);margin-top:1px;}
+  .tm-link{font-size:11px;color:var(--accent);font-weight:600;text-decoration:none;}
+
+  .mom-card{background:linear-gradient(135deg,rgba(250,204,21,.05),rgba(245,158,11,.03));border:1px solid rgba(250,204,21,.15);border-radius:10px;padding:12px;margin-bottom:8px;}
+  .mom-card:last-child{margin-bottom:0;}
+  .mom-match{font-size:12px;font-weight:600;color:#fff;margin-bottom:4px;}
+  .mom-perf{font-size:11px;color:var(--muted);}
+
+  /* ── TOURNAMENT AWARDS ── */
+  .ta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:28px;}
+  .ta-card{border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
+  .ta-card.mot{background:linear-gradient(135deg,#1a1400,#2a1f00);border:1px solid rgba(250,204,21,.3);}
+  .ta-card.bbat{background:linear-gradient(135deg,#0a1f0a,#0d2b10);border:1px solid rgba(16,185,129,.3);}
+  .ta-card.bbol{background:linear-gradient(135deg,#0a0f2a,#0d1535);border:1px solid rgba(59,130,246,.3);}
+  .ta-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.15;}
+  .ta-card.mot::before{background:#facc15;}
+  .ta-card.bbat::before{background:#10b981;}
+  .ta-card.bbol::before{background:#3b82f6;}
+  .ta-icon{font-size:28px;margin-bottom:8px;}
+  .ta-award{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
+  .ta-card.mot .ta-award{color:#facc15;}
+  .ta-card.bbat .ta-award{color:var(--success);}
+  .ta-card.bbol .ta-award{color:var(--info);}
+  .ta-tournament{font-size:13px;font-weight:600;color:#fff;margin-bottom:8px;}
+  .ta-stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;}
+  .ta-stat{display:flex;flex-direction:column;}
+  .ta-stat-v{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;}
+  .ta-card.mot .ta-stat-v,.ta-card.bbat .ta-stat-v{color:var(--accent);}
+  .ta-card.bbol .ta-stat-v{color:var(--info);}
+  .ta-stat-l{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+
+  .empty{padding:28px;text-align:center;color:var(--muted);font-size:13px;}
+</style>
+
+<!-- HERO -->
+<div class="pp-hero">
+  <div class="pp-hero-inner">
+    <a href="javascript:history.back()" class="pp-back">← Back</a>
+    {% if player.photo %}
+      <img src="{{ player.photo.url }}" class="pp-photo" alt="{{ player.player_name }}">
+    {% else %}
+      <div class="pp-av-init">{{ player.player_name|first|upper }}</div>
+    {% endif %}
+    <div class="pp-text">
+      <div class="pp-tag">Player Profile</div>
+      <div class="pp-name">{{ player.player_name }}</div>
+      <div class="pp-chips">
+        {% for r in rosters %}
+          <span class="pp-chip">🏏 <strong>{{ r.tournament_team.team.team_name }}</strong> · {{ r.tournament_team.tournament.tournament_name }}</span>
+        {% empty %}
+          <span class="pp-chip">No team assigned</span>
+        {% endfor %}
+        {% if mom_awards %}<span class="pp-chip">🏆 <strong>{{ mom_awards|length }}</strong> MOM Awards</span>{% endif %}
+      </div>
+      <a href="{% url 'player_analysis' player.id %}" class="btn-player-analysis">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        {% if is_own %}My Performance Analysis{% else %}View Analysis{% endif %}
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="stat-row" id="pp-stat-row">
+  <div class="stat-card amber">
+    <div class="stat-num" data-stat="total_runs">{{ bat_total.total_runs|default:"0" }}</div>
+    <div class="stat-label">Total Runs</div>
+    {% if bat_avg %}<div class="stat-sub" data-stat="bat_avg">Avg {{ bat_avg }}</div>{% endif %}
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-num" data-stat="highest_score">{{ bat_total.highest|default:"0" }}</div>
+    <div class="stat-label">Highest Score</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-num" data-stat="batting_sr">{{ sr|default:"0" }}</div>
+    <div class="stat-label">Strike Rate</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-num" data-stat="total_wickets">{{ bowl_total.total_wickets|default:"0" }}</div>
+    <div class="stat-label">Wickets</div>
+    {% if bowl_avg %}<div class="stat-sub" data-stat="bowl_avg">Avg {{ bowl_avg }}</div>{% endif %}
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-num" data-stat="total_sixes">{{ bat_total.total_sixes|default:"0" }}</div>
+    <div class="stat-label">Sixes</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-num" data-stat="mom_count">{{ mom_awards|length }}</div>
+    <div class="stat-label">MOM Awards</div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="pp-body">
+<div>
+
+  <!-- TOURNAMENT AWARDS -->
+  {% if tournament_awards %}
+  <div class="sec" style="margin-bottom:24px;">
+    <div class="sec-hdr">
+      <span class="sec-title">🏆 Tournament Honours</span>
+      <span class="sec-count">{{ tournament_awards|length }}</span>
+    </div>
+    <div class="ta-grid">
+      {% for a in tournament_awards %}
+        {% if a.award_type == 'MOT' %}
+        <div class="ta-card mot">
+          <div class="ta-icon">🥇</div>
+          <div class="ta-award">Man of the Tournament</div>
+          <div class="ta-tournament">{{ a.tournament.tournament_name }}</div>
+          <div class="ta-stats">
+            {% if a.total_runs %}<div class="ta-stat"><span class="ta-stat-v">{{ a.total_runs }}</span><span class="ta-stat-l">Runs</span></div>{% endif %}
+            {% if a.total_wickets %}<div class="ta-stat"><span class="ta-stat-v">{{ a.total_wickets }}</span><span class="ta-stat-l">Wickets</span></div>{% endif %}
+            {% if a.matches_played %}<div class="ta-stat"><span class="ta-stat-v">{{ a.matches_played }}</span><span class="ta-stat-l">Matches</span></div>{% endif %}
+          </div>
+        </div>
+        {% elif a.award_type == 'BBAT' %}
+        <div class="ta-card bbat">
+          <div class="ta-icon">🏏</div>
+          <div class="ta-award">Best Batsman</div>
+          <div class="ta-tournament">{{ a.tournament.tournament_name }}</div>
+          <div class="ta-stats">
+            {% if a.total_runs %}<div class="ta-stat"><span class="ta-stat-v">{{ a.total_runs }}</span><span class="ta-stat-l">Runs</span></div>{% endif %}
+            {% if a.batting_avg %}<div class="ta-stat"><span class="ta-stat-v">{{ a.batting_avg }}</span><span class="ta-stat-l">Avg</span></div>{% endif %}
+            {% if a.highest_score %}<div class="ta-stat"><span class="ta-stat-v">{{ a.highest_score }}</span><span class="ta-stat-l">HS</span></div>{% endif %}
+            {% if a.batting_sr %}<div class="ta-stat"><span class="ta-stat-v">{{ a.batting_sr }}</span><span class="ta-stat-l">SR</span></div>{% endif %}
+          </div>
+        </div>
+        {% elif a.award_type == 'BBOL' %}
+        <div class="ta-card bbol">
+          <div class="ta-icon">⚾</div>
+          <div class="ta-award">Best Bowler</div>
+          <div class="ta-tournament">{{ a.tournament.tournament_name }}</div>
+          <div class="ta-stats">
+            {% if a.total_wickets %}<div class="ta-stat"><span class="ta-stat-v">{{ a.total_wickets }}</span><span class="ta-stat-l">Wickets</span></div>{% endif %}
+            {% if a.bowling_avg %}<div class="ta-stat"><span class="ta-stat-v">{{ a.bowling_avg }}</span><span class="ta-stat-l">Avg</span></div>{% endif %}
+            {% if a.best_bowling %}<div class="ta-stat"><span class="ta-stat-v">{{ a.best_bowling }}</span><span class="ta-stat-l">Best</span></div>{% endif %}
+            {% if a.bowling_economy %}<div class="ta-stat"><span class="ta-stat-v">{{ a.bowling_economy }}</span><span class="ta-stat-l">Econ</span></div>{% endif %}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('bat', event)">🏏 Batting</button>
+    <button class="tab-btn" onclick="switchTab('bowl', event)">⚾ Bowling</button>
+    {% if mom_awards %}<button class="tab-btn" onclick="switchTab('mom', event)">🌟 MOM Awards</button>{% endif %}
+  </div>
+
+  <!-- BATTING TAB -->
+  <div id="tab-bat" class="tab-pane active">
+    <div class="sec-hdr">
+      <span class="sec-title">🏏 Batting Performances</span>
+      <span class="sec-count">{{ bat_records|length }} innings</span>
+    </div>
+    {% if bat_records %}
+      {% for b in bat_records %}
+      <div class="mr">
+        <div class="mr-head">
+          <div>
+            <div class="mr-vs">{{ b.innings.match.team1 }} vs {{ b.innings.match.team2 }}</div>
+            <div class="mr-sub">{{ b.innings.match.tournament.tournament_name }} · {{ b.innings.match.match_date }}</div>
+          </div>
+          <span class="badge badge-bat">🏏 Batting for {{ b.innings.batting_team }}</span>
+        </div>
+        <div class="mr-stats">
+          <div class="mr-stat">
+            <div class="mr-stat-v">{{ b.runs }}</div>
+            <div class="mr-stat-l">Runs</div>
+          </div>
+          <div class="mr-divider"></div>
+          <div class="mr-stat">
+            <div class="mr-stat-v">{{ b.balls_faced }}</div>
+            <div class="mr-stat-l">Balls</div>
+          </div>
+          <div class="mr-divider"></div>
+          <div class="mr-stat">
+            <div class="mr-stat-v">{{ b.fours }}</div>
+            <div class="mr-stat-l">4s</div>
+          </div>
+          <div class="mr-divider"></div>
+          <div class="mr-stat">
+            <div class="mr-stat-v">{{ b.sixes }}</div>
+            <div class="mr-stat-l">6s</div>
+          </div>
+          <div class="mr-divider"></div>
+          <div class="mr-stat">
+            <div class="mr-stat-v">{{ b.strike_rate }}</div>
+            <div class="mr-stat-l">SR</div>
+          </div>
+          {% if b.status == 'NOT_OUT' %}<span class="badge badge-bowl" style="margin-left:auto;">Not Out</span>{% endif %}
+        </div>
+        {% if b.dismissal_info %}
+        <div class="mr-dismissal">{{ b.dismissal_info }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No batting records found.</div>
+    {% endif %}
+  </div>
+
+  <!-- BOWLING TAB -->
+  <div id="tab-bowl" class="tab-pane">
+    <div class="sec-hdr">
+      <span class="sec-title">⚾ Bowling Performances</span>
+      <span class="sec-count">{{ bowl_records|length }} spells</span>
+    </div>
+    {% if bowl_records %}
+      {% for b in bowl_records %}
+      <div class="mr">
+        <div class="mr-head">
+          <div>
+            <div class="mr-vs">{{ b.innings.match.team1 }} vs {{ b.innings.match.team2 }}</div>
+            <div class="mr-sub">{{ b.innings.match.tournament.tournament_name }} · {{ b.innings.match.match_date }}</div>
+          </div>
+          <span class="badge badge-bowl">⚾ Bowling vs {{ b.innings.batting_team }}</span>
+        </div>
+        <div class="mr-stats">
+          <div class="mr-stat">
+            <div class="mr-stat-v" style="color:var(--success);">{{ b.wickets }}</div>
+            <div class="mr-stat-l">Wickets</div>
+          </div>
+          <div class="mr-divider"></div>
+          <div class="mr-stat">
+            <div class="mr-stat-v">{{ b.overs_bowled }}</div>
+            <div class="mr-stat-l">Overs</div>
+          </div>
+          <div class="mr-divider"></div>
+          <div class="mr-stat">
+            <div class="mr-stat-v">{{ b.runs_given }}</div>
+            <div class="mr-stat-l">Runs</div>
+          </div>
+          <div class="mr-divider"></div>
+          <div class="mr-stat">
+            <div class="mr-stat-v">{{ b.economy }}</div>
+            <div class="mr-stat-l">Economy</div>
+          </div>
+          {% if b.wides %}<div class="mr-divider"></div>
+          <div class="mr-stat">
+            <div class="mr-stat-v" style="color:var(--muted);">{{ b.wides }}</div>
+            <div class="mr-stat-l">Wides</div>
+          </div>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No bowling records found.</div>
+    {% endif %}
+  </div>
+
+  <!-- MOM TAB -->
+  {% if mom_awards %}
+  <div id="tab-mom" class="tab-pane">
+    <div class="sec-hdr">
+      <span class="sec-title">🏆 Man of the Match Awards</span>
+      <span class="sec-count">{{ mom_awards|length }}</span>
+    </div>
+    {% for m in mom_awards %}
+    <div class="mom-card">
+      <div class="mom-match">{{ m.match.team1 }} vs {{ m.match.team2 }} — {{ m.match.tournament.tournament_name }}</div>
+      <div class="mom-perf">
+        {% if m.bat_runs %}🏏 {{ m.bat_runs }} runs ({{ m.bat_balls }}b){% endif %}
+        {% if m.bowl_wickets %} · ⚾ {{ m.bowl_wickets }}/{{ m.bowl_runs }} ({{ m.bowl_overs }}){% endif %}
+        · UII {{ m.uii_score }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- SIDEBAR -->
+<aside class="pp-sidebar">
+  <div class="sb-card">
+    <div class="sb-title">📋 Player Info</div>
+    {% for r in rosters %}
+    <div class="tm-row">
+      <div class="tm-av">{{ r.tournament_team.team.team_name|first|upper }}</div>
+      <div class="tm-info">
+        <div class="tm-name">{{ r.tournament_team.team.team_name }}</div>
+        <div class="tm-tournament">{{ r.tournament_team.tournament.tournament_name }} · {{ r.get_role_display }}</div>
+        {% if r.is_captain %}<div class="tm-tournament" style="color:var(--accent);">👑 Captain</div>{% endif %}
+        {% if r.is_vice_captain %}<div class="tm-tournament" style="color:#94a3b8;">⭐ Vice Captain</div>{% endif %}
+      </div>
+      <a href="/team/{{ r.tournament_team.team.id }}/" class="tm-link">Team →</a>
+    </div>
+    {% empty %}
+    <div class="empty">No team data.</div>
+    {% endfor %}
+  </div>
+
+  <div class="sb-card">
+    <div class="sb-title">📊 Career Summary</div>
+    <div class="info-row"><span class="info-label">Innings Batted</span><span class="info-val">{{ bat_total.innings_count|default:0 }}</span></div>
+    <div class="info-row"><span class="info-label">Total Runs</span><span class="info-val" style="color:var(--accent);">{{ bat_total.total_runs|default:0 }}</span></div>
+    <div class="info-row"><span class="info-label">Highest Score</span><span class="info-val">{{ bat_total.highest|default:0 }}</span></div>
+    <div class="info-row"><span class="info-label">Batting Avg</span><span class="info-val">{{ bat_avg|default:"–" }}</span></div>
+    <div class="info-row"><span class="info-label">Strike Rate</span><span class="info-val">{{ sr|default:"–" }}</span></div>
+    <div class="info-row"><span class="info-label">Fours / Sixes</span><span class="info-val">{{ bat_total.total_fours|default:0 }} / {{ bat_total.total_sixes|default:0 }}</span></div>
+    <div class="info-row"><span class="info-label">Wickets</span><span class="info-val" style="color:var(--success);">{{ bowl_total.total_wickets|default:0 }}</span></div>
+    <div class="info-row"><span class="info-label">Bowling Spells</span><span class="info-val">{{ bowl_total.innings_count|default:0 }}</span></div>
+    <div class="info-row"><span class="info-label">Bowling Avg</span><span class="info-val">{{ bowl_avg|default:"–" }}</span></div>
+    <div class="info-row"><span class="info-label">MOM Awards</span><span class="info-val" style="color:#facc15;">{{ mom_awards|length }}</span></div>
+    <div class="info-row"><span class="info-label">Tournament Honours</span><span class="info-val" style="color:#facc15;">{{ tournament_awards|length }}</span></div>
+  </div>
+</aside>
+
+</div>
+
+<script>
+function switchTab(name, e) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const pane = document.getElementById('tab-' + name);
+  if (pane) pane.classList.add('active');
+  if (e && e.target) e.target.classList.add('active');
+}
+
+// ── LIVE STAT UPDATES ─────────────────────────────────────────────────
+(function() {
+  const PLAYER_ID = {{ player.id }};
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  let fetchPending = false;
+
+  function updateStat(key, value) {
+    const el = document.querySelector(`[data-stat="${key}"]`);
+    if (!el || el.textContent == value) return;
+    el.textContent = value;
+    el.style.transition = 'color 0.3s';
+    el.style.color = '#f59e0b';
+    setTimeout(() => el.style.color = '', 800);
+  }
+
+  function refreshStats() {
+    if (fetchPending) return;
+    fetchPending = true;
+    fetch(`/player/${PLAYER_ID}/stats-api/`)
+      .then(r => r.json())
+      .then(d => {
+        updateStat('total_runs',    d.total_runs);
+        updateStat('highest_score', d.highest_score);
+        updateStat('batting_sr',    d.batting_sr);
+        updateStat('total_wickets', d.total_wickets);
+        updateStat('total_sixes',   d.total_sixes);
+        updateStat('mom_count',     d.mom_count);
+        const avgEl = document.querySelector('[data-stat="bat_avg"]');
+        if (avgEl && d.batting_avg) avgEl.textContent = 'Avg ' + d.batting_avg;
+        const bAvgEl = document.querySelector('[data-stat="bowl_avg"]');
+        if (bAvgEl && d.bowling_avg) bAvgEl.textContent = 'Avg ' + d.bowling_avg;
+      })
+      .catch(() => {})
+      .finally(() => { fetchPending = false; });
+  }
+
+  function connect() {
+    const ws = new WebSocket(`${proto}://${location.host}/ws/live/`);
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'home_update' || msg.type === 'match_status_change') {
+        // Debounce: wait 2s after last update before fetching
+        clearTimeout(connect._t);
+        connect._t = setTimeout(refreshStats, 2000);
+      }
+    };
+    ws.onclose = () => setTimeout(connect, 4000);
+    ws.onerror = () => ws.close();
+  }
+
+  connect();
+})();
+</script>
+
+{% endblock %}

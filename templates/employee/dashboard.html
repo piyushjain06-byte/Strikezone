@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Employee Dashboard — StrikeZone{% endblock %}
+
+{% block content %}
+<style>
+  .emp-wrap { max-width: 1100px; margin: 32px auto; padding: 0 16px; }
+  .emp-title { font-size: 24px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
+  .emp-sub { color: #64748b; font-size: 14px; margin-bottom: 28px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .stat-card { background: #1e293b; border-radius: 14px; padding: 20px 22px; border: 1px solid #334155; }
+  .stat-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .stat-value { font-size: 32px; font-weight: 800; color: #f1f5f9; }
+  .stat-value.yellow { color: #f59e0b; }
+  .stat-value.blue   { color: #60a5fa; }
+  .stat-value.purple { color: #a78bfa; }
+  .stat-value.green  { color: #34d399; }
+  .section-title { font-size: 16px; font-weight: 700; color: #f1f5f9; margin: 28px 0 14px; display: flex; align-items: center; gap: 8px; }
+  .table-wrap { background: #1e293b; border-radius: 14px; border: 1px solid #334155; overflow: hidden; margin-bottom: 28px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #0f172a; padding: 12px 16px; font-size: 12px; color: #64748b; text-align: left; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 12px 16px; font-size: 14px; color: #cbd5e1; border-top: 1px solid #1e293b; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-free     { background: rgba(148,163,184,0.15); color: #94a3b8; }
+  .badge-pro      { background: rgba(59,130,246,0.15);  color: #60a5fa; }
+  .badge-pro_plus { background: rgba(139,92,246,0.15);  color: #a78bfa; }
+  .badge-live     { background: rgba(34,197,94,0.15);   color: #4ade80; }
+  .btn-sm { padding: 5px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-block; }
+  .btn-manage { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+  .nav-links { display: flex; gap: 12px; margin-bottom: 24px; }
+  .nav-link { padding: 8px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+  .nav-link.active { background: rgba(245,158,11,0.1); color: #f59e0b; border-color: rgba(245,158,11,0.3); }
+  .warning-row td { color: #fbbf24; }
+</style>
+
+<div class="emp-wrap">
+  <div class="emp-title">👔 Employee Dashboard</div>
+  <div class="emp-sub">Manage users, view stats and revenue reports.</div>
+
+  <div class="nav-links">
+    <a href="{% url 'employee_dashboard' %}" class="nav-link active">📊 Dashboard</a>
+    <a href="{% url 'employee_users' %}" class="nav-link">👥 All Users</a>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Users</div>
+      <div class="stat-value">{{ total_users }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Free</div>
+      <div class="stat-value">{{ free_count }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pro</div>
+      <div class="stat-value blue">{{ pro_count }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pro Plus</div>
+      <div class="stat-value purple">{{ proplus_count }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Est. Monthly Revenue</div>
+      <div class="stat-value green">₹{{ estimated_revenue }}</div>
+    </div>
+  </div>
+
+  <!-- EXPIRING SOON -->
+  <div class="section-title">⚠️ Expiring Soon (Next 7 Days)</div>
+  {% if expiring_soon %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Mobile</th><th>Plan</th><th>Expires</th></tr></thead>
+      <tbody>
+        {% for u in expiring_soon %}
+        <tr class="warning-row">
+          <td>{{ u.mobile_number }}</td>
+          <td><span class="badge badge-{{ u.plan }}">{{ u.get_plan_display }}</span></td>
+          <td>{{ u.plan_expires_at|date:"d M Y, h:i A" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="color:#64748b;font-size:14px;margin-bottom:28px;">No plans expiring in the next 7 days.</div>
+  {% endif %}
+
+  <!-- RECENTLY UPGRADED -->
+  <div class="section-title">🚀 Recently Upgraded</div>
+  {% if recently_upgraded %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Mobile</th><th>Plan</th><th>Expires</th></tr></thead>
+      <tbody>
+        {% for u in recently_upgraded %}
+        <tr>
+          <td>{{ u.mobile_number }}</td>
+          <td><span class="badge badge-{{ u.plan }}">{{ u.get_plan_display }}</span></td>
+          <td>{{ u.plan_expires_at|date:"d M Y" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="color:#64748b;font-size:14px;margin-bottom:28px;">No recent upgrades.</div>
+  {% endif %}
+
+  <!-- MOST ACTIVE TOURNAMENTS -->
+  <div class="section-title">🏆 Most Active Tournaments</div>
+  {% if tournament_activity %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tournament</th><th>Matches</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for t in tournament_activity %}
+        <tr>
+          <td>{{ t.tournament.tournament_name }}</td>
+          <td>{{ t.match_count }}</td>
+          <td>{% if t.is_live %}<span class="badge badge-live">🔴 Live</span>{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

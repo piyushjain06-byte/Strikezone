@@ -28,7 +28,72 @@
   }
   .btn-logout:hover { color: #fff; border-color: #475569; }
 
-  /* ── PLAYER HERO ── */
+  /* ── TOP BAR QR BUTTONS ── */
+  .top-bar-actions { display: flex; align-items: center; gap: 8px; }
+  .btn-topbar {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border-radius: 9px; font-size: 12px; font-weight: 700;
+    cursor: pointer; border: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+    text-decoration: none; white-space: nowrap;
+  }
+  .btn-myqr  { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+  .btn-myqr:hover  { background: rgba(59,130,246,0.2); }
+  .btn-scanqr { background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+  .btn-scanqr:hover { background: rgba(245,158,11,0.2); }
+
+  /* ── MODALS ── */
+  .qr-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.88); z-index: 9999;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .qr-modal.open { display: flex; }
+  .qr-modal-box {
+    background: #0e1117; border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 18px; padding: 24px 20px;
+    width: 100%; max-width: 320px; position: relative; text-align: center;
+  }
+  .qr-modal-title { font-size: 15px; font-weight: 700; color: #60a5fa; margin-bottom: 4px; }
+  .qr-modal-sub   { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+  .qr-white-box   { display: inline-block; background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 0 24px rgba(59,130,246,0.2); }
+  .btn-modal-close {
+    position: absolute; top: 12px; right: 14px;
+    background: none; border: none; color: var(--muted);
+    font-size: 20px; cursor: pointer; line-height: 1;
+  }
+  .btn-modal-close:hover { color: #fff; }
+  .btn-dl { margin-top: 16px; display: inline-flex; align-items: center; gap: 7px; padding: 9px 20px; border-radius: 10px; background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .btn-dl:hover { background: rgba(34,197,94,0.2); }
+
+  /* ── SCANNER MODAL ── */
+  .scanner-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.88); z-index: 9999;
+    align-items: center; justify-content: center;
+    flex-direction: column; padding: 20px;
+  }
+  .scanner-modal.open { display: flex; }
+  .scanner-box {
+    background: #0e1117; border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 18px; padding: 20px; width: 100%; max-width: 380px;
+    position: relative;
+  }
+  .scanner-title { text-align: center; font-size: 15px; font-weight: 700; color: #f59e0b; margin-bottom: 4px; }
+  .scanner-sub   { text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .scanner-viewport { width: 100%; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #000; position: relative; }
+  .scanner-viewport video { width: 100%; height: 100%; object-fit: cover; }
+  .scanner-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .scanner-frame { width: 60%; height: 60%; border: 2.5px solid #f59e0b; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.45); animation: pulse-frame 1.5s ease-in-out infinite; }
+  @keyframes pulse-frame {
+    0%,100% { border-color: #f59e0b; box-shadow: 0 0 0 9999px rgba(0,0,0,0.45), 0 0 12px rgba(245,158,11,0.4); }
+    50%      { border-color: #fbbf24; box-shadow: 0 0 0 9999px rgba(0,0,0,0.45), 0 0 24px rgba(245,158,11,0.7); }
+  }
+  .scanner-status { text-align: center; font-size: 12px; color: var(--muted); margin-top: 10px; min-height: 18px; }
+  .scanner-status.success { color: #22c55e; font-weight: 700; }
+  .scanner-status.error   { color: #ef4444; }
+  .btn-close-scanner { position: absolute; top: 12px; right: 14px; background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; line-height: 1; }
+  .btn-close-scanner:hover { color: #fff; }
+
   .player-hero {
     background: linear-gradient(135deg, #0a1a0a, #071507);
     border: 1px solid rgba(34,197,94,0.2);
@@ -193,10 +258,16 @@
     <div style="font-size:13px; color:var(--muted);">
       👋 Hello, <strong style="color:#fff;">{% if player %}{{ player.player_name }}{% else %}{{ player_name }}{% endif %}</strong>
     </div>
-    <form method="post" action="{% url 'player_logout' %}">
-      {% csrf_token %}
-      <button type="submit" class="btn-logout">Logout →</button>
-    </form>
+    <div class="top-bar-actions">
+      {% if not is_guest %}
+      <button class="btn-topbar btn-myqr" onclick="openQRModal()">🪪 My QR</button>
+      <button class="btn-topbar btn-scanqr" onclick="openScanner()">📷 Scan</button>
+      {% endif %}
+      <form method="post" action="{% url 'player_logout' %}" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="btn-logout">Logout →</button>
+      </form>
+    </div>
   </div>
 
 
@@ -238,6 +309,33 @@
     {% csrf_token %}
     <input type="file" id="photo-upload" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="this.form.submit()">
   </form>
+
+  <!-- ── MY QR MODAL ── -->
+  <div class="qr-modal" id="qr-modal">
+    <div class="qr-modal-box">
+      <button class="btn-modal-close" onclick="closeQRModal()">✕</button>
+      <div class="qr-modal-title">🪪 Your Player QR</div>
+      <div class="qr-modal-sub">Anyone can scan this to view your cricket profile</div>
+      <div class="qr-white-box" id="qr-render-target"></div>
+      <br>
+      <button class="btn-dl" onclick="downloadQR()">⬇️ Save QR</button>
+    </div>
+  </div>
+
+  <!-- ── QR SCANNER MODAL ── -->
+  <div class="scanner-modal" id="scanner-modal">
+    <div class="scanner-box">
+      <button class="btn-close-scanner" onclick="closeScanner()">✕</button>
+      <div class="scanner-title">📷 Scan Player QR</div>
+      <div class="scanner-sub">Point at a player's QR code to view their profile</div>
+      <div class="scanner-viewport">
+        <video id="scanner-video" playsinline autoplay muted></video>
+        <div class="scanner-overlay"><div class="scanner-frame"></div></div>
+        <canvas id="scanner-canvas" style="display:none;"></canvas>
+      </div>
+      <div class="scanner-status" id="scanner-status">Initializing camera…</div>
+    </div>
+  </div>
 
   <!-- ── EDIT PROFILE ── -->
   <div class="profile-card">
@@ -332,53 +430,53 @@
 
   <div class="stats-grid stats-grid-4" style="margin-bottom:8px;">
     <div class="stat-card">
-      <div class="stat-val">{{ total_matches }}</div>
+      <div class="stat-val" data-stat="total_matches">{{ total_matches }}</div>
       <div class="stat-label">Matches</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val">{{ total_innings_b }}</div>
+      <div class="stat-val" data-stat="total_innings_b">{{ total_innings_b }}</div>
       <div class="stat-label">Innings</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val accent">{{ total_runs }}</div>
+      <div class="stat-val accent" data-stat="total_runs">{{ total_runs }}</div>
       <div class="stat-label">Runs</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val gold">{{ batting_avg }}</div>
+      <div class="stat-val gold" data-stat="batting_avg">{{ batting_avg }}</div>
       <div class="stat-label">Average</div>
     </div>
   </div>
 
   <div class="stats-grid stats-grid-4" style="margin-bottom:8px;">
     <div class="stat-card">
-      <div class="stat-val info">{{ batting_sr }}</div>
+      <div class="stat-val info" data-stat="batting_sr">{{ batting_sr }}</div>
       <div class="stat-label">Strike Rate</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val">{{ highest_score.runs|default:"0" }}{% if highest_score and highest_score.status == 'NOT_OUT' %}<span style="color:var(--accent);font-size:20px;">*</span>{% endif %}</div>
+      <div class="stat-val" data-stat="highest_score">{{ highest_score.runs|default:"0" }}{% if highest_score and highest_score.status == 'NOT_OUT' %}<span style="color:var(--accent);font-size:20px;">*</span>{% endif %}</div>
       <div class="stat-label">Highest</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val gold">{{ fifties }}</div>
+      <div class="stat-val gold" data-stat="fifties">{{ fifties }}</div>
       <div class="stat-label">50s</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val accent">{{ hundreds }}</div>
+      <div class="stat-val accent" data-stat="hundreds">{{ hundreds }}</div>
       <div class="stat-label">100s</div>
     </div>
   </div>
 
   <div class="stats-grid stats-grid-3">
     <div class="stat-card">
-      <div class="stat-val">{{ total_balls_faced }}</div>
+      <div class="stat-val" data-stat="total_balls_faced">{{ total_balls_faced }}</div>
       <div class="stat-label">Balls Faced</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val info">{{ total_fours }}</div>
+      <div class="stat-val info" data-stat="total_fours">{{ total_fours }}</div>
       <div class="stat-label">Fours</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val gold">{{ total_sixes }}</div>
+      <div class="stat-val gold" data-stat="total_sixes">{{ total_sixes }}</div>
       <div class="stat-label">Sixes</div>
     </div>
   </div>
@@ -389,19 +487,19 @@
 
   <div class="stats-grid stats-grid-4" style="margin-bottom:8px;">
     <div class="stat-card">
-      <div class="stat-val accent">{{ total_wickets }}</div>
+      <div class="stat-val accent" data-stat="total_wickets">{{ total_wickets }}</div>
       <div class="stat-label">Wickets</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val gold">{{ bowling_economy }}</div>
+      <div class="stat-val gold" data-stat="bowling_economy">{{ bowling_economy }}</div>
       <div class="stat-label">Economy</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val">{{ bowling_avg }}</div>
+      <div class="stat-val" data-stat="bowling_avg">{{ bowling_avg }}</div>
       <div class="stat-label">Average</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val">
+      <div class="stat-val" data-stat="best_bowling">
         {% if best_bowling %}{{ best_bowling.wickets }}/{{ best_bowling.runs_given }}{% else %}—{% endif %}
       </div>
       <div class="stat-label">Best</div>
@@ -410,11 +508,11 @@
 
   <div class="stats-grid stats-grid-2">
     <div class="stat-card">
-      <div class="stat-val">{{ total_wides }}</div>
+      <div class="stat-val" data-stat="total_wides">{{ total_wides }}</div>
       <div class="stat-label">Wides</div>
     </div>
     <div class="stat-card">
-      <div class="stat-val">{{ total_no_balls }}</div>
+      <div class="stat-val" data-stat="total_no_balls">{{ total_no_balls }}</div>
       <div class="stat-label">No Balls</div>
     </div>
   </div>
@@ -542,5 +640,194 @@
   {% endif %}
 
 </div>
+
+<!-- QR Code generation library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- jsQR for scanning -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+<script>
+// ── Generate QR (lazy — only when modal opens) ──
+let qrGenerated = false;
+const playerId = {{ player.id }};
+const profileUrl = window.location.protocol + '//' + window.location.host + '/player/' + playerId + '/profile/';
+
+function openQRModal() {
+  document.getElementById('qr-modal').classList.add('open');
+  if (!qrGenerated) {
+    new QRCode(document.getElementById('qr-render-target'), {
+      text: profileUrl,
+      width: 200, height: 200,
+      colorDark: '#000000', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+    qrGenerated = true;
+  }
+}
+
+function closeQRModal() {
+  document.getElementById('qr-modal').classList.remove('open');
+}
+
+document.getElementById('qr-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeQRModal();
+});
+
+function downloadQR() {
+  const img = document.querySelector('#qr-render-target img, #qr-render-target canvas');
+  if (!img) return;
+  let dataUrl;
+  if (img.tagName === 'CANVAS') {
+    dataUrl = img.toDataURL('image/png');
+  } else {
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    dataUrl = c.toDataURL('image/png');
+  }
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = 'player-qr-{{ player.id }}.png';
+  a.click();
+}
+
+// ── QR Scanner ──
+let scanStream = null;
+let scanInterval = null;
+
+function openScanner() {
+  document.getElementById('scanner-modal').classList.add('open');
+  const status = document.getElementById('scanner-status');
+  status.textContent = 'Requesting camera access…';
+  status.className = 'scanner-status';
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      scanStream = stream;
+      const video = document.getElementById('scanner-video');
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play();
+        status.textContent = 'Scanning… point at a QR code';
+        startScanLoop();
+      };
+    })
+    .catch(() => {
+      status.textContent = '❌ Camera access denied.';
+      status.className = 'scanner-status error';
+    });
+}
+
+function startScanLoop() {
+  const video = document.getElementById('scanner-video');
+  const canvas = document.getElementById('scanner-canvas');
+  const ctx = canvas.getContext('2d');
+  scanInterval = setInterval(() => {
+    if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+    if (code && code.data) {
+      const statusEl = document.getElementById('scanner-status');
+      statusEl.textContent = '✅ QR detected! Redirecting…';
+      statusEl.className = 'scanner-status success';
+      clearInterval(scanInterval);
+      stopCamera();
+      setTimeout(() => {
+        const url = code.data;
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+          window.location.href = url;
+        } else {
+          statusEl.textContent = `Scanned: ${url}`;
+        }
+      }, 700);
+    }
+  }, 200);
+}
+
+function stopCamera() {
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+}
+
+function closeScanner() {
+  stopCamera();
+  document.getElementById('scanner-modal').classList.remove('open');
+  document.getElementById('scanner-status').textContent = 'Initializing camera…';
+  document.getElementById('scanner-status').className = 'scanner-status';
+  document.getElementById('scanner-video').srcObject = null;
+}
+
+document.getElementById('scanner-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeScanner();
+});
+</script>
+
+<script>
+// ── LIVE STAT UPDATES ─────────────────────────────────────────────────
+(function() {
+  const PLAYER_ID = {{ player.id }};
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  let fetchPending = false;
+
+  function flash(el) {
+    if (!el) return;
+    el.style.transition = 'color 0.3s';
+    el.style.color = '#f59e0b';
+    setTimeout(() => el.style.color = '', 900);
+  }
+
+  function set(key, val) {
+    const el = document.querySelector(`[data-stat="${key}"]`);
+    if (!el) return;
+    const newVal = String(val ?? '—');
+    if (el.textContent.trim() === newVal) return;
+    el.textContent = newVal;
+    flash(el);
+  }
+
+  function refreshStats() {
+    if (fetchPending) return;
+    fetchPending = true;
+    fetch(`/player/${PLAYER_ID}/stats-api/`)
+      .then(r => r.json())
+      .then(d => {
+        set('total_runs',       d.total_runs);
+        set('batting_avg',      d.batting_avg);
+        set('batting_sr',       d.batting_sr);
+        set('highest_score',    d.highest_score);
+        set('fifties',          d.fifties);
+        set('hundreds',         d.hundreds);
+        set('total_balls_faced',d.total_balls_faced ?? '');
+        set('total_fours',      d.total_fours ?? '');
+        set('total_sixes',      d.total_sixes ?? '');
+        set('total_wickets',    d.total_wickets);
+        set('bowling_economy',  d.bowling_economy);
+        set('bowling_avg',      d.bowling_avg);
+        set('best_bowling',     d.best_bowling);
+        set('total_wides',      d.total_wides ?? '');
+        set('total_no_balls',   d.total_no_balls ?? '');
+      })
+      .catch(() => {})
+      .finally(() => { fetchPending = false; });
+  }
+
+  function connect() {
+    const ws = new WebSocket(`${proto}://${location.host}/ws/live/`);
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'home_update' || msg.type === 'match_status_change') {
+        clearTimeout(connect._t);
+        connect._t = setTimeout(refreshStats, 2000);
+      }
+    };
+    ws.onclose = () => setTimeout(connect, 4000);
+    ws.onerror = () => ws.close();
+  }
+
+  connect();
+})();
+</script>
 
 {% endblock %}

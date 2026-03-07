@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Upgrade Plan — StrikeZone{% endblock %}
+
+{% block content %}
+<style>
+  .plans-wrapper { max-width: 900px; margin: 40px auto; padding: 0 16px; }
+  .plans-title { text-align: center; font-size: 28px; font-weight: 700; color: #f59e0b; margin-bottom: 8px; }
+  .plans-sub { text-align: center; color: #94a3b8; margin-bottom: 40px; font-size: 15px; }
+  .current-plan-banner { text-align: center; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 10px; padding: 12px 20px; margin-bottom: 32px; color: #f59e0b; font-weight: 600; }
+  .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+  .plan-card { background: #1e293b; border: 2px solid #334155; border-radius: 16px; padding: 28px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .plan-card.active-free { border-color: #f59e0b; }
+  .plan-card.active-pro { border-color: #3b82f6; }
+  .plan-card.active-pro_plus { border-color: #8b5cf6; }
+  .plan-name { font-size: 20px; font-weight: 700; color: #f1f5f9; }
+  .plan-price { font-size: 32px; font-weight: 800; color: #f59e0b; }
+  .plan-price span { font-size: 14px; font-weight: 400; color: #94a3b8; }
+  .plan-features { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .plan-features li { font-size: 14px; color: #cbd5e1; display: flex; align-items: center; gap: 8px; }
+  .tick { color: #10b981; } .cross { color: #ef4444; }
+  .btn-plan { display: block; padding: 12px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; width: 100%; text-align: center; text-decoration: none; }
+  .btn-plan:hover { opacity: 0.85; }
+  .btn-current { background: #334155; color: #94a3b8; cursor: default; pointer-events: none; }
+  .btn-pro { background: #3b82f6; color: #fff; }
+  .btn-pro_plus { background: #8b5cf6; color: #fff; }
+  .badge-current { display: inline-block; background: #f59e0b; color: #000; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
+  .validity-note { font-size: 12px; color: #64748b; text-align: center; margin-top: 4px; }
+</style>
+
+<div class="plans-wrapper">
+  <div class="plans-title">Choose Your Plan</div>
+  <div class="plans-sub">Valid for 30 days. Auto-downgrade to Free after expiry.</div>
+
+  <div class="current-plan-banner">
+    Your current plan: <strong>{{ current_label }}</strong>
+    {% if expires_at %}&nbsp;· Expires {{ expires_at|date:"d M Y" }}{% endif %}
+  </div>
+
+  {% if messages %}{% for m in messages %}<div style="text-align:center;color:#10b981;margin-bottom:16px;font-weight:600;">{{ m }}</div>{% endfor %}{% endif %}
+
+  <div class="plans-grid">
+
+    <!-- FREE -->
+    <div class="plan-card {% if current_plan == 'free' %}active-free{% endif %}">
+      <div>
+        <div class="plan-name">Free {% if current_plan == 'free' %}<span class="badge-current">Current</span>{% endif %}</div>
+        <div class="plan-price">₹0 <span>/ forever</span></div>
+      </div>
+      <ul class="plan-features">
+        <li><span class="tick">✓</span> View live scores</li>
+        <li><span class="tick">✓</span> View scorecards</li>
+        <li><span class="tick">✓</span> Player & team profiles</li>
+        <li><span class="cross">✗</span> ML Analysis</li>
+        <li><span class="cross">✗</span> CrickBot AI</li>
+        <li><span class="cross">✗</span> Manage cricket</li>
+      </ul>
+      <span class="btn-plan btn-current">{% if current_plan == 'free' %}Current Plan{% else %}Free (Default){% endif %}</span>
+    </div>
+
+    <!-- PRO -->
+    <div class="plan-card {% if current_plan == 'pro' %}active-pro{% endif %}">
+      <div>
+        <div class="plan-name">Pro {% if current_plan == 'pro' %}<span class="badge-current">Current</span>{% endif %}</div>
+        <div class="plan-price">₹199 <span>/ month</span></div>
+      </div>
+      <ul class="plan-features">
+        <li><span class="tick">✓</span> Everything in Free</li>
+        <li><span class="tick">✓</span> Player ML Analysis</li>
+        <li><span class="tick">✓</span> Team ML Analysis</li>
+        <li><span class="tick">✓</span> Match ML Analysis</li>
+        <li><span class="tick">✓</span> CrickBot AI</li>
+        <li><span class="cross">✗</span> Manage cricket</li>
+      </ul>
+      {% if current_plan == 'pro' %}
+        <span class="btn-plan btn-current">Current Plan</span>
+      {% elif current_plan == 'pro_plus' %}
+        <span class="btn-plan btn-current">Cannot Downgrade</span>
+      {% else %}
+        <a href="{% url 'checkout' 'pro' %}" class="btn-plan btn-pro">Upgrade to Pro — ₹199</a>
+      {% endif %}
+      <div class="validity-note">Valid for 30 days</div>
+    </div>
+
+    <!-- PRO PLUS -->
+    <div class="plan-card {% if current_plan == 'pro_plus' %}active-pro_plus{% endif %}">
+      <div>
+        <div class="plan-name">Pro Plus {% if current_plan == 'pro_plus' %}<span class="badge-current">Current</span>{% endif %}</div>
+        <div class="plan-price">₹499 <span>/ month</span></div>
+      </div>
+      <ul class="plan-features">
+        <li><span class="tick">✓</span> Everything in Pro</li>
+        <li><span class="tick">✓</span> Create tournaments</li>
+        <li><span class="tick">✓</span> Create & manage teams</li>
+        <li><span class="tick">✓</span> Add & edit players</li>
+        <li><span class="tick">✓</span> Start & score matches</li>
+        <li><span class="tick">✓</span> Full management access</li>
+      </ul>
+      {% if current_plan == 'pro_plus' %}
+        <span class="btn-plan btn-current">Current Plan</span>
+      {% else %}
+        <a href="{% url 'checkout' 'pro_plus' %}" class="btn-plan btn-pro_plus">Upgrade to Pro Plus — ₹499</a>
+      {% endif %}
+      <div class="validity-note">Valid for 30 days</div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

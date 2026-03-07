@@ -120,14 +120,29 @@
     .inn-big-score{font-size:34px;}
     .inn-tab{font-size:12px;padding:10px 6px;}
   }
+
+  /* clickable player/team names */
+  .name-link { color: inherit; text-decoration: none; transition: color .15s; }
+  .name-link:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  .team-link-live:hover { color: #f59e0b; }
+  .ytb-link { cursor: pointer; }
+  .ytb-link:hover { border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
+
+  /* Strike indicators */
+  .strike-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent); margin-left:6px; vertical-align:middle; box-shadow:0 0 6px rgba(16,185,129,0.7); animation:strikePulse 1.2s infinite; }
+  .nonstrike-dot { display:inline-block; width:8px; height:8px; border-radius:50%; border:2px solid #475569; margin-left:6px; vertical-align:middle; }
+  @keyframes strikePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
+  tr.on-strike td { background:rgba(16,185,129,0.04) !important; }
+  tr.on-strike .batting-name { color:#fff; font-weight:700; }
+
 </style>
 
-<div class="ls-wrap">
+<div class="ls-wrap" data-match-id="{{ match.id }}" data-live="{{ current_innings|yesno:'true,false' }}">
 
 {% if current_innings %}
 <div class="refresh-bar">
   <div class="refresh-dot"></div>
-  <span>Live &middot; Auto-updating every 5s</span>
+  <span>Live &middot; Connecting...</span>
   <span class="last-updated" id="last-updated">&mdash;</span>
 </div>
 {% endif %}
@@ -137,7 +152,7 @@
   <div class="hero-top">
     <div>
       <div class="hero-tournament">{{ match.tournament.tournament_name }}</div>
-      <div class="hero-teams">{{ match.team1 }} vs {{ match.team2 }}</div>
+      <div class="hero-teams"><a href="/team/{{ match.team1.id }}/" class="name-link team-link-live">{{ match.team1 }}</a> vs <a href="/team/{{ match.team2.id }}/" class="name-link team-link-live">{{ match.team2 }}</a></div>
       <div class="hero-venue">{{ match.venue }} &middot; {{ match.match_date }}</div>
     </div>
     {% if current_innings %}
@@ -153,7 +168,7 @@
     {% if inn1 %}
     <div class="inn-score-block {% if current_innings and current_innings.innings_number == 1 %}active-inn{% endif %}">
       <div class="inn-label">1st Innings</div>
-      <div class="inn-team">{{ inn1.batting_team }}</div>
+      <div class="inn-team"><a href="/team/{{ inn1.batting_team.id }}/" class="name-link team-link-live">{{ inn1.batting_team }}</a></div>
       <div class="inn-big-score" id="inn1-score">{{ inn1.total_runs }}<span>/{{ inn1.total_wickets }}</span></div>
       <div class="inn-overs" id="inn1-overs">{{ inn1.overs_completed }} overs</div>
       <div class="inn-extras" id="inn1-extras">Extras: {{ inn1.extras }}</div>
@@ -163,7 +178,7 @@
     {% if inn2 %}
     <div class="inn-score-block {% if current_innings and current_innings.innings_number == 2 %}active-inn{% endif %}">
       <div class="inn-label">2nd Innings</div>
-      <div class="inn-team">{{ inn2.batting_team }}</div>
+      <div class="inn-team"><a href="/team/{{ inn2.batting_team.id }}/" class="name-link team-link-live">{{ inn2.batting_team }}</a></div>
       <div class="inn-big-score" id="inn2-score">{{ inn2.total_runs }}<span>/{{ inn2.total_wickets }}</span></div>
       <div class="inn-overs" id="inn2-overs">{{ inn2.overs_completed }} overs</div>
       <div class="inn-extras" id="inn2-extras">Extras: {{ inn2.extras }}</div>
@@ -184,7 +199,7 @@
 {% if target and current_innings and current_innings.innings_number == 2 and not result %}
 <div class="target-banner">
   <div>
-    <div class="target-main">&#127919; {{ inn2.batting_team }} needs <strong id="runs-needed">{{ target }}</strong> runs</div>
+    <div class="target-main">&#127919; <a href="/team/{{ inn2.batting_team.id }}/" class="name-link team-link-live">{{ inn2.batting_team }}</a> needs <strong id="runs-needed">{{ target }}</strong> runs</div>
     <div class="target-sub">from <span id="balls-left">&mdash;</span> &middot; Req RR: <span id="req-rr">&mdash;</span></div>
   </div>
 </div>
@@ -225,11 +240,11 @@
 {% if current_innings %}
 <div class="batsmen-row" id="batsmen-row">
   {% for b in batting_sc1 %}{% if b.status == 'NOT_OUT' %}
-  <div class="batsman-card on-strike">
+  <div class="batsman-card {% if b.batsman.id == striker_id %}on-strike{% endif %}" data-player-id="{{ b.batsman.id }}">
     <div class="bat-header">
       {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="bat-avatar">
       {% else %}<div class="bat-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
-      <div><div class="bat-name">{{ b.batsman.player_name }}</div><div class="strike-tag">&#127955; Batting</div></div>
+      <div><div class="bat-name"><a href="/player/{{ b.batsman.id }}/profile/" class="name-link">{{ b.batsman.player_name }}</a></div><div class="strike-tag">{% if b.batsman.id == striker_id %}⚡ On Strike{% else %}🏏 Batting{% endif %}</div></div>
     </div>
     <div class="bat-stats">
       <div class="bat-stat"><div class="bat-stat-val">{{ b.runs }}</div><div class="bat-stat-lbl">Runs</div></div>
@@ -241,11 +256,11 @@
   </div>
   {% endif %}{% endfor %}
   {% for b in batting_sc2 %}{% if b.status == 'NOT_OUT' %}
-  <div class="batsman-card on-strike">
+  <div class="batsman-card {% if b.batsman.id == striker_id %}on-strike{% endif %}" data-player-id="{{ b.batsman.id }}">
     <div class="bat-header">
       {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="bat-avatar">
       {% else %}<div class="bat-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
-      <div><div class="bat-name">{{ b.batsman.player_name }}</div><div class="strike-tag">&#127955; Batting</div></div>
+      <div><div class="bat-name"><a href="/player/{{ b.batsman.id }}/profile/" class="name-link">{{ b.batsman.player_name }}</a></div><div class="strike-tag">{% if b.batsman.id == striker_id %}⚡ On Strike{% else %}🏏 Batting{% endif %}</div></div>
     </div>
     <div class="bat-stats">
       <div class="bat-stat"><div class="bat-stat-val">{{ b.runs }}</div><div class="bat-stat-lbl">Runs</div></div>
@@ -264,13 +279,13 @@
   <div class="inn-tabs">
     {% if inn1 %}
     <div class="inn-tab active" id="tab-btn-inn1" onclick="switchInnTab('inn1')">
-      {{ inn1.batting_team }}
+      <a href="/team/{{ inn1.batting_team.id }}/" class="name-link team-link-live">{{ inn1.batting_team }}</a>
       <span class="inn-tab-score" id="tab-score-inn1">{{ inn1.total_runs }}/{{ inn1.total_wickets }}</span>
     </div>
     {% endif %}
     {% if inn2 %}
     <div class="inn-tab" id="tab-btn-inn2" onclick="switchInnTab('inn2')">
-      {{ inn2.batting_team }}
+      <a href="/team/{{ inn2.batting_team.id }}/" class="name-link team-link-live">{{ inn2.batting_team }}</a>
       <span class="inn-tab-score" id="tab-score-inn2">{{ inn2.total_runs }}/{{ inn2.total_wickets }}</span>
     </div>
     {% endif %}
@@ -289,11 +304,15 @@
       <!-- NOT OUT rows appear FIRST (top) -->
       <tbody id="bat-body-inn1-notout">
         {% for b in batting_sc1 %}{% if b.status == 'NOT_OUT' %}
-        <tr class="not-out-row" data-batsman="{{ b.batsman.player_name }}" data-status="NOT_OUT">
+        <tr class="not-out-row {% if b.batsman.id == striker_id %}on-strike{% endif %}" data-batsman="{{ b.batsman.player_name }}" data-player-id="{{ b.batsman.id }}" data-status="NOT_OUT">
           <td><div class="player-cell">
             {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av">
             {% else %}<div class="sc-av-init amber">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
-            <div><span class="batting-name">{{ b.batsman.player_name }}</span><span class="not-out-txt">not out</span></div>
+            <div>
+              <span class="batting-name"><a href="/player/{{ b.batsman.id }}/profile/" class="name-link">{{ b.batsman.player_name }}</a></span>
+              {% if b.batsman.id == striker_id %}<span class="strike-dot" title="On strike"></span>{% elif b.batsman.id == non_striker_id %}<span class="nonstrike-dot" title="Non-striker"></span>{% endif %}
+              <span class="not-out-txt">not out</span>
+            </div>
           </div></td>
           <td></td>
           <td class="r"><span class="runs-bold bat-r">{{ b.runs }}</span></td>
@@ -311,7 +330,7 @@
           <td><div class="player-cell">
             {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av">
             {% else %}<div class="sc-av-init amber">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
-            <span class="batting-name">{{ b.batsman.player_name }}</span>
+            <span class="batting-name"><a href="/player/{{ b.batsman.id }}/profile/" class="name-link">{{ b.batsman.player_name }}</a></span>
           </div></td>
           <td><span class="dismissal-txt">{% if b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.get_status_display }}{% endif %}</span></td>
           <td class="r"><span class="runs-bold bat-r">{{ b.runs }}</span></td>
@@ -337,7 +356,7 @@
     <div class="ytb-section">
       <div class="ytb-title">Yet to Bat</div>
       <div class="ytb-chips">
-        {% for p in yet_to_bat1 %}<span class="ytb-chip">{{ p.player_name }}</span>{% endfor %}
+        {% for p in yet_to_bat1 %}<a href="/player/{{ p.id }}/profile/" class="ytb-chip name-link ytb-link">{{ p.player_name }}</a>{% endfor %}
       </div>
     </div>
     {% endif %}
@@ -354,7 +373,7 @@
           <td><div class="player-cell">
             {% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av">
             {% else %}<div class="sc-av-init">{{ b.bowler.player_name|first|upper }}</div>{% endif %}
-            <span>{{ b.bowler.player_name }}</span>
+            <span><a href="/player/{{ b.bowler.id }}/profile/" class="name-link">{{ b.bowler.player_name }}</a></span>
           </div></td>
           <td class="r bowl-o">{{ b.overs_bowled }}</td>
           <td class="r bowl-r">{{ b.runs_given }}</td>
@@ -381,11 +400,15 @@
       </tr></thead>
       <tbody id="bat-body-inn2-notout">
         {% for b in batting_sc2 %}{% if b.status == 'NOT_OUT' %}
-        <tr class="not-out-row" data-batsman="{{ b.batsman.player_name }}" data-status="NOT_OUT">
+        <tr class="not-out-row {% if b.batsman.id == striker_id %}on-strike{% endif %}" data-batsman="{{ b.batsman.player_name }}" data-player-id="{{ b.batsman.id }}" data-status="NOT_OUT">
           <td><div class="player-cell">
             {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av">
             {% else %}<div class="sc-av-init amber">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
-            <div><span class="batting-name">{{ b.batsman.player_name }}</span><span class="not-out-txt">not out</span></div>
+            <div>
+              <span class="batting-name"><a href="/player/{{ b.batsman.id }}/profile/" class="name-link">{{ b.batsman.player_name }}</a></span>
+              {% if b.batsman.id == striker_id %}<span class="strike-dot" title="On strike"></span>{% elif b.batsman.id == non_striker_id %}<span class="nonstrike-dot" title="Non-striker"></span>{% endif %}
+              <span class="not-out-txt">not out</span>
+            </div>
           </div></td>
           <td></td>
           <td class="r"><span class="runs-bold bat-r">{{ b.runs }}</span></td>
@@ -402,7 +425,7 @@
           <td><div class="player-cell">
             {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av">
             {% else %}<div class="sc-av-init amber">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
-            <span class="batting-name">{{ b.batsman.player_name }}</span>
+            <span class="batting-name"><a href="/player/{{ b.batsman.id }}/profile/" class="name-link">{{ b.batsman.player_name }}</a></span>
           </div></td>
           <td><span class="dismissal-txt">{% if b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.get_status_display }}{% endif %}</span></td>
           <td class="r"><span class="runs-bold bat-r">{{ b.runs }}</span></td>
@@ -428,7 +451,7 @@
     <div class="ytb-section">
       <div class="ytb-title">Yet to Bat</div>
       <div class="ytb-chips">
-        {% for p in yet_to_bat2 %}<span class="ytb-chip">{{ p.player_name }}</span>{% endfor %}
+        {% for p in yet_to_bat2 %}<a href="/player/{{ p.id }}/profile/" class="ytb-chip name-link ytb-link">{{ p.player_name }}</a>{% endfor %}
       </div>
     </div>
     {% endif %}
@@ -445,7 +468,7 @@
           <td><div class="player-cell">
             {% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av">
             {% else %}<div class="sc-av-init">{{ b.bowler.player_name|first|upper }}</div>{% endif %}
-            <span>{{ b.bowler.player_name }}</span>
+            <span><a href="/player/{{ b.bowler.id }}/profile/" class="name-link">{{ b.bowler.player_name }}</a></span>
           </div></td>
           <td class="r bowl-o">{{ b.overs_bowled }}</td>
           <td class="r bowl-r">{{ b.runs_given }}</td>
@@ -464,9 +487,51 @@
 </div><!-- /ls-wrap -->
 
 <script>
-const MATCH_ID = {{ match.id }};
-const IS_LIVE  = {{ current_innings|yesno:"true,false" }};
+const MATCH_ID  = {{ match.id }};
+const IS_LIVE   = {{ current_innings|yesno:"true,false" }};
 const MAX_OVERS = {{ match.tournament.number_of_overs }};
+let STRIKER_ID     = {{ striker_id|default:"null" }};
+let NON_STRIKER_ID = {{ non_striker_id|default:"null" }};
+
+function updateStrike(strikerId, nonStrikerId) {
+  STRIKER_ID     = strikerId;
+  NON_STRIKER_ID = nonStrikerId;
+
+  // ── 1. Table rows ──────────────────────────────────────────────────
+  document.querySelectorAll('tr[data-player-id]').forEach(row => {
+    row.classList.remove('on-strike');
+    row.querySelectorAll('.strike-dot, .nonstrike-dot').forEach(el => el.remove());
+    const pid = parseInt(row.dataset.playerId);
+    const nameSpan = row.querySelector('.batting-name');
+    if (!nameSpan) return;
+    if (pid === strikerId) {
+      row.classList.add('on-strike');
+      const dot = document.createElement('span');
+      dot.className = 'strike-dot'; dot.title = 'On strike';
+      nameSpan.insertAdjacentElement('afterend', dot);
+    } else if (pid === nonStrikerId) {
+      const dot = document.createElement('span');
+      dot.className = 'nonstrike-dot'; dot.title = 'Non-striker';
+      nameSpan.insertAdjacentElement('afterend', dot);
+    }
+  });
+
+  // ── 2. Top batsman hero cards ──────────────────────────────────────
+  document.querySelectorAll('.batsman-card[data-player-id]').forEach(card => {
+    const pid = parseInt(card.dataset.playerId);
+    const strikeTag = card.querySelector('.strike-tag');
+    if (pid === strikerId) {
+      card.classList.add('on-strike');
+      if (strikeTag) strikeTag.textContent = '⚡ On Strike';
+    } else {
+      card.classList.remove('on-strike');
+      if (strikeTag) strikeTag.textContent = '🏏 Batting';
+    }
+  });
+}
+
+// Apply on initial load
+if (STRIKER_ID) updateStrike(STRIKER_ID, NON_STRIKER_ID);
 
 // Auto-switch to active innings tab on load
 {% if current_innings and current_innings.innings_number == 2 %}
@@ -506,6 +571,8 @@ function renderBatting(innId, arr) {
            || outBody.querySelector('tr[data-batsman="' + b.name + '"]');
 
     if (row) {
+      // Always keep player-id in sync
+      if (b.player_id) row.setAttribute('data-player-id', b.player_id);
       // Update stats
       const rEl  = row.querySelector('.bat-r');
       const bEl  = row.querySelector('.bat-b');
@@ -536,6 +603,7 @@ function renderBatting(innId, arr) {
       const tr = document.createElement('tr');
       tr.setAttribute('data-batsman', b.name);
       tr.setAttribute('data-status', b.status);
+      if (b.player_id) tr.setAttribute('data-player-id', b.player_id);
       if (isNotOut) tr.classList.add('not-out-row');
 
       tr.innerHTML =
@@ -626,7 +694,111 @@ function fetchLive() {
     .catch(e => console.log('Live fetch error:', e));
 }
 
+// ── CREATE 2ND INNINGS DOM DYNAMICALLY ────────────────────────────────────
+// Called when viewers loaded the page during 1st innings and 2nd innings just started.
+// Builds every inn2 element so updateInn can then update them normally.
+function createInn2DOM(d) {
+  // 1. Replace the "2nd Innings Not started" placeholder with a real score block
+  const inningsScores = document.querySelector('.innings-scores');
+  if (inningsScores) {
+    const placeholder = inningsScores.querySelector('.inn-score-block:last-child');
+    if (placeholder) {
+      placeholder.className = 'inn-score-block active-inn';
+      placeholder.innerHTML = `
+        <div class="inn-label">2nd Innings</div>
+        <div class="inn-team">${d.team}</div>
+        <div class="inn-big-score" id="inn2-score">${d.total_runs}<span>/${d.total_wickets}</span></div>
+        <div class="inn-overs" id="inn2-overs">${d.overs} overs</div>
+        <div class="inn-extras" id="inn2-extras">Extras: ${d.extras}</div>
+        <div class="inn-batting-tag">Batting</div>
+      `;
+      // Remove active from inn1
+      const inn1Block = inningsScores.querySelector('.inn-score-block:first-child');
+      if (inn1Block) inn1Block.classList.remove('active-inn');
+    }
+  }
+
+  // 2. Add target banner if we have a target
+  const heroBoard = document.querySelector('.hero-board');
+  if (heroBoard && d.status === 'IN_PROGRESS') {
+    const inn1Score = document.getElementById('inn1-score');
+    const inn1Runs = inn1Score ? parseInt(inn1Score.textContent) : 0;
+    const target = inn1Runs + 1;
+    let targetBanner = document.querySelector('.target-banner');
+    if (!targetBanner) {
+      targetBanner = document.createElement('div');
+      targetBanner.className = 'target-banner';
+      targetBanner.innerHTML = `
+        <div>
+          <div class="target-main">🎯 ${d.team} needs <strong id="runs-needed">${target}</strong> runs</div>
+          <div class="target-sub">from <span id="balls-left">—</span> · Req RR: <span id="req-rr">—</span></div>
+        </div>
+      `;
+      heroBoard.insertAdjacentElement('afterend', targetBanner);
+    }
+  }
+
+  // 3. Add inn2 tab button
+  const tabsRow = document.querySelector('.inn-tabs');
+  if (tabsRow && !document.getElementById('tab-btn-inn2')) {
+    const tab = document.createElement('div');
+    tab.className = 'inn-tab';
+    tab.id = 'tab-btn-inn2';
+    tab.onclick = () => switchInnTab('inn2');
+    tab.innerHTML = `${d.team}<span class="inn-tab-score" id="tab-score-inn2">${d.total_runs}/${d.total_wickets}</span>`;
+    tabsRow.appendChild(tab);
+  }
+
+  // 4. Add inn2 tab panel with batting + bowling tables
+  const tabsWrap = document.querySelector('.inn-tabs-wrap');
+  if (tabsWrap && !document.getElementById('panel-inn2')) {
+    const panel = document.createElement('div');
+    panel.className = 'inn-tab-panel';
+    panel.id = 'panel-inn2';
+    panel.innerHTML = `
+      <div class="sc-section-label">Batting</div>
+      <table class="sc-table">
+        <thead><tr>
+          <th>Batsman</th><th></th>
+          <th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">S/R</th>
+        </tr></thead>
+        <tbody id="bat-body-inn2-notout"></tbody>
+        <tbody id="bat-body-inn2-out"></tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="2">Total</td>
+            <td class="r" id="inn2-total-r">${d.total_runs}</td>
+            <td class="r" colspan="3">${d.overs} ov · Extras: ${d.extras}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="sc-divider"></div>
+      <div class="sc-section-label">Bowling</div>
+      <table class="sc-table">
+        <thead><tr>
+          <th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Eco</th><th class="r">Wd</th><th class="r">Nb</th>
+        </tr></thead>
+        <tbody id="bowl-body-inn2"></tbody>
+      </table>
+    `;
+    tabsWrap.appendChild(panel);
+  }
+
+  // 5. Switch tab to inn2 automatically
+  switchInnTab('inn2');
+
+  // 6. Now call updateInn normally to fill in the data
+  updateInn('inn2', d);
+}
+
 function updateInn(id, d) {
+  // If inn2 elements don't exist yet (page loaded during 1st innings), create them
+  if (id === 'inn2' && !document.getElementById('inn2-score')) {
+    createInn2DOM(d);
+    return;
+  }
+
   // Hero scores
   const s = document.getElementById(id + '-score');
   if (s) s.innerHTML = d.total_runs + '<span>/' + d.total_wickets + '</span>';
@@ -674,8 +846,205 @@ function updateTarget(data) {
 }
 
 if (IS_LIVE) {
-  fetchLive();
-  setInterval(fetchLive, 5000);
+  fetchLive();   // initial load from HTTP (page may have just loaded)
+  startWebSocket();
+}
+
+function startWebSocket() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${proto}://${location.host}/ws/match/${MATCH_ID}/live/`);
+
+  ws.onopen = () => {
+    const dot = document.querySelector('.refresh-dot');
+    const lbl = document.querySelector('.refresh-bar span:nth-child(2)');
+    if (dot) dot.style.background = '#10b981';
+    if (lbl) lbl.textContent = 'Live · WebSocket connected';
+  };
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+
+    if (msg.type === 'score_update') {
+      const d = msg.data;
+      const u = document.getElementById('last-updated');
+      if (u) u.textContent = 'Updated ' + new Date().toLocaleTimeString();
+      if (d.inn1) updateInn('inn1', d.inn1);
+      if (d.inn2) updateInn('inn2', d.inn2);
+      if (d.inn1 && d.inn2 && d.target) updateTarget(d);
+      if (d.result && !document.querySelector('.result-banner')) showResultBanner(d.result);
+      if (d.commentary) showCommentaryToast(d.commentary);
+      // Update strike indicators from active innings
+      const activeInn = d.inn2 && d.inn2.status === 'IN_PROGRESS' ? d.inn2 : d.inn1;
+      if (activeInn && activeInn.striker_id != null) updateStrike(activeInn.striker_id, activeInn.non_striker_id);
+    }
+
+    if (msg.type === 'commentary' && msg.data && msg.data.text) {
+      showCommentaryToast(msg.data.text);
+    }
+
+    if (msg.type === 'milestone') {
+      showMilestoneToast(msg.data.text);
+    }
+
+    if (msg.type === 'innings_complete') {
+      const d = msg.data;
+      showCommentaryToast(`🏏 Innings over! ${d.team}: ${d.runs}/${d.wickets} (${d.overs} ov)`);
+    }
+
+    if (msg.type === 'match_complete') {
+      showResultBanner(msg.data.result);
+      const pill = document.querySelector('.live-pill');
+      if (pill) { pill.className = 'completed-pill'; pill.textContent = 'COMPLETED'; }
+    }
+    if (msg.type === 'new_batsman') {
+      if (window._showRevealCard) {
+        window._showRevealCard({
+          label: 'NEW BATSMAN',
+          name: msg.data.name,
+          photo: msg.data.photo,
+          initial: msg.data.initial,
+          color: '#f59e0b',
+          icon: '🏏'
+        });
+      }
+    }
+
+    if (msg.type === 'new_over') {
+      if (window._showRevealCard) {
+        window._showRevealCard({
+          label: `OVER ${msg.data.over_number} · NEW BALL`,
+          name: msg.data.bowler_name,
+          photo: msg.data.photo,
+          initial: msg.data.initial,
+          color: '#3b82f6',
+          icon: '🎯'
+        });
+      }
+    }
+    // milestone also handled here for reliability
+    if (msg.type === 'milestone' && msg.data && msg.data.text) {
+      if (window._showToast) window._showToast(msg.data.text, 5000, true);
+    }
+  };
+
+  ws.onclose = () => {
+    const lbl = document.querySelector('.refresh-bar span:nth-child(2)');
+    if (lbl) lbl.textContent = 'Reconnecting...';
+    setTimeout(startWebSocket, 3000);   // auto-reconnect
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+// ── toast helpers ──
+function showCommentaryToast(text) {
+  let t = document.getElementById('ws-commentary-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'ws-commentary-toast';
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a2235;border:1px solid #1e2d45;color:#e2e8f0;padding:10px 18px;border-radius:12px;font-size:13px;z-index:9999;max-width:90vw;text-align:center;transition:opacity 0.3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = text;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 4000);
+}
+
+function showMilestoneToast(text) {
+  let t = document.getElementById('ws-milestone-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'ws-milestone-toast';
+    t.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#78350f,#f59e0b);color:#000;padding:12px 24px;border-radius:20px;font-size:15px;font-weight:700;z-index:9999;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(245,158,11,0.4);transition:opacity 0.3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = text;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 5000);
+}
+
+function showResultBanner(result) {
+  let b = document.querySelector('.result-banner');
+  if (!b) {
+    b = document.createElement('div');
+    b.className = 'result-banner';
+    const wrap = document.querySelector('.ls-wrap');
+    if (wrap) wrap.insertBefore(b, wrap.querySelector('.inn-tabs-wrap'));
+  }
+  b.innerHTML = '<div style="font-size:28px;margin-bottom:6px;">🏆</div><div class="result-text">' + result + '</div>';
+}
+
+// ── REVEAL CARD (new batsman / new over) ──────────────────────────────────
+function showRevealCard({ label, name, photo, initial, color, icon }) {
+  // Remove any existing card first
+  const existing = document.getElementById('ws-reveal-card');
+  if (existing) existing.remove();
+
+  const card = document.createElement('div');
+  card.id = 'ws-reveal-card';
+  card.style.cssText = `
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    animation: rcFadeIn 0.2s ease;
+  `;
+
+  const avatar = photo
+    ? `<img src="${photo}" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:4px solid ${color};box-shadow:0 0 24px ${color}66;">`
+    : `<div style="width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,${color}99,${color});display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;color:#000;border:4px solid ${color};box-shadow:0 0 24px ${color}66;">${initial}</div>`;
+
+  card.innerHTML = `
+    <div style="
+      background: linear-gradient(145deg, #0f1b2d, #1a2a40);
+      border: 2px solid ${color}66;
+      border-radius: 24px;
+      padding: 36px 48px;
+      text-align: center;
+      box-shadow: 0 8px 48px rgba(0,0,0,0.7), 0 0 40px ${color}22;
+      animation: rcSlideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      min-width: 280px;
+      max-width: 90vw;
+    ">
+      <div style="font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:${color};margin-bottom:20px;opacity:0.9;">${icon} ${label}</div>
+      <div style="display:flex;justify-content:center;margin-bottom:18px;">
+        ${avatar}
+      </div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:800;color:#fff;letter-spacing:-0.5px;line-height:1.1;">${name}</div>
+    </div>
+  `;
+
+  // Inject keyframes once
+  if (!document.getElementById('rc-keyframes')) {
+    const style = document.createElement('style');
+    style.id = 'rc-keyframes';
+    style.textContent = `
+      @keyframes rcFadeIn  { from { opacity:0 } to { opacity:1 } }
+      @keyframes rcSlideUp { from { transform:translateY(30px) scale(0.92); opacity:0 } to { transform:translateY(0) scale(1); opacity:1 } }
+      @keyframes rcFadeOut { from { opacity:1 } to { opacity:0 } }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(card);
+
+  // Auto-dismiss after 2.5 seconds with fade out
+  setTimeout(() => {
+    card.style.animation = 'rcFadeOut 0.3s ease forwards';
+    setTimeout(() => card.remove(), 300);
+  }, 2500);
+
+  // Tap to dismiss early
+  card.addEventListener('click', () => {
+    card.style.animation = 'rcFadeOut 0.2s ease forwards';
+    setTimeout(() => card.remove(), 200);
+  });
 }
 </script>
 {% endblock %}

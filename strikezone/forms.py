@@ -53,7 +53,11 @@ class PlayerForm(forms.Form):
     team = _TeamChoiceField(queryset=TeamDetails.objects.all())
 
     player_name = forms.CharField(max_length=100, required=False)
-    mobile_number = forms.CharField(max_length=15, required=False)
+    mobile_number = forms.CharField(
+        max_length=15,
+        required=True,
+        error_messages={"required": "Mobile number is required to add a player."}
+    )
     photo = forms.ImageField(required=False)
 
     role = forms.ChoiceField(choices=PlayerDetails.PLAYER_ROLE, initial="BATSMAN")
@@ -61,22 +65,19 @@ class PlayerForm(forms.Form):
     is_vice_captain = forms.BooleanField(required=False)
     jersey_number = forms.IntegerField(required=False, min_value=0)
 
+    def clean_mobile_number(self):
+        mobile = (self.cleaned_data.get("mobile_number") or "").strip()
+        if not mobile:
+            raise forms.ValidationError("Mobile number is required to add a player.")
+        if not mobile.isdigit():
+            raise forms.ValidationError("Mobile number must contain digits only.")
+        if len(mobile) < 10 or len(mobile) > 15:
+            raise forms.ValidationError("Enter a valid mobile number (10–15 digits).")
+        return mobile
+
     def clean(self):
         cleaned = super().clean()
-        name = (cleaned.get("player_name") or "").strip()
-        mobile = (cleaned.get("mobile_number") or "").strip()
-
-        # Mobile number alone is enough (we can auto-create a player identity).
-        # If mobile is not provided, name is required.
-        if not mobile and not name:
-            raise forms.ValidationError("Enter mobile number (recommended) or player name.")
-
-        if not mobile and name:
-            return cleaned
-
-        # If mobile is present, allow empty name.
-        # (If player doesn't exist yet, we'll auto-create a placeholder name in the view.)
-
+        # Name is optional — if not provided, view will auto-set it from mobile number.
         return cleaned
 
 

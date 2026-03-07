@@ -241,7 +241,7 @@ class Ball(models.Model):
         balls = Ball.objects.filter(over__innings=innings)
 
         innings.total_runs = sum(b.total_runs for b in balls)
-        innings.total_wickets = balls.filter(is_wicket=True).count()
+        innings.total_wickets = balls.filter(is_wicket=True).exclude(wicket_type="RETIRED_HURT").count()
         innings.total_balls = balls.filter(is_legal_ball=True).count()
         innings.extras = sum(b.extra_runs for b in balls)
 

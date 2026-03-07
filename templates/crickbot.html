@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #07090f;
+    --surface: #0e1117;
+    --surface2: #161b26;
+    --border: #1e2a3a;
+    --accent: #22c55e;
+    --accent2: #16a34a;
+    --gold: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 14px;
+    --user-bubble: #1a3a5c;
+    --user-border: #1d4ed8;
+  }
+
+  * { box-sizing: border-box; }
+
+  .cb-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 64px);
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .cb-topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #0e1a0e, #0d2116);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .cb-topbar .cb-icon { font-size: 30px; }
+  .cb-topbar h2 { font-size: 20px; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; }
+  .cb-topbar .cb-sub { font-size: 12px; color: var(--muted); }
+  .cb-badge {
+    margin-left: auto;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--accent);
+    color: #fff;
+  }
+  .cb-badge.admin { background: var(--gold); color: #1a1000; }
+
+  .cb-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .cb-messages::-webkit-scrollbar { width: 5px; }
+  .cb-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .msg {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 760px;
+    width: 100%;
+  }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.bot  { align-self: flex-start; }
+
+  .msg-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+  .msg.bot  .msg-avatar { background: #0d2116; }
+  .msg.user .msg-avatar { background: #0d1a35; }
+
+  .msg-bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 16px;
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+  }
+  .msg.user .msg-bubble { background: var(--user-bubble); border-color: var(--user-border); }
+  .msg-bubble.error { color: #f87171; }
+
+  .typing-dots { display: flex; gap: 5px; padding: 4px 2px; }
+  .typing-dots span {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: dot-bounce 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 1; }
+    40% { transform: translateY(-8px); opacity: 0.6; }
+  }
+
+  .cb-suggestions {
+    padding: 0 16px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(34,197,94,0.06); }
+
+  .cb-inputbar {
+    padding: 12px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .cb-inputbar input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 11px 16px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .cb-inputbar input:focus { border-color: var(--accent); }
+  .cb-inputbar input::placeholder { color: var(--muted); }
+
+  .cb-inputbar button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .cb-inputbar button:hover:not(:disabled) { background: var(--accent2); }
+  .cb-inputbar button:active:not(:disabled) { transform: scale(0.97); }
+  .cb-inputbar button:disabled { background: var(--border); cursor: not-allowed; color: var(--muted); }
+
+  @media (max-width: 600px) {
+    .cb-topbar h2 { font-size: 17px; }
+    .cb-messages { padding: 14px 10px; }
+    .cb-inputbar { padding: 10px; }
+    .cb-inputbar button { padding: 11px 16px; }
+    .msg-bubble { font-size: 13px; }
+  }
+</style>
+
+<div class="cb-page">
+
+  <div class="cb-topbar">
+    <div class="cb-icon">🏏</div>
+    <div>
+      <h2>CrickBot</h2>
+      <div class="cb-sub">Your personal cricket analyst</div>
+    </div>
+    <div class="cb-badge {% if is_admin %}admin{% endif %}">
+      {% if is_admin %}⚙️ Adin — Admin View{% else %}{{ player_name }}{% endif %}
+    </div>
+  </div>
+
+  <div class="cb-messages" id="cb-messages">
+    <div class="msg bot">
+      <div class="msg-avatar">🤖</div>
+      <div class="msg-bubble">
+{% if is_admin %}Hey Adin! 👋 Welcome to CrickBot.
+
+As admin, you have full access to the entire database — all tournaments, teams, players, match scorecards, and ball-by-ball stats.
+
+Ask me anything like:
+- "Who has hit the most sixes overall?"
+- "List all matches in Tournament X"
+- "Which player has the best bowling economy?"
+- "Give me the top 5 run scorers"{% else %}Hey {{ player_name }}! 👋 I'm CrickBot, your personal cricket analyst.
+
+I have all your cricket stats loaded. Ask me anything like:
+- "How many sixes have I hit against [team name]?"
+- "What's my batting average?"
+- "Which bowler have I scored the most off?"
+- "What's my best innings?"{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="cb-suggestions" id="cb-suggestions">
+    {% if is_admin %}
+      <button class="chip" onclick="useSuggestion(this)">Top 5 run scorers</button>
+      <button class="chip" onclick="useSuggestion(this)">Most sixes overall</button>
+      <button class="chip" onclick="useSuggestion(this)">Best bowling figures</button>
+      <button class="chip" onclick="useSuggestion(this)">All tournaments list</button>
+      <button class="chip" onclick="useSuggestion(this)">Highest team score</button>
+    {% else %}
+      <button class="chip" onclick="useSuggestion(this)">My career stats</button>
+      <button class="chip" onclick="useSuggestion(this)">My sixes vs each team</button>
+      <button class="chip" onclick="useSuggestion(this)">My best innings</button>
+      <button class="chip" onclick="useSuggestion(this)">My wickets taken</button>
+      <button class="chip" onclick="useSuggestion(this)">How many MOM awards do I have?</button>
+    {% endif %}
+  </div>
+
+  <div class="cb-inputbar">
+    <input type="text" id="cb-input" placeholder="Ask anything about cricket stats…" autocomplete="off" />
+    <button id="cb-send" onclick="sendMessage()">Send ➤</button>
+  </div>
+
+</div>
+
+<script>
+  const messagesEl = document.getElementById('cb-messages');
+  const inputEl    = document.getElementById('cb-input');
+  const sendBtn    = document.getElementById('cb-send');
+  let history = [];
+
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  function useSuggestion(el) {
+    inputEl.value = el.textContent.trim();
+    document.getElementById('cb-suggestions').style.display = 'none';
+    sendMessage();
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  function addMessage(role, text, isError = false) {
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+    const avatar = role === 'user' ? '👤' : '🤖';
+    div.innerHTML = `
+      <div class="msg-avatar">${avatar}</div>
+      <div class="msg-bubble${isError ? ' error' : ''}">${escHtml(text)}</div>
+    `;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function showTyping() {
+    const div = document.createElement('div');
+    div.className = 'msg bot';
+    div.id = 'cb-typing';
+    div.innerHTML = `
+      <div class="msg-avatar">🤖</div>
+      <div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+    `;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function hideTyping() {
+    const el = document.getElementById('cb-typing');
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    const msg = inputEl.value.trim();
+    if (!msg) return;
+
+    document.getElementById('cb-suggestions').style.display = 'none';
+    inputEl.value = '';
+    sendBtn.disabled = true;
+    addMessage('user', msg);
+    showTyping();
+
+    try {
+      const res = await fetch('/crickbot/chat/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, history }),
+      });
+      const data = await res.json();
+      hideTyping();
+
+      if (data.error) {
+        addMessage('bot', '⚠️ Error: ' + data.error, true);
+      } else {
+        addMessage('bot', data.reply);
+        history.push({ role: 'user', content: msg });
+        history.push({ role: 'assistant', content: data.reply });
+        if (history.length > 20) history = history.slice(-20);
+      }
+    } catch (err) {
+      hideTyping();
+      addMessage('bot', '⚠️ Could not reach the server.', true);
+    }
+
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+</script>
+
+{% endblock %}

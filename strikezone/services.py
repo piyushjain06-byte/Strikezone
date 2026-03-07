@@ -165,10 +165,29 @@ def _update_batting_scorecard(innings, batsman, ball):
         scorecard.sixes += 1
 
     if ball.is_wicket and ball.player_dismissed == batsman:
-        scorecard.status = "OUT"
-        scorecard.dismissal_info = _dismissal_text(ball)
+        # RETIRED_HURT is NOT out — player can return later
+        if ball.wicket_type == "RETIRED_HURT":
+            scorecard.status = "RETIRED_HURT"
+            scorecard.dismissal_info = "retired hurt"
+        else:
+            scorecard.status = "OUT"
+            scorecard.dismissal_info = _dismissal_text(ball)
 
     scorecard.save()
+
+    # ── If a DIFFERENT player was dismissed (run-out of non-striker),
+    # mark their scorecard as OUT too so they can't be selected again ──
+    if ball.is_wicket and ball.player_dismissed and ball.player_dismissed != batsman:
+        dismissed_sc, _ = BattingScorecard.objects.get_or_create(
+            innings=innings,
+            batsman=ball.player_dismissed,
+            defaults={
+                "batting_position": BattingScorecard.objects.filter(innings=innings).count() + 1
+            }
+        )
+        dismissed_sc.status = "OUT"
+        dismissed_sc.dismissal_info = _dismissal_text(ball)
+        dismissed_sc.save()
 
 
 # ─────────────────────────────────────────────
@@ -189,7 +208,7 @@ def _update_bowling_scorecard(innings, bowler, ball):
     elif ball.ball_type == "NO_BALL":
         scorecard.no_balls += 1
 
-    if ball.is_wicket and ball.wicket_type not in ["RUN_OUT"]:
+    if ball.is_wicket and ball.wicket_type not in ["RUN_OUT", "OBSTRUCTING", "RETIRED", "RETIRED_HURT"]:
         scorecard.wickets += 1
 
     # Recalculate overs bowled from legal balls
@@ -220,11 +239,17 @@ def _dismissal_text(ball):
     elif wt == "LBW":
         return f"lbw b {bowler}"
     elif wt == "STUMPED":
-        return f"st {fielder} b {bowler}"
+        return f"st {fielder} b {bowler}" if fielder else f"st †wk b {bowler}"
     elif wt == "RUN_OUT":
         return f"run out ({fielder})" if fielder else "run out"
     elif wt == "HIT_WICKET":
         return f"hit wicket b {bowler}"
+    elif wt == "OBSTRUCTING":
+        return "obstructing the field"
+    elif wt == "RETIRED":
+        return "retired out"
+    elif wt == "RETIRED_HURT":
+        return "retired hurt"
     return "out"
 
 
@@ -471,7 +496,7 @@ def undo_last_ball(innings):
             bowl_sc.wides = max(0, bowl_sc.wides - 1)
         elif ball_type == "NO_BALL":
             bowl_sc.no_balls = max(0, bowl_sc.no_balls - 1)
-        if was_wicket and wicket_type not in ["RUN_OUT"]:
+        if was_wicket and wicket_type not in ["RUN_OUT", "OBSTRUCTING", "RETIRED", "RETIRED_HURT"]:
             bowl_sc.wickets = max(0, bowl_sc.wickets - 1)
         legal_balls_after = (
             Ball.objects
@@ -493,7 +518,7 @@ def undo_last_ball(innings):
     # ── Recompute innings totals ──
     remaining_balls = Ball.objects.filter(over__innings=innings)
     innings.total_runs    = sum(b.total_runs for b in remaining_balls)
-    innings.total_wickets = remaining_balls.filter(is_wicket=True).count()
+    innings.total_wickets = remaining_balls.filter(is_wicket=True).exclude(wicket_type="RETIRED_HURT").count()
     innings.total_balls   = remaining_balls.filter(is_legal_ball=True).count()
     innings.extras        = sum(b.extra_runs for b in remaining_balls)
     if innings.status == "COMPLETED":

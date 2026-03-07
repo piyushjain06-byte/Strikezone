@@ -10,26 +10,24 @@
   }
 
   /* ── TOURNAMENT SELECTOR ── */
-  .t-selector-wrap { max-width: 1360px; margin: 0 auto; padding: 20px 16px 0; }
+  .t-selector-wrap { max-width: 1360px; margin: 0 auto; padding: 24px 20px 0; }
   .t-selector { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .t-selector-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
-  .t-btn { padding: 8px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: var(--surface); color: var(--muted); text-decoration: none; transition: all 0.15s; white-space: nowrap; }
-  .t-btn:hover { color: var(--accent); border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.06); }
-  .t-btn.active { color: #000; background: linear-gradient(135deg, #b45309, #f59e0b); border-color: transparent; font-weight: 700; }
-  .t-btn-new { margin-left: auto; padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 700; border: 1px solid rgba(16,185,129,0.35); background: rgba(16,185,129,0.08); color: var(--success); text-decoration: none; white-space: nowrap; transition: all 0.15s; }
-  .t-btn-new:hover { background: rgba(16,185,129,0.16); }
+  .t-selector-label { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .t-btn { padding: 9px 22px; border-radius: 22px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: var(--surface); color: var(--muted); text-decoration: none; transition: all 0.18s; white-space: nowrap; }
+  .t-btn:hover { color: var(--accent); border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.07); }
+  .t-btn.active { color: #000; background: linear-gradient(135deg, #b45309, #f59e0b); border-color: transparent; font-weight: 700; box-shadow: 0 3px 14px rgba(245,158,11,0.3); }
 
   /* ── LAYOUT ── */
-  .main-grid { max-width: 1360px; margin: 0 auto; padding: 24px 16px 60px; display: grid; grid-template-columns: 1fr 310px; gap: 22px; align-items: start; }
+  .main-grid { max-width: 1360px; margin: 0 auto; padding: 28px 20px 80px; display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
   .primary-content { min-width: 0; }
 
   /* ── SECTION HEADERS ── */
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; margin-top: 28px; gap: 10px; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; margin-top: 32px; gap: 10px; }
   .section-header:first-child { margin-top: 0; }
   .section-title-row { display: flex; align-items: center; gap: 10px; }
-  .section-title { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: #fff; }
-  .section-count { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; }
-  .see-all-btn { font-size: 12px; font-weight: 700; color: var(--accent); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 20px; padding: 5px 14px; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+  .section-title { font-family: 'Rajdhani', sans-serif; font-size: 21px; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
+  .section-count { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 11px; }
+  .see-all-btn { font-size: 12px; font-weight: 700; color: var(--accent); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 20px; padding: 6px 15px; cursor: pointer; transition: all 0.15s; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
   .see-all-btn:hover { background: rgba(245,158,11,0.16); }
   .see-all-btn .arr { font-size: 10px; transition: transform 0.2s; display: inline-block; }
   .see-all-btn.open .arr { transform: rotate(180deg); }
@@ -63,26 +61,26 @@
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 
   /* ── FEATURED MATCH (most recent completed) ── */
-  .featured-match { background: linear-gradient(135deg, #1a2a4a 0%, #0f1f38 100%); border: 1px solid #1e3a5f; border-radius: 18px; overflow: hidden; }
-  .fm-header { padding: 18px 22px; border-bottom: 1px solid #1e3a5f; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  .fm-teams { font-family: 'Rajdhani', sans-serif; font-size: 21px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+  .featured-match { background: linear-gradient(135deg, #1a2a4a 0%, #0f1f38 100%); border: 1px solid #1e3a5f; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.2); }
+  .fm-header { padding: 20px 24px; border-bottom: 1px solid #1e3a5f; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .fm-teams { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
   .fm-meta { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
   .fm-scores { display: flex; }
-  .fm-score-half { flex: 1; padding: 16px 22px; }
+  .fm-score-half { flex: 1; padding: 18px 24px; }
   .fm-score-half:first-child { border-right: 1px solid #1e3a5f; }
-  .fm-team-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
-  .fm-score-num { font-family: 'Rajdhani', sans-serif; font-size: 38px; font-weight: 700; color: #fff; line-height: 1; }
+  .fm-team-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .fm-score-num { font-family: 'Rajdhani', sans-serif; font-size: 42px; font-weight: 700; color: #fff; line-height: 1; }
   .fm-wkts { color: var(--accent); }
-  .fm-overs { font-size: 12px; color: var(--muted); margin-top: 3px; }
-  .fm-winner-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--success); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; padding: 3px 10px; }
-  .fm-result-bar { padding: 11px 22px; font-size: 13px; font-weight: 600; color: var(--success); background: rgba(16,185,129,0.06); border-bottom: 1px solid rgba(16,185,129,0.12); display: flex; align-items: center; gap: 8px; }
+  .fm-overs { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .fm-winner-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--success); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; padding: 4px 12px; }
+  .fm-result-bar { padding: 12px 24px; font-size: 13px; font-weight: 600; color: var(--success); background: rgba(16,185,129,0.06); border-bottom: 1px solid rgba(16,185,129,0.12); display: flex; align-items: center; gap: 8px; }
 
   /* ── SCORECARD TOGGLE ── */
-  .sc-toggle { padding: 11px 22px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); transition: background 0.1s; border-top: 1px solid var(--border); }
-  .sc-toggle:hover { background: rgba(255,255,255,0.02); color: var(--accent); }
+  .sc-toggle { padding: 13px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); transition: background 0.1s; border-top: 1px solid var(--border); }
+  .sc-toggle:hover { background: rgba(255,255,255,0.03); color: var(--accent); }
   .sc-toggle .arr { font-size: 10px; transition: transform 0.2s; display: inline-block; }
   .sc-toggle.open .arr { transform: rotate(180deg); }
-  .sc-body { display: none; padding: 20px 22px; border-top: 1px solid var(--border); }
+  .sc-body { display: none; padding: 22px 24px; border-top: 1px solid var(--border); }
   .sc-body.visible { display: block; }
 
   /* ── SCORECARD INTERNALS ── */
@@ -97,6 +95,39 @@
   .sc-table tr:last-child td { border-bottom: none; }
   .sc-table tr:hover td { background: rgba(255,255,255,0.02); }
   .sc-player { font-weight: 600; color: #fff; }
+  .sc-player-link,
+  .sc-player-link:visited,
+  .sc-player-link:active,
+  .sc-player-link:focus {
+    font-weight: 600; color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(245,158,11,.4);
+    transition: color .15s;
+    outline: none;
+  }
+  .sc-player-link:hover { color: #fff; border-bottom-color: rgba(255,255,255,.4); }
+
+  .team-link,
+  .team-link:visited,
+  .team-link:active,
+  .team-link:focus {
+    color: inherit; text-decoration: none;
+    border-bottom: 1px dashed rgba(245,158,11,.4);
+    transition: color .15s; outline: none;
+  }
+  .team-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .perf-name-link,
+  .perf-name-link:visited,
+  .perf-name-link:active,
+  .perf-name-link:focus {
+    font-size: 13px; font-weight: 600; color: #fff;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(245,158,11,.4);
+    transition: color .15s; outline: none;
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .perf-name-link:hover { color: var(--accent); }
   .sc-cell { display: flex; align-items: center; gap: 7px; }
   .sc-av { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1.5px solid rgba(255,255,255,0.12); }
   .sc-av-init { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg,#14532d,#22c55e); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
@@ -117,50 +148,50 @@
   .pending-more.visible { display: flex; }
   .pending-initial { display: flex; flex-direction: column; gap: 12px; }
 
-  .match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.15s; }
-  .match-card:hover { border-color: rgba(245,158,11,0.25); }
-  .mc-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-  .mc-teams { font-size: 14px; font-weight: 700; color: #fff; }
-  .mc-meta { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .match-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s; }
+  .match-card:hover { border-color: rgba(245,158,11,0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+  .mc-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .mc-teams { font-size: 14px; font-weight: 700; color: #fff; line-height: 1.4; }
+  .mc-meta { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .mc-scores { display: flex; }
-  .mc-score-half { flex: 1; padding: 12px 18px; }
+  .mc-score-half { flex: 1; padding: 14px 20px; }
   .mc-score-half:first-child { border-right: 1px solid var(--border); }
-  .mc-team-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
-  .mc-score-num { font-family: 'Rajdhani', sans-serif; font-size: 26px; font-weight: 700; color: #fff; line-height: 1; }
+  .mc-team-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .mc-score-num { font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 700; color: #fff; line-height: 1; }
   .mc-wkts { color: var(--accent); }
-  .mc-overs { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .mc-result { padding: 9px 18px; font-size: 12px; font-weight: 600; color: var(--success); background: rgba(16,185,129,0.06); border-top: 1px solid rgba(16,185,129,0.12); }
-  .mc-pending { padding: 14px 18px; font-size: 13px; color: var(--muted); font-style: italic; display: flex; align-items: center; justify-content: space-between; }
+  .mc-overs { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .mc-result { padding: 10px 20px; font-size: 12px; font-weight: 600; color: var(--success); background: rgba(16,185,129,0.06); border-top: 1px solid rgba(16,185,129,0.12); }
+  .mc-pending { padding: 14px 20px; font-size: 13px; color: var(--muted); font-style: italic; display: flex; align-items: center; justify-content: space-between; }
   .mc-pending a { color: var(--accent); font-style: normal; font-weight: 600; font-size: 12px; text-decoration: none; }
 
   /* ── EMPTY STATES ── */
-  .empty-state { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 50px 24px; text-align: center; }
-  .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; }
-  .empty-title { font-family: 'Rajdhani', sans-serif; font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 6px; }
-  .empty-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
-  .btn-primary { display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 700; background: linear-gradient(135deg,#b45309,#f59e0b); color: #000; text-decoration: none; transition: all 0.15s; }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245,158,11,.3); color:#000; }
-  .btn-secondary { display: inline-flex; align-items: center; gap: 7px; margin-left: 8px; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; background: var(--surface2); color: var(--text); border: 1px solid var(--border); text-decoration: none; transition: all 0.15s; }
+  .empty-state { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 60px 24px; text-align: center; }
+  .empty-icon { font-size: 52px; display: block; margin-bottom: 14px; }
+  .empty-title { font-family: 'Rajdhani', sans-serif; font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .empty-sub { font-size: 14px; color: var(--muted); margin-bottom: 22px; }
+  .btn-primary { display: inline-flex; align-items: center; gap: 7px; padding: 11px 24px; border-radius: 11px; font-size: 14px; font-weight: 700; background: linear-gradient(135deg,#b45309,#f59e0b); color: #000; text-decoration: none; transition: all 0.18s; box-shadow: 0 3px 14px rgba(245,158,11,0.25); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(245,158,11,.35); color:#000; }
+  .btn-secondary { display: inline-flex; align-items: center; gap: 7px; margin-left: 10px; padding: 11px 24px; border-radius: 11px; font-size: 14px; font-weight: 600; background: var(--surface2); color: var(--text); border: 1px solid var(--border); text-decoration: none; transition: all 0.18s; }
   .btn-secondary:hover { border-color: rgba(245,158,11,.3); color: var(--accent); }
 
   /* ── SIDEBAR ── */
-  .sidebar { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; }
-  .sidebar-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .sidebar { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 16px; }
+  .sidebar-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
   .sidebar-section.blue { background: linear-gradient(135deg,#1a2a4a,#0f1f38); border-color: #1e3a5f; }
-  .sb-title { font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 14px; padding-bottom: 9px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .sb-title { font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; letter-spacing: 0.3px; }
   .t-tag { font-size: 10px; color: var(--accent); font-weight: 600; background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.2); border-radius: 10px; padding: 2px 8px; }
-  .perf-list { display: flex; flex-direction: column; gap: 12px; }
-  .perf-item { display: flex; align-items: center; gap: 9px; }
-  .perf-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1.5px solid rgba(255,255,255,0.12); }
-  .perf-avatar-init { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#1e3a8a,#3b82f6); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; border: 1.5px solid rgba(59,130,246,0.3); }
-  .perf-rank { font-family:'Rajdhani',sans-serif; font-size: 17px; font-weight: 700; color: var(--accent); min-width: 26px; }
+  .perf-list { display: flex; flex-direction: column; gap: 14px; }
+  .perf-item { display: flex; align-items: center; gap: 10px; }
+  .perf-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.1); }
+  .perf-avatar-init { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg,#1e3a8a,#3b82f6); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; border: 2px solid rgba(59,130,246,0.25); }
+  .perf-rank { font-family:'Rajdhani',sans-serif; font-size: 18px; font-weight: 700; color: var(--accent); min-width: 28px; }
   .perf-details { flex: 1; min-width: 0; }
   .perf-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .perf-stat { font-size: 11px; color: var(--muted); margin-top: 1px; }
-  .perf-team { font-size: 10px; color: #475569; }
-  .no-data { padding: 16px 0; text-align: center; color: var(--muted); font-size: 13px; }
+  .perf-stat { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .perf-team { font-size: 10px; color: #475569; margin-top: 1px; }
+  .no-data { padding: 18px 0; text-align: center; color: var(--muted); font-size: 13px; }
   .qa-list { display: flex; flex-direction: column; gap: 8px; }
-  .qa-btn { padding: 10px 13px; border-radius: 9px; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 7px; transition: all .15s; }
+  .qa-btn { padding: 11px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: all .15s; }
   .qa-btn.amber { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2); color: var(--accent); }
   .qa-btn.amber:hover { background: rgba(245,158,11,.16); }
   .qa-btn.green { background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.2); color: var(--success); }
@@ -169,14 +200,14 @@
   .qa-btn.blue:hover { background: rgba(59,130,246,.16); }
   .qa-btn.grey { background: var(--surface2); border: 1px solid var(--border); color: #94a3b8; }
   .qa-btn.grey:hover { color: #fff; }
-  .info-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; margin-bottom: 8px; }
+  .info-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
   .info-pill:last-child { margin-bottom: 0; }
-  .pill-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .pill-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
   .pill-value { font-size: 14px; font-weight: 600; color: #fff; }
-  .pill-value.big { font-family:'Rajdhani',sans-serif; font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .pill-value.big { font-family:'Rajdhani',sans-serif; font-size: 28px; font-weight: 700; color: var(--accent); line-height: 1; }
 
   @media (max-width:1080px) { .main-grid { grid-template-columns: 1fr; } .sidebar { position: static; } }
-  @media (max-width:600px) { .fm-scores,.mc-scores { flex-direction: column; } .fm-score-half:first-child,.mc-score-half:first-child { border-right: none; border-bottom: 1px solid var(--border); } }
+  @media (max-width:600px) { .fm-scores,.mc-scores { flex-direction: column; } .fm-score-half:first-child,.mc-score-half:first-child { border-right: none; border-bottom: 1px solid var(--border); } .main-grid { padding: 18px 14px 60px; } }
 </style>
 
 <!-- TOURNAMENT SELECTOR -->
@@ -190,6 +221,9 @@
     {% empty %}
       <span style="font-size:13px;color:var(--muted);">No tournaments yet</span>
     {% endfor %}
+    <button onclick="openHomeScanner()" style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700;border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.08);color:var(--accent);cursor:pointer;white-space:nowrap;transition:all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.16)'" onmouseout="this.style.background='rgba(245,158,11,0.08)'">
+      📷 Scan Player QR
+    </button>
   </div>
 </div>
 
@@ -231,8 +265,7 @@
   </div>
 </div>
 {% for mc in live_matches %}
-<a href="/match/{{ mc.match.id }}/live/" style="text-decoration:none;display:block;">
-<div class="match-card live-match-card" data-match-id="{{ mc.match.id }}" style="border-color:rgba(16,185,129,0.3);margin-bottom:12px;cursor:pointer;transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+<div class="match-card live-match-card" data-match-id="{{ mc.match.id }}" onclick="window.location.href='/match/{{ mc.match.id }}/live/'" style="border-color:rgba(16,185,129,0.4);margin-bottom:12px;cursor:pointer;transition:transform 0.18s,box-shadow 0.18s;box-shadow:0 4px 20px rgba(16,185,129,0.08);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(16,185,129,0.16)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(16,185,129,0.08)'">
   <div class="mc-header">
     <div>
       <div class="mc-teams">
@@ -247,7 +280,7 @@
         {% else %}
           <span class="match-type-pill pill-league">League · M{{ mc.match_number }}</span>
         {% endif %}
-        {{ mc.match.team1 }} vs {{ mc.match.team2 }}
+        <a href="/team/{{ mc.match.team1.id }}/" class="team-link" onclick="event.stopPropagation()">{{ mc.match.team1 }}</a> vs <a href="/team/{{ mc.match.team2.id }}/" class="team-link" onclick="event.stopPropagation()">{{ mc.match.team2 }}</a>
       </div>
       <div class="mc-meta">📍 {{ mc.match.venue }} · 📅 {{ mc.match.match_date }}</div>
     </div>
@@ -270,7 +303,6 @@
   </div>
   {% endif %}
 </div>
-</a>
 {% endfor %}
 {% endif %}
 
@@ -305,7 +337,7 @@
         {% else %}
           <span class="match-type-pill pill-league">League · M{{ mc.match_number }}</span>
         {% endif %}
-        {{ mc.match.team1 }} vs {{ mc.match.team2 }}
+        <a href="/team/{{ mc.match.team1.id }}/" class="team-link">{{ mc.match.team1 }}</a> vs <a href="/team/{{ mc.match.team2.id }}/" class="team-link">{{ mc.match.team2 }}</a>
       </div>
       <div class="fm-meta">
         <span>📍 {{ mc.match.venue }}</span>
@@ -348,7 +380,7 @@
         <tbody>
           {% for b in mc.batting_sc1 %}
           <tr>
-            <td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td>
+            <td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<a href="/player/{{ b.batsman.id }}/profile/" class="sc-player-link">{{ b.batsman.player_name }}</a>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td>
             <td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td>
             <td class="r"><span class="sc-runs">{{ b.runs }}</span></td>
             <td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td>
@@ -365,7 +397,7 @@
       <table class="sc-table">
         <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
         <tbody>
-          {% for b in mc.bowling_sc1 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.bowler.player_name }}</span></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}
+          {% for b in mc.bowling_sc1 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<a href="/player/{{ b.bowler.id }}/profile/" class="sc-player-link">{{ b.bowler.player_name }}</a></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
@@ -379,7 +411,7 @@
         <tbody>
           {% for b in mc.batting_sc2 %}
           <tr>
-            <td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td>
+            <td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<a href="/player/{{ b.batsman.id }}/profile/" class="sc-player-link">{{ b.batsman.player_name }}</a>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td>
             <td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td>
             <td class="r"><span class="sc-runs">{{ b.runs }}</span></td>
             <td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td>
@@ -396,7 +428,7 @@
       <table class="sc-table">
         <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
         <tbody>
-          {% for b in mc.bowling_sc2 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.bowler.player_name }}</span></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}
+          {% for b in mc.bowling_sc2 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<a href="/player/{{ b.bowler.id }}/profile/" class="sc-player-link">{{ b.bowler.player_name }}</a></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
@@ -426,7 +458,7 @@
           {% else %}
             <span class="match-type-pill pill-league">League · M{{ mc.match_number }}</span>
           {% endif %}
-          {{ mc.match.team1 }} vs {{ mc.match.team2 }}
+          <a href="/team/{{ mc.match.team1.id }}/" class="team-link">{{ mc.match.team1 }}</a> vs <a href="/team/{{ mc.match.team2.id }}/" class="team-link">{{ mc.match.team2 }}</a>
         </div>
         <div class="mc-meta">📍 {{ mc.match.venue }} · 📅 {{ mc.match.match_date }}</div>
       </div>
@@ -458,7 +490,7 @@
         <table class="sc-table">
           <thead><tr><th>Batsman</th><th>How Out</th><th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">SR</th></tr></thead>
           <tbody>
-            {% for b in mc.batting_sc1 %}<tr><td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td><td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td><td class="r"><span class="sc-runs">{{ b.runs }}</span></td><td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td></tr>{% endfor %}
+            {% for b in mc.batting_sc1 %}<tr><td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<a href="/player/{{ b.batsman.id }}/profile/" class="sc-player-link">{{ b.batsman.player_name }}</a>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td><td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td><td class="r"><span class="sc-runs">{{ b.runs }}</span></td><td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td></tr>{% endfor %}
           </tbody>
         </table>
         <div class="inn-total"><span class="inn-total-label">Total · {{ mc.inn1.overs_completed }} ov · Extras: {{ mc.inn1.extras }}</span><span class="inn-total-score">{{ mc.inn1.total_runs }}/{{ mc.inn1.total_wickets }}</span></div>
@@ -469,7 +501,7 @@
         <div class="sc-section-title">⚾ {{ mc.inn1.bowling_team }} — Bowling</div>
         <table class="sc-table">
           <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
-          <tbody>{% for b in mc.bowling_sc1 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.bowler.player_name }}</span></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}</tbody>
+          <tbody>{% for b in mc.bowling_sc1 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<a href="/player/{{ b.bowler.id }}/profile/" class="sc-player-link">{{ b.bowler.player_name }}</a></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}</tbody>
         </table>
       </div>
       {% endif %}
@@ -479,7 +511,7 @@
         <div class="sc-section-title">🏏 {{ mc.inn2.batting_team }} — Batting</div>
         <table class="sc-table">
           <thead><tr><th>Batsman</th><th>How Out</th><th class="r">R</th><th class="r">B</th><th class="r">4s</th><th class="r">6s</th><th class="r">SR</th></tr></thead>
-          <tbody>{% for b in mc.batting_sc2 %}<tr><td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.batsman.player_name }}</span>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td><td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td><td class="r"><span class="sc-runs">{{ b.runs }}</span></td><td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td></tr>{% endfor %}</tbody>
+          <tbody>{% for b in mc.batting_sc2 %}<tr><td><div class="sc-cell">{% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}<a href="/player/{{ b.batsman.id }}/profile/" class="sc-player-link">{{ b.batsman.player_name }}</a>{% if b.status == 'NOT_OUT' %}<span class="sc-not-out"> *</span>{% endif %}</div></td><td><span class="sc-dismissal">{% if b.status == 'NOT_OUT' %}not out{% elif b.dismissal_info %}{{ b.dismissal_info }}{% else %}{{ b.status }}{% endif %}</span></td><td class="r"><span class="sc-runs">{{ b.runs }}</span></td><td class="r">{{ b.balls_faced }}</td><td class="r">{{ b.fours }}</td><td class="r">{{ b.sixes }}</td><td class="r">{{ b.strike_rate }}</td></tr>{% endfor %}</tbody>
         </table>
         <div class="inn-total"><span class="inn-total-label">Total · {{ mc.inn2.overs_completed }} ov · Extras: {{ mc.inn2.extras }}</span><span class="inn-total-score">{{ mc.inn2.total_runs }}/{{ mc.inn2.total_wickets }}</span></div>
       </div>
@@ -489,7 +521,7 @@
         <div class="sc-section-title">⚾ {{ mc.inn2.bowling_team }} — Bowling</div>
         <table class="sc-table">
           <thead><tr><th>Bowler</th><th class="r">O</th><th class="r">R</th><th class="r">W</th><th class="r">Econ</th><th class="r">Wd</th><th class="r">NB</th></tr></thead>
-          <tbody>{% for b in mc.bowling_sc2 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<span class="sc-player">{{ b.bowler.player_name }}</span></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}</tbody>
+          <tbody>{% for b in mc.bowling_sc2 %}<tr><td><div class="sc-cell">{% if b.bowler.photo %}<img src="{{ b.bowler.photo.url }}" class="sc-av" alt="">{% else %}<div class="sc-av-init" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">{{ b.bowler.player_name|first|upper }}</div>{% endif %}<a href="/player/{{ b.bowler.id }}/profile/" class="sc-player-link">{{ b.bowler.player_name }}</a></div></td><td class="r">{{ b.overs_bowled }}</td><td class="r">{{ b.runs_given }}</td><td class="r"><span class="sc-wkts">{{ b.wickets }}</span></td><td class="r">{{ b.economy }}</td><td class="r">{{ b.wides }}</td><td class="r">{{ b.no_balls }}</td></tr>{% endfor %}</tbody>
         </table>
       </div>
       {% endif %}
@@ -533,7 +565,7 @@
           {% else %}
             <span class="match-type-pill pill-league">League · M{{ mc.match_number }}</span>
           {% endif %}
-          {{ mc.match.team1 }} vs {{ mc.match.team2 }}
+          <a href="/team/{{ mc.match.team1.id }}/" class="team-link">{{ mc.match.team1 }}</a> vs <a href="/team/{{ mc.match.team2.id }}/" class="team-link">{{ mc.match.team2 }}</a>
         </div>
         <div class="mc-meta">📍 {{ mc.match.venue }} · 📅 {{ mc.match.match_date }}</div>
       </div>
@@ -591,7 +623,7 @@
           {% else %}
             <span class="match-type-pill pill-league">League · M{{ mc.match_number }}</span>
           {% endif %}
-          {{ mc.match.team1 }} vs {{ mc.match.team2 }}
+          <a href="/team/{{ mc.match.team1.id }}/" class="team-link">{{ mc.match.team1 }}</a> vs <a href="/team/{{ mc.match.team2.id }}/" class="team-link">{{ mc.match.team2 }}</a>
         </div>
         <div class="mc-meta">📍 {{ mc.match.venue }} · 📅 {{ mc.match.match_date }}</div>
       </div>
@@ -651,7 +683,7 @@
           <div class="perf-avatar-init">{{ p.batsman__player_name|first|upper }}</div>
         {% endif %}
         <div class="perf-details">
-          <div class="perf-name">{{ p.batsman__player_name }}</div>
+          <a href="/player/{{ p.batsman__id }}/profile/" class="perf-name-link">{{ p.batsman__player_name }}</a>
           <div class="perf-stat"><strong style="color:var(--accent)">{{ p.total_runs }}</strong> runs · {{ p.total_balls }}b · {{ p.total_fours }}×4 · {{ p.total_sixes }}×6</div>
           <div class="perf-team">{{ p.batsman__team__team_name }}</div>
         </div>
@@ -674,7 +706,7 @@
           <div class="perf-avatar-init" style="background:linear-gradient(135deg,#14532d,#22c55e);border-color:rgba(34,197,94,0.3);">{{ p.bowler__player_name|first|upper }}</div>
         {% endif %}
         <div class="perf-details">
-          <div class="perf-name">{{ p.bowler__player_name }}</div>
+          <a href="/player/{{ p.bowler__id }}/profile/" class="perf-name-link">{{ p.bowler__player_name }}</a>
           <div class="perf-stat"><strong style="color:var(--accent)">{{ p.total_wickets }}</strong> wkts · {{ p.total_runs_given }} runs</div>
           <div class="perf-team">{{ p.bowler__team__team_name }}</div>
         </div>
@@ -727,53 +759,168 @@
 </script>
 
 <script>
-// ── LIVE SCORE AUTO-UPDATER ──
-// Polls every 5 seconds and updates scores ball by ball without page refresh
+// ── HOME PAGE LIVE TICKER — WebSocket ──
+// Replaces polling. Receives compact score pushes from server after every ball.
 
-function updateLiveScores() {
+(function() {
   const liveCards = document.querySelectorAll('.live-match-card');
-  if (liveCards.length === 0) return; // no live matches, skip
+  if (liveCards.length === 0) return;  // no live matches right now
 
-  fetch('/api/live-scores/')
-    .then(res => res.json())
-    .then(data => {
-      data.matches.forEach(match => {
-        const card = document.querySelector('.live-match-card[data-match-id="' + match.match_id + '"]');
-        if (!card) return;
+  function applyUpdate(match) {
+    const card = document.querySelector('.live-match-card[data-match-id="' + match.match_id + '"]');
+    if (!card) return;
+    if (match.inn1) {
+      const runsEl  = card.querySelector('.live-runs[data-inn="1"]');
+      const wktsEl  = card.querySelector('.live-wkts[data-inn="1"]');
+      const oversEl = card.querySelector('.live-overs[data-inn="1"]');
+      if (runsEl && wktsEl) { runsEl.childNodes[0].nodeValue = match.inn1.runs + '/'; wktsEl.textContent = match.inn1.wickets; }
+      if (oversEl) oversEl.textContent = match.inn1.overs + ' overs';
+    }
+    if (match.inn2) {
+      const runsEl2  = card.querySelector('.live-runs[data-inn="2"]');
+      const wktsEl2  = card.querySelector('.live-wkts[data-inn="2"]');
+      const oversEl2 = card.querySelector('.live-overs[data-inn="2"]');
+      if (runsEl2 && wktsEl2) { runsEl2.childNodes[0].nodeValue = match.inn2.runs + '/'; wktsEl2.textContent = match.inn2.wickets; }
+      if (oversEl2) oversEl2.textContent = match.inn2.overs + ' overs';
+    }
+  }
 
-        // Update innings 1
-        if (match.inn1) {
-          const runsEl = card.querySelector('.live-runs[data-inn="1"]');
-          const wktsEl = card.querySelector('.live-wkts[data-inn="1"]');
-          const oversEl = card.querySelector('.live-overs[data-inn="1"]');
-          if (runsEl && wktsEl) {
-            runsEl.childNodes[0].nodeValue = match.inn1.runs + '/';
-            wktsEl.textContent = match.inn1.wickets;
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}/ws/live/`);
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'home_update') {
+        msg.matches.forEach(applyUpdate);
+      }
+      if (msg.type === 'match_status_change') {
+        const d = msg.data;
+        if (d.status === 'completed') {
+          const card = document.querySelector('.live-match-card[data-match-id="' + d.match_id + '"]');
+          if (card) {
+            const pill = card.querySelector('.live-pill, .live-badge');
+            if (pill) { pill.textContent = 'COMPLETED'; pill.style.background = 'rgba(100,116,139,0.15)'; pill.style.color = '#64748b'; }
           }
-          if (oversEl) oversEl.textContent = match.inn1.overs + ' overs';
         }
+      }
+    };
 
-        // Update innings 2
-        if (match.inn2) {
-          const runsEl2 = card.querySelector('.live-runs[data-inn="2"]');
-          const wktsEl2 = card.querySelector('.live-wkts[data-inn="2"]');
-          const oversEl2 = card.querySelector('.live-overs[data-inn="2"]');
-          if (runsEl2 && wktsEl2) {
-            runsEl2.childNodes[0].nodeValue = match.inn2.runs + '/';
-            wktsEl2.textContent = match.inn2.wickets;
-          }
-          if (oversEl2) oversEl2.textContent = match.inn2.overs + ' overs';
-        }
-      });
+    ws.onclose = () => setTimeout(connect, 3000);
+    ws.onerror = () => ws.close();
+  }
+
+  connect();
+  console.log('🏏 Home live ticker: WebSocket started');
+})();
+</script>
+
+<!-- ── QR SCANNER MODAL ── -->
+<div id="home-scanner-modal" style="
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.88); z-index:9999;
+  align-items:center; justify-content:center;
+  flex-direction:column; padding:20px;
+">
+  <div style="background:#0e1117; border:1px solid rgba(245,158,11,0.3); border-radius:18px; padding:22px; width:100%; max-width:380px; position:relative;">
+    <button onclick="closeHomeScanner()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#64748b'">✕</button>
+    <div style="text-align:center;font-size:16px;font-weight:700;color:#f59e0b;margin-bottom:4px;">📷 Scan Player QR</div>
+    <div style="text-align:center;font-size:12px;color:#64748b;margin-bottom:16px;">Point at any player's QR code to view their profile</div>
+    <div style="width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;background:#000;position:relative;">
+      <video id="home-scanner-video" playsinline autoplay muted style="width:100%;height:100%;object-fit:cover;"></video>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+        <div id="home-scan-frame" style="width:60%;height:60%;border:2.5px solid #f59e0b;border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);animation:pulse-scan 1.5s ease-in-out infinite;"></div>
+      </div>
+      <canvas id="home-scanner-canvas" style="display:none;"></canvas>
+    </div>
+    <div id="home-scanner-status" style="text-align:center;font-size:12px;color:#64748b;margin-top:10px;min-height:18px;">Initializing camera…</div>
+  </div>
+</div>
+
+<style>
+  @keyframes pulse-scan {
+    0%,100% { border-color:#f59e0b; box-shadow:0 0 0 9999px rgba(0,0,0,0.45),0 0 12px rgba(245,158,11,0.4); }
+    50%      { border-color:#fbbf24; box-shadow:0 0 0 9999px rgba(0,0,0,0.45),0 0 24px rgba(245,158,11,0.7); }
+  }
+</style>
+
+<!-- jsQR for scanning -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+let homeScanStream = null;
+let homeScanInterval = null;
+
+function openHomeScanner() {
+  const modal = document.getElementById('home-scanner-modal');
+  modal.style.display = 'flex';
+  const status = document.getElementById('home-scanner-status');
+  status.textContent = 'Requesting camera access…';
+  status.style.color = '#64748b';
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      homeScanStream = stream;
+      const video = document.getElementById('home-scanner-video');
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play();
+        status.textContent = 'Scanning… point at a player QR code';
+        startHomeScanLoop();
+      };
     })
-    .catch(err => console.log('Live score fetch error:', err));
+    .catch(() => {
+      status.textContent = '❌ Camera access denied. Please allow camera and try again.';
+      status.style.color = '#ef4444';
+    });
 }
 
-// Start polling every 5 seconds if there are live matches
-if (document.querySelectorAll('.live-match-card').length > 0) {
-  setInterval(updateLiveScores, 5000);
-  console.log('🏏 Live score updater started (every 5s)');
+function startHomeScanLoop() {
+  const video = document.getElementById('home-scanner-video');
+  const canvas = document.getElementById('home-scanner-canvas');
+  const ctx = canvas.getContext('2d');
+  const status = document.getElementById('home-scanner-status');
+
+  homeScanInterval = setInterval(() => {
+    if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+    if (code && code.data) {
+      status.textContent = '✅ QR detected! Redirecting…';
+      status.style.color = '#22c55e';
+      clearInterval(homeScanInterval);
+      stopHomeCamera();
+      setTimeout(() => {
+        const url = code.data;
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+          window.location.href = url;
+        } else {
+          status.textContent = `Scanned: ${url}`;
+        }
+      }, 600);
+    }
+  }, 200);
 }
+
+function stopHomeCamera() {
+  if (homeScanStream) { homeScanStream.getTracks().forEach(t => t.stop()); homeScanStream = null; }
+  if (homeScanInterval) { clearInterval(homeScanInterval); homeScanInterval = null; }
+}
+
+function closeHomeScanner() {
+  stopHomeCamera();
+  const modal = document.getElementById('home-scanner-modal');
+  modal.style.display = 'none';
+  document.getElementById('home-scanner-status').textContent = 'Initializing camera…';
+  document.getElementById('home-scanner-video').srcObject = null;
+}
+
+// Close on backdrop click
+document.getElementById('home-scanner-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeHomeScanner();
+});
 </script>
 
 {% endblock %}

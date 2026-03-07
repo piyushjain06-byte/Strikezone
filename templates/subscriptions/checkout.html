@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Checkout — {{ plan_name }} Plan{% endblock %}
+
+{% block content %}
+<style>
+  .checkout-wrap { max-width: 520px; margin: 40px auto; padding: 0 16px; }
+  .checkout-card { background: #1e293b; border-radius: 20px; padding: 36px 32px; border: 1px solid #334155; }
+  .checkout-title { font-size: 22px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
+  .checkout-price { font-size: 40px; font-weight: 800; color: #f59e0b; margin: 12px 0; }
+  .checkout-price span { font-size: 16px; color: #94a3b8; font-weight: 400; }
+  .checkout-validity { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; padding: 8px 14px; font-size: 13px; color: #f59e0b; margin-bottom: 24px; display: inline-block; }
+  .features-list { list-style: none; padding: 0; margin: 0 0 28px; display: flex; flex-direction: column; gap: 10px; }
+  .features-list li { font-size: 14px; color: #cbd5e1; display: flex; align-items: center; gap: 10px; }
+  .features-list li::before { content: '✓'; color: #10b981; font-weight: 700; }
+  .divider { border: none; border-top: 1px solid #334155; margin: 24px 0; }
+  .tnc-box { background: #0f172a; border-radius: 10px; padding: 16px; margin-bottom: 24px; max-height: 180px; overflow-y: auto; font-size: 12px; color: #64748b; line-height: 1.7; }
+  .tnc-box h4 { font-size: 13px; color: #94a3b8; margin: 0 0 10px; }
+  .tnc-box p { margin: 0 0 8px; }
+  .tnc-accept { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; cursor: pointer; }
+  .tnc-accept input { width: 18px; height: 18px; accent-color: #f59e0b; cursor: pointer; }
+  .tnc-accept label { font-size: 14px; color: #94a3b8; cursor: pointer; }
+  .btn-pay { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 17px; font-weight: 700; cursor: pointer; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn-pay:hover { opacity: 0.9; }
+  .btn-pay:disabled { opacity: 0.4; cursor: not-allowed; }
+  .gpay-logo { background: #fff; border-radius: 4px; padding: 2px 6px; font-size: 13px; font-weight: 800; color: #000; letter-spacing: -0.5px; }
+  .secure-note { text-align: center; font-size: 12px; color: #475569; margin-top: 14px; }
+  .back-link { display: inline-block; margin-bottom: 20px; color: #64748b; font-size: 14px; text-decoration: none; }
+  .back-link:hover { color: #94a3b8; }
+  .payment-success { display: none; text-align: center; padding: 40px 0; }
+  .payment-success .check { font-size: 60px; margin-bottom: 16px; }
+  .payment-success h3 { color: #10b981; font-size: 22px; margin-bottom: 8px; }
+  .payment-success p { color: #94a3b8; font-size: 14px; }
+  .spinner { display: none; width: 22px; height: 22px; border: 3px solid rgba(0,0,0,0.2); border-top-color: #000; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-msg { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 12px 16px; color: #fca5a5; font-size: 14px; margin-bottom: 16px; display: none; }
+</style>
+
+<div class="checkout-wrap">
+  <a href="{% url 'upgrade_plan' %}" class="back-link">← Back to Plans</a>
+
+  <div class="checkout-card" id="checkout-form">
+    <div class="checkout-title">Upgrade to {{ plan_name }}</div>
+    <div class="checkout-price">₹{{ price_inr }} <span>/ month</span></div>
+    <div class="checkout-validity">🗓 Valid for 30 days · Auto-expires to Free</div>
+
+    <ul class="features-list">
+      {% for f in features %}
+        <li>{{ f }}</li>
+      {% endfor %}
+    </ul>
+
+    <hr class="divider">
+
+    <div class="tnc-box">
+      <h4>Terms & Conditions</h4>
+      <p>1. <strong>Subscription Duration:</strong> This plan is valid for 30 days from the date of purchase. After 30 days your account will automatically revert to the Free plan.</p>
+      <p>2. <strong>No Refunds:</strong> Payments are non-refundable once processed. If you experience a technical issue, contact support within 48 hours.</p>
+      <p>3. <strong>No Downgrades:</strong> Once you upgrade to a paid plan, you cannot manually downgrade until the plan expires.</p>
+      <p>4. <strong>Plan Features:</strong> StrikeZone reserves the right to modify features with 7 days notice. Core features will remain intact.</p>
+      <p>5. <strong>Payment Security:</strong> All payments are processed securely by Razorpay. StrikeZone does not store your card or UPI details.</p>
+      <p>6. <strong>Google Pay / UPI:</strong> You can pay using Google Pay, PhonePe, Paytm, or any UPI app. No additional charges apply.</p>
+      <p>7. <strong>Account:</strong> Your plan is linked to your registered mobile number and cannot be transferred.</p>
+    </div>
+
+    <label class="tnc-accept">
+      <input type="checkbox" id="tnc-check" onchange="togglePayBtn()">
+      <label for="tnc-check">I have read and agree to the Terms & Conditions</label>
+    </label>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <button class="btn-pay" id="pay-btn" disabled onclick="startPayment()">
+      <span id="btn-text">Pay ₹{{ price_inr }} with <span class="gpay-logo">G Pay</span> / UPI</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+
+    <div class="secure-note">🔒 Secured by Razorpay · Google Pay · UPI · Cards accepted</div>
+  </div>
+
+  <div class="payment-success" id="payment-success">
+    <div class="check">✅</div>
+    <h3>Payment Successful!</h3>
+    <p id="success-msg">Your {{ plan_name }} plan is now active.</p>
+    <p style="margin-top:8px;color:#64748b;">Redirecting to home...</p>
+  </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  const PLAN      = "{{ plan }}";
+  const PLAN_NAME = "{{ plan_name }}";
+  const PRICE_INR = {{ price_inr }};
+  const RZP_KEY   = "{{ razorpay_key }}";
+
+  function togglePayBtn() {
+    document.getElementById('pay-btn').disabled = !document.getElementById('tnc-check').checked;
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function setLoading(loading) {
+    document.getElementById('btn-text').style.display  = loading ? 'none' : 'flex';
+    document.getElementById('spinner').style.display   = loading ? 'block' : 'none';
+    document.getElementById('pay-btn').disabled        = loading;
+  }
+
+  async function startPayment() {
+    document.getElementById('error-msg').style.display = 'none';
+    setLoading(true);
+
+    // Step 1: Create order on server
+    let orderData;
+    try {
+      const resp = await fetch("{% url 'create_payment_order' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify({ plan: PLAN }),
+      });
+      orderData = await resp.json();
+      if (!resp.ok) throw new Error(orderData.error || 'Order creation failed');
+    } catch(e) {
+      setLoading(false);
+      showError(e.message);
+      return;
+    }
+
+    // Step 2: Open Razorpay modal
+    const options = {
+      key:         RZP_KEY,
+      amount:      orderData.amount,
+      currency:    orderData.currency,
+      name:        'StrikeZone',
+      description: `${PLAN_NAME} Plan — 30 days`,
+      order_id:    orderData.order_id,
+      prefill: {},
+      config: {
+        display: {
+          // Show Google Pay first
+          preferences: {
+            show_default_blocks: false,
+          },
+          blocks: {
+            gpay: { name: 'Google Pay', instruments: [{ method: 'upi', flows: ['intent'], apps: ['google_pay'] }] },
+            upi:  { name: 'UPI', instruments: [{ method: 'upi', flows: ['collect', 'qr'] }] },
+            other: { name: 'More Options', instruments: [{ method: 'card' }, { method: 'netbanking' }] },
+          },
+          sequence: ['block.gpay', 'block.upi', 'block.other'],
+        }
+      },
+      theme: { color: '#f59e0b' },
+      modal: {
+        ondismiss: function() {
+          setLoading(false);
+          document.getElementById('tnc-check').checked = false;
+          togglePayBtn();
+        }
+      },
+      handler: async function(response) {
+        // Step 3: Verify payment on server
+        try {
+          const vresp = await fetch("{% url 'verify_payment' %}", {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({
+              razorpay_order_id:   response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature:  response.razorpay_signature,
+              plan:                PLAN,
+            }),
+          });
+          const vdata = await vresp.json();
+          if (!vresp.ok) throw new Error(vdata.error || 'Verification failed');
+
+          // Success!
+          document.getElementById('checkout-form').style.display    = 'none';
+          document.getElementById('payment-success').style.display  = 'block';
+          document.getElementById('success-msg').textContent =
+            `Your ${PLAN_NAME} plan is active until ${vdata.expires_at}.`;
+
+          setTimeout(() => { window.location.href = '/'; }, 2500);
+
+        } catch(e) {
+          setLoading(false);
+          showError('Payment received but verification failed. Please contact support with your payment ID: ' + response.razorpay_payment_id);
+        }
+      },
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function(response) {
+      setLoading(false);
+      showError('Payment failed: ' + (response.error.description || 'Unknown error'));
+    });
+    rzp.open();
+    setLoading(false);
+  }
+</script>
+{% endblock %}

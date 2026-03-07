@@ -1,0 +1,455 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  :root {
+    --bg:#0a0f1e;--surface:#111827;--surface2:#1a2235;
+    --border:#1e2d45;--accent:#f59e0b;--success:#10b981;
+    --danger:#ef4444;--info:#3b82f6;--text:#e2e8f0;--muted:#64748b;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  /* ── HERO ── */
+  .tp-hero{
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#07122b 0%,#0d1f3c 50%,#0a1628 100%);
+    border-bottom:1px solid var(--border);
+    padding:48px 20px 40px;
+  }
+  .tp-hero::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse 80% 60% at 70% 50%,rgba(245,158,11,.08) 0%,transparent 65%);
+    pointer-events:none;
+  }
+  .tp-hero-inner{max-width:1280px;margin:0 auto;position:relative;display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
+  .tp-avatar{
+    width:88px;height:88px;border-radius:50%;
+    background:linear-gradient(135deg,#92400e,#f59e0b);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Rajdhani',sans-serif;font-size:38px;font-weight:700;color:#000;
+    box-shadow:0 0 0 4px rgba(245,158,11,.25),0 0 40px rgba(245,158,11,.15);
+    flex-shrink:0;
+  }
+  .tp-hero-text{}
+  .tp-tag{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:20px;padding:3px 12px;display:inline-block;margin-bottom:10px;}
+  .tp-name{font-family:'Rajdhani',sans-serif;font-size:46px;font-weight:700;color:#fff;line-height:1;margin-bottom:8px;text-shadow:0 2px 20px rgba(0,0,0,.5);}
+  .tp-meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .tp-meta-chip{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;}
+  .tp-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;transition:all .15s;position:absolute;top:0;right:0;}
+  .tp-back:hover{color:var(--accent);border-color:rgba(245,158,11,.3);}
+
+  /* ── STAT CARDS ROW ── */
+  .stat-row{max-width:1280px;margin:0 auto;padding:24px 20px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px;text-align:center;position:relative;overflow:hidden;}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;}
+  .stat-card.gold::before{background:linear-gradient(90deg,#b45309,#f59e0b);}
+  .stat-card.green::before{background:linear-gradient(90deg,#047857,#10b981);}
+  .stat-card.red::before{background:linear-gradient(90deg,#991b1b,#ef4444);}
+  .stat-card.blue::before{background:linear-gradient(90deg,#1d4ed8,#3b82f6);}
+  .stat-card.purple::before{background:linear-gradient(90deg,#6d28d9,#8b5cf6);}
+  .stat-num{font-family:'Rajdhani',sans-serif;font-size:38px;font-weight:700;line-height:1;margin-bottom:4px;}
+  .stat-card.gold .stat-num{color:var(--accent);}
+  .stat-card.green .stat-num{color:var(--success);}
+  .stat-card.red .stat-num{color:var(--danger);}
+  .stat-card.blue .stat-num{color:var(--info);}
+  .stat-card.purple .stat-num{color:#a78bfa;}
+  .stat-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+
+  /* ── MAIN LAYOUT ── */
+  .tp-body{max-width:1280px;margin:0 auto;padding:24px 20px 60px;display:grid;grid-template-columns:1fr 320px;gap:22px;align-items:start;}
+  @media(max-width:960px){.tp-body{grid-template-columns:1fr;}}
+
+  /* ── HONOURS ── */
+  .honours-section{max-width:1280px;margin:20px auto 0;padding:0 20px;}
+  .honours-grid{display:flex;flex-wrap:wrap;gap:12px;}
+  .honour-card{
+    display:flex;align-items:center;gap:12px;
+    border-radius:12px;padding:14px 18px;flex:1;min-width:200px;
+    position:relative;overflow:hidden;
+  }
+  .honour-card::before{content:'';position:absolute;top:-24px;right:-24px;width:70px;height:70px;border-radius:50%;opacity:.12;}
+  .honour-card.winner { background:linear-gradient(135deg,#1c1400,#2a1e00); border:1px solid rgba(250,204,21,.35); }
+  .honour-card.winner::before { background:#facc15; }
+  .honour-card.runnerup { background:linear-gradient(135deg,#181818,#242424); border:1px solid rgba(203,213,225,.25); }
+  .honour-card.runnerup::before { background:#cbd5e1; }
+  .honour-card.semifinal { background:linear-gradient(135deg,#140a00,#1e1000); border:1px solid rgba(251,146,60,.25); }
+  .honour-card.semifinal::before { background:#fb923c; }
+  .honour-card.quarterfinal { background:linear-gradient(135deg,#050e20,#0a1528); border:1px solid rgba(99,102,241,.25); }
+  .honour-card.quarterfinal::before { background:#818cf8; }
+  .honour-icon{font-size:26px;flex-shrink:0;line-height:1;}
+  .honour-info{}
+  .honour-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;}
+  .honour-card.winner    .honour-label { color:#facc15; }
+  .honour-card.runnerup  .honour-label { color:#cbd5e1; }
+  .honour-card.semifinal .honour-label { color:#fb923c; }
+  .honour-card.quarterfinal .honour-label { color:#818cf8; }
+  .honour-tournaments{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;}
+  .honour-tag{font-size:11px;font-weight:600;color:#fff;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:2px 8px;}
+
+  /* ── WIN RATE BAR ── */
+  .wr-bar-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:22px;}
+  .wr-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;}
+  .wr-bar{height:10px;border-radius:6px;background:var(--surface2);overflow:hidden;}
+  .wr-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#047857,#10b981);transition:width .8s ease;}
+
+  /* ── SECTION HEADER ── */
+  .sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .sec-hdr:not(:first-child){margin-top:28px;}
+  .sec-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:#fff;}
+  .sec-count{font-size:11px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;}
+
+  /* ── MATCH CARD ── */
+  .mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;transition:border-color .15s, transform .15s;}
+  .mc:hover{border-color:rgba(245,158,11,.4);transform:translateY(-1px);}
+  .mc-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px;}
+  .mc-vs{font-size:14px;font-weight:700;color:#fff;}
+  .mc-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .badge{font-size:11px;font-weight:700;border-radius:20px;padding:3px 12px;white-space:nowrap;}
+  .badge-win{color:var(--success);background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);}
+  .badge-loss{color:var(--danger);background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);}
+  .badge-tie{color:#a78bfa;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);}
+  .badge-pending{color:var(--info);background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);}
+  .mc-scores{display:flex;}
+  .mc-half{flex:1;padding:12px 18px;}
+  .mc-half:first-child{border-right:1px solid var(--border);}
+  .mc-tl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+  .mc-score{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;color:#fff;line-height:1;}
+  .mc-score .wkt{color:var(--accent);}
+  .mc-overs{font-size:11px;color:var(--muted);margin-top:2px;}
+  .mc-result{padding:9px 18px;font-size:12px;font-weight:600;border-top:1px solid rgba(16,185,129,.12);background:rgba(16,185,129,.05);}
+  .mc-result.win{color:var(--success);}
+  .mc-result.loss{color:var(--danger);background:rgba(239,68,68,.05);border-top-color:rgba(239,68,68,.12);}
+  .mc-result.tie{color:#a78bfa;background:rgba(139,92,246,.05);border-top-color:rgba(139,92,246,.12);}
+
+  /* ── SIDEBAR ── */
+  .tp-sidebar{display:flex;flex-direction:column;gap:16px;position:sticky;top:80px;}
+  .sb-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .sb-title{font-size:12px;font-weight:700;color:#94a3b8;padding-bottom:9px;margin-bottom:14px;border-bottom:1px solid var(--border);}
+
+  /* ── PLAYER ROW ── */
+  .player-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .player-row:last-child{border-bottom:none;}
+  .pl-av{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid rgba(255,255,255,.1);}
+  .pl-av-init{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1e3a8a,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
+  .pl-info{flex:1;min-width:0;}
+  .pl-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pl-role{font-size:10px;color:var(--muted);margin-top:2px;}
+  .pl-link{font-size:11px;color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap;}
+  .pl-link:hover{text-decoration:underline;}
+
+  /* ── STATS TABLE ── */
+  .stats-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+  .stats-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+  .stats-tbl th.r{text-align:right;}
+  .stats-tbl td{padding:9px 10px;color:#cbd5e1;border-bottom:1px solid rgba(255,255,255,.03);}
+  .stats-tbl td.r{text-align:right;}
+  .stats-tbl tr:last-child td{border-bottom:none;}
+  .stats-tbl tr:hover td{background:rgba(255,255,255,.02);}
+  .sn{font-weight:600;color:#fff;}
+  .sh{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--accent);}
+  .empty{padding:28px;text-align:center;color:var(--muted);font-size:13px;}
+</style>
+
+<!-- HERO -->
+<div class="tp-hero">
+  <div class="tp-hero-inner">
+    <a href="javascript:history.back()" class="tp-back">← Back</a>
+    <div class="tp-avatar">{{ team.team_name|first|upper }}</div>
+    <div class="tp-hero-text">
+      <div class="tp-tag">Team Profile</div>
+      <div class="tp-name">{{ team.team_name }}</div>
+      <div class="tp-meta">
+        <span class="tp-meta-chip">🆔 {{ team.team_code }}</span>
+        {% if team.team_created_date %}<span class="tp-meta-chip">📅 Est. {{ team.team_created_date }}</span>{% endif %}
+        <span class="tp-meta-chip">⚡ {{ total }} matches played</span>
+      </div>
+      <div style="margin-top:14px;">
+        <a href="{% url 'team_analysis' team.id %}" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#92400e,#f59e0b);color:#000;font-size:13px;font-weight:700;padding:10px 20px;border-radius:10px;text-decoration:none;transition:.15s;">
+          📊 View Team Analysis
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="stat-row">
+  <div class="stat-card gold">
+    <div class="stat-num">{{ total }}</div>
+    <div class="stat-label">Matches</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-num">{{ wins }}</div>
+    <div class="stat-label">Wins</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-num">{{ losses }}</div>
+    <div class="stat-label">Losses</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-num">{{ ties }}</div>
+    <div class="stat-label">Ties</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-num">{{ win_pct }}%</div>
+    <div class="stat-label">Win Rate</div>
+  </div>
+</div>
+
+<!-- KNOCKOUT HONOURS -->
+{% if winner_of or runnerup_of or sf_of or qf_of or pqf_of %}
+<div class="honours-section">
+  <div class="honours-grid">
+
+    {% if winner_of %}
+    <div class="honour-card winner">
+      <div class="honour-icon">🏆</div>
+      <div class="honour-info">
+        <div class="honour-label">Tournament Winner</div>
+        <div class="honour-tournaments">
+          {% for km in winner_of %}
+            <span class="honour-tag">{{ km.stage.tournament.tournament_name }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if runnerup_of %}
+    <div class="honour-card runnerup">
+      <div class="honour-icon">🥈</div>
+      <div class="honour-info">
+        <div class="honour-label">Runner-Up</div>
+        <div class="honour-tournaments">
+          {% for km in runnerup_of %}
+            <span class="honour-tag">{{ km.stage.tournament.tournament_name }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if sf_of %}
+    <div class="honour-card semifinal">
+      <div class="honour-icon">🥉</div>
+      <div class="honour-info">
+        <div class="honour-label">Semi-Finalist</div>
+        <div class="honour-tournaments">
+          {% for km in sf_of %}
+            <span class="honour-tag">{{ km.stage.tournament.tournament_name }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if qf_of %}
+    <div class="honour-card quarterfinal">
+      <div class="honour-icon">⚡</div>
+      <div class="honour-info">
+        <div class="honour-label">Quarter-Finalist</div>
+        <div class="honour-tournaments">
+          {% for km in qf_of %}
+            <span class="honour-tag">{{ km.stage.tournament.tournament_name }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if pqf_of %}
+    <div class="honour-card quarterfinal">
+      <div class="honour-icon">🎯</div>
+      <div class="honour-info">
+        <div class="honour-label">Pre-QF Participant</div>
+        <div class="honour-tournaments">
+          {% for km in pqf_of %}
+            <span class="honour-tag">{{ km.stage.tournament.tournament_name }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endif %}
+
+<!-- BODY -->
+<div class="tp-body">
+<div>
+
+  <!-- WIN RATE BAR -->
+  {% if total %}
+  <div class="wr-bar-wrap">
+    <div class="wr-label"><span>Win Rate</span><span>{{ wins }}W / {{ losses }}L{% if ties %} / {{ ties }}T{% endif %}</span></div>
+    <div class="wr-bar"><div class="wr-fill" style="width:{{ win_pct }}%;"></div></div>
+  </div>
+  {% endif %}
+
+  <!-- MATCHES -->
+  <div class="sec-hdr">
+    <span class="sec-title">⚔️ All Matches</span>
+    <span class="sec-count">{{ match_data|length }}</span>
+  </div>
+
+  {% if match_data %}
+    {% for m in match_data %}
+    <a href="/match/{{ m.match.id }}/scorecard/" style="text-decoration:none;display:block;">
+    <div class="mc" style="cursor:pointer;">
+      <div class="mc-head">
+        <div>
+          <div class="mc-vs">{{ m.match.team1 }} vs {{ m.match.team2 }}</div>
+          <div class="mc-sub">{{ m.match.tournament.tournament_name }} · 📍 {{ m.match.venue }} · 📅 {{ m.match.match_date }}</div>
+        </div>
+        {% if m.status == 'completed' %}
+          {% if m.winner == team.team_name %}
+            <span class="badge badge-win">🏆 Win</span>
+          {% elif not m.winner %}
+            <span class="badge badge-tie">⚖️ Tie</span>
+          {% else %}
+            <span class="badge badge-loss">✗ Loss</span>
+          {% endif %}
+        {% else %}
+          <span class="badge badge-pending">📅 Scheduled</span>
+        {% endif %}
+      </div>
+
+      {% if m.inn1 %}
+      <div class="mc-scores">
+        <div class="mc-half">
+          <div class="mc-tl">{{ m.inn1.batting_team }}</div>
+          <div class="mc-score">{{ m.inn1.total_runs }}/<span class="wkt">{{ m.inn1.total_wickets }}</span></div>
+          <div class="mc-overs">{{ m.inn1.overs_completed }} ov</div>
+        </div>
+        {% if m.inn2 %}
+        <div class="mc-half">
+          <div class="mc-tl">{{ m.inn2.batting_team }}</div>
+          <div class="mc-score">{{ m.inn2.total_runs }}/<span class="wkt">{{ m.inn2.total_wickets }}</span></div>
+          <div class="mc-overs">{{ m.inn2.overs_completed }} ov</div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if m.margin %}
+        {% if m.winner == team.team_name %}
+          <div class="mc-result win">🏆 {{ m.margin }}</div>
+        {% else %}
+          <div class="mc-result loss">{{ m.margin }}</div>
+        {% endif %}
+      {% endif %}
+    </div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <div class="empty">No matches found for this team.</div>
+  {% endif %}
+
+  <!-- BATTING STATS -->
+  {% if player_bat_stats %}
+  <div class="sec-hdr" style="margin-top:32px;">
+    <span class="sec-title">🏏 Batting Stats</span>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:auto;">
+    <table class="stats-tbl">
+      <thead><tr>
+        <th>Player</th>
+        <th class="r">Inns</th>
+        <th class="r">Runs</th>
+        <th class="r">Balls</th>
+        <th class="r">HS</th>
+        <th class="r">4s</th>
+        <th class="r">6s</th>
+        <th class="r">SR</th>
+      </tr></thead>
+      <tbody>
+        {% for p in player_bat_stats %}
+        <tr>
+          <td>
+            <a href="/player/{{ p.batsman__id }}/profile/" style="text-decoration:none;">
+              <span class="sn" style="color:var(--accent);">{{ p.batsman__player_name }}</span>
+            </a>
+          </td>
+          <td class="r">{{ p.innings_count }}</td>
+          <td class="r"><span class="sh">{{ p.total_runs }}</span></td>
+          <td class="r">{{ p.total_balls }}</td>
+          <td class="r">–</td>
+          <td class="r">{{ p.total_fours }}</td>
+          <td class="r">{{ p.total_sixes }}</td>
+          <td class="r">{% if p.total_balls %}{{ p.total_runs|floatformat:0 }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- BOWLING STATS -->
+  {% if player_bowl_stats %}
+  <div class="sec-hdr" style="margin-top:28px;">
+    <span class="sec-title">⚾ Bowling Stats</span>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:auto;">
+    <table class="stats-tbl">
+      <thead><tr>
+        <th>Player</th>
+        <th class="r">Inns</th>
+        <th class="r">Wkts</th>
+        <th class="r">Runs</th>
+        <th class="r">Avg</th>
+      </tr></thead>
+      <tbody>
+        {% for p in player_bowl_stats %}
+        <tr>
+          <td>
+            <a href="/player/{{ p.bowler__id }}/profile/" style="text-decoration:none;">
+              <span class="sn" style="color:var(--accent);">{{ p.bowler__player_name }}</span>
+            </a>
+          </td>
+          <td class="r">{{ p.innings_count }}</td>
+          <td class="r"><span class="sh">{{ p.total_wickets }}</span></td>
+          <td class="r">{{ p.total_runs_given }}</td>
+          <td class="r">{% if p.total_wickets %}{{ p.total_runs_given|floatformat:0 }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- SIDEBAR -->
+<aside class="tp-sidebar">
+  <div class="sb-card">
+    <div class="sb-title">👥 Squad</div>
+    {% if rosters %}
+      {% for r in rosters %}
+      <div class="player-row">
+        {% if r.player.photo %}
+          <img src="{{ r.player.photo.url }}" class="pl-av" alt="">
+        {% else %}
+          <div class="pl-av-init">{{ r.player.player_name|first|upper }}</div>
+        {% endif %}
+        <div class="pl-info">
+          <div class="pl-name">
+            {% if r.is_captain %}👑 {% endif %}
+            {% if r.is_vice_captain %}⭐ {% endif %}
+            {{ r.player.player_name }}
+          </div>
+          <div class="pl-role">{{ r.get_role_display }}{% if r.jersey_number %} · #{{ r.jersey_number }}{% endif %}</div>
+        </div>
+        <a href="/player/{{ r.player.id }}/profile/" class="pl-link">View →</a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No squad data available.</div>
+    {% endif %}
+  </div>
+</aside>
+
+</div>
+
+{% endblock %}

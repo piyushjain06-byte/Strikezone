@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap');
+:root{--bg:#07090f;--s1:#0e1117;--s2:#161b26;--border:#1e2d40;--accent:#6366f1;--gold:#f59e0b;--green:#22c55e;--red:#ef4444;--text:#e2e8f0;--muted:#64748b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
+.wrap{max-width:920px;margin:0 auto;padding:24px 14px 80px;}
+.btn-back{display:inline-flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:13px;font-weight:600;padding:8px 16px;text-decoration:none;margin-bottom:20px;transition:.15s;}
+.btn-back:hover{color:#fff;border-color:#475569;}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#080c1e,#06090f,#100808);border:1px solid rgba(99,102,241,0.2);border-radius:18px;padding:28px 24px;margin-bottom:20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-50px;right:-50px;width:300px;height:300px;background:radial-gradient(circle,rgba(99,102,241,0.1) 0%,transparent 70%);pointer-events:none;}
+.hero-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#1e1b4b,#4f46e5);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fff;flex-shrink:0;border:2px solid rgba(99,102,241,0.4);}
+.hero-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;}
+.hero-info{flex:1;}
+.hero-tag{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:20px;padding:3px 10px;display:inline-block;margin-bottom:8px;}
+.hero-name{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fff;line-height:1;margin-bottom:4px;}
+.hero-own{font-size:11px;color:var(--gold);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:6px;padding:3px 10px;display:inline-block;margin-top:4px;}
+
+/* LOADING */
+.loading{display:flex;flex-direction:column;align-items:center;padding:60px 20px;gap:14px;}
+.spin{width:48px;height:48px;border-radius:50%;border:3px solid rgba(99,102,241,0.15);border-top-color:var(--accent);animation:spin .85s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;}
+.loading-sub{font-size:12px;color:var(--muted);text-align:center;max-width:260px;line-height:1.6;}
+.loading-steps{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.step{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;opacity:0;animation:fi .4s forwards;}
+.step:nth-child(1){animation-delay:.3s}.step:nth-child(2){animation-delay:1s}.step:nth-child(3){animation-delay:1.8s}.step:nth-child(4){animation-delay:2.6s}
+@keyframes fi{to{opacity:1;}}
+.dot{width:4px;height:4px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+
+/* STAT ROW */
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.stat-pill{flex:1;min-width:80px;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center;}
+.stat-pill.accent::before{content:'';display:block;height:2px;background:var(--accent);border-radius:2px;margin-bottom:10px;}
+.stat-pill.gold::before{content:'';display:block;height:2px;background:var(--gold);border-radius:2px;margin-bottom:10px;}
+.stat-pill.green::before{content:'';display:block;height:2px;background:var(--green);border-radius:2px;margin-bottom:10px;}
+.stat-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:600;color:#fff;line-height:1;}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.card-head{background:var(--s2);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:8px;}
+.card-icon{font-size:15px;}
+.card-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;}
+.ml-badge{margin-left:auto;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:2px 8px;}
+.card-body{padding:14px;}
+.chart-img{width:100%;display:block;border-radius:8px;}
+.chart-loading{width:100%;height:180px;background:var(--s2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:10px;}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:640px){.grid2{grid-template-columns:1fr;}}
+
+/* STRENGTHS/WEAKNESSES */
+.sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 16px;}
+@media(max-width:600px){.sw-grid{grid-template-columns:1fr;}}
+.sw-col{}
+.sw-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.sw-label.str{color:var(--green);}
+.sw-label.wk{color:var(--red);}
+.sw-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;color:#94a3b8;line-height:1.5;}
+.sw-item:last-child{border-bottom:none;}
+.sw-bullet{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.sw-bullet.str{background:var(--green);}
+.sw-bullet.wk{background:var(--red);}
+
+/* TABS */
+.tabs{display:flex;gap:0;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:16px;}
+.tab{flex:1;padding:8px;text-align:center;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;color:var(--muted);}
+.tab.active{background:var(--accent);color:#fff;}
+.hidden{display:none;}
+</style>
+
+<div class="wrap">
+<a href="{% url 'public_player_profile' player.id %}" class="btn-back">← Back to Profile</a>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-avatar">
+    {% if player.photo %}
+    <img src="{{ player.photo.url }}" alt="{{ player.player_name }}">
+    {% else %}{{ player.player_name|first|upper }}{% endif %}
+  </div>
+  <div class="hero-info">
+    <div class="hero-tag">🤖 ML Performance Analysis</div>
+    <div class="hero-name">{{ player.player_name }}</div>
+    {% if is_own %}<div class="hero-own">⭐ Your Personal Analysis</div>{% endif %}
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading" class="loading">
+  <div class="spin"></div>
+  <div class="loading-title">Analysing Performance</div>
+  <div class="loading-sub">Running Python ML models on every ball faced and bowled.</div>
+  <div class="loading-steps">
+    <div class="step"><span class="dot"></span>Loading career ball-by-ball data...</div>
+    <div class="step"><span class="dot"></span>Computing batting metrics & phases...</div>
+    <div class="step"><span class="dot"></span>Building radar & zone charts...</div>
+    <div class="step"><span class="dot"></span>Identifying strengths & weaknesses...</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main" style="display:none">
+
+  <!-- BATTING TABS if both batting + bowling -->
+  <div class="tabs" id="role-tabs">
+    <div class="tab active" onclick="showRole('bat',this)">🏏 Batting</div>
+    <div class="tab" onclick="showRole('bowl',this)">🎳 Bowling</div>
+  </div>
+
+  <!-- BATTING SECTION -->
+  <div id="bat-sec">
+    <!-- Stat pills -->
+    <div class="stat-row" id="bat-stats"></div>
+
+    <!-- Radar + Shot Zones -->
+    <div class="grid2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-head"><span class="card-icon">🕸</span><span class="card-title">Skill Radar</span><span class="ml-badge">📊 ML</span></div>
+        <div class="card-body" style="padding:10px">
+          <img id="chart-radar" class="chart-img" style="display:none">
+          <div class="chart-loading" id="load-radar">Generating...</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-head"><span class="card-icon">🎯</span><span class="card-title">Shot Zones</span></div>
+        <div class="card-body" style="padding:10px">
+          <img id="chart-zones" class="chart-img" style="display:none">
+          <div class="chart-loading" id="load-zones">Generating...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strengths & Weaknesses -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">⚡</span><span class="card-title">Strengths & Weaknesses</span></div>
+      <div class="sw-grid">
+        <div class="sw-col">
+          <div class="sw-label str">✅ Strengths</div>
+          <div id="strengths-list"></div>
+        </div>
+        <div class="sw-col">
+          <div class="sw-label wk">⚠️ Weaknesses</div>
+          <div id="weaknesses-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run history -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">📊</span><span class="card-title">Runs Per Innings</span><span class="ml-badge">Trend Line</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-runs" class="chart-img" style="display:none">
+        <div class="chart-loading" id="load-runs">Generating...</div>
+      </div>
+    </div>
+
+    <!-- SR + Phase side by side -->
+    <div class="grid2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-head"><span class="card-icon">⚡</span><span class="card-title">Strike Rate History</span></div>
+        <div class="card-body" style="padding:10px">
+          <img id="chart-sr" class="chart-img" style="display:none">
+          <div class="chart-loading" id="load-sr">Generating...</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-head"><span class="card-icon">⏱</span><span class="card-title">Phase Breakdown</span></div>
+        <div class="card-body" style="padding:10px">
+          <img id="chart-phase" class="chart-img" style="display:none">
+          <div class="chart-loading" id="load-phase">Generating...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bowler Weakness Alerts -->
+    <div class="card" id="dismissal-alerts-card" style="display:none;margin-top:16px">
+      <div class="card-head"><span class="card-icon">🚨</span><span class="card-title">Bowler Vulnerability Alerts</span></div>
+      <div class="card-body" id="dismissal-alerts-body" style="padding:10px;display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <!-- Dismissal -->
+    <div class="card" style="margin-top:16px">
+      <div class="card-head"><span class="card-icon">🔴</span><span class="card-title">Dismissal Breakdown</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-dismissal" class="chart-img" style="display:none">
+        <div class="chart-loading" id="load-dismissal">Generating...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOWLING SECTION -->
+  <div id="bowl-sec" class="hidden">
+    <div class="stat-row" id="bowl-stats"></div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-icon">📈</span><span class="card-title">Economy Rate History</span><span class="ml-badge">Trend</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-eco" class="chart-img" style="display:none">
+        <div class="chart-loading" id="load-eco">Generating...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🎳</span><span class="card-title">Wickets Per Match</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-wkts" class="chart-img" style="display:none">
+        <div class="chart-loading" id="load-wkts">Generating...</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main -->
+</div><!-- end wrap -->
+
+<script>
+const PLAYER_ID = {{ player.id }};
+
+function showRole(role, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('bat-sec').classList.toggle('hidden', role !== 'bat');
+  document.getElementById('bowl-sec').classList.toggle('hidden', role !== 'bowl');
+}
+
+function showChart(imgId, loadId, b64) {
+  const img = document.getElementById(imgId);
+  const ld  = document.getElementById(loadId);
+  if (b64 && b64.length > 100) {
+    if (img) { img.src = 'data:image/png;base64,' + b64; img.style.display = 'block'; }
+    if (ld)  { ld.style.display = 'none'; }
+  } else {
+    // null or empty — show "no data" instead of spinning forever
+    if (ld)  { ld.style.color = '#64748b'; ld.textContent = 'Not enough data yet — play more matches!'; }
+  }
+}
+
+function buildStats(containerId, pills) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = pills.map(p =>
+    `<div class="stat-pill ${p.cls||'accent'}"><div class="stat-val">${p.v}</div><div class="stat-lbl">${p.l}</div></div>`
+  ).join('');
+}
+
+function buildSW(strengths, weaknesses) {
+  const sl = document.getElementById('strengths-list');
+  const wl = document.getElementById('weaknesses-list');
+  if (sl) sl.innerHTML = strengths.map(s =>
+    `<div class="sw-item"><span class="sw-bullet str"></span>${s}</div>`).join('');
+  if (wl) wl.innerHTML = weaknesses.map(w =>
+    `<div class="sw-item"><span class="sw-bullet wk"></span>${w}</div>`).join('');
+}
+
+function setChartError(msg) {
+  document.querySelectorAll('.chart-loading').forEach(el => {
+    el.style.color = '#f59e0b';
+    el.innerHTML = `⚠️ ${msg}`;
+  });
+}
+
+async function load() {
+  try {
+    const res = await fetch(`/api/player/${PLAYER_ID}/analysis/`);
+    const D   = await res.json();
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+
+    const {batting, bowling, strengths, weaknesses, charts} = D;
+
+    // Hide bowling tab if no bowling data
+    if (!bowling || bowling.innings === 0) {
+      document.getElementById('role-tabs').style.display = 'none';
+    }
+
+    // Batting stats
+    buildStats('bat-stats', [
+      {v: batting.innings,   l: 'Innings',     cls:'accent'},
+      {v: batting.runs,      l: 'Total Runs',  cls:'gold'},
+      {v: batting.avg,       l: 'Average',     cls:'green'},
+      {v: batting.sr,        l: 'Strike Rate', cls:'accent'},
+      {v: batting.highest,   l: 'Highest',     cls:'gold'},
+      {v: batting.fifties,   l: '50s',         cls:'green'},
+      {v: batting.sixes,     l: 'Sixes',       cls:'gold'},
+    ]);
+
+    // Bowling stats
+    if (bowling && bowling.innings > 0) {
+      buildStats('bowl-stats', [
+        {v: bowling.innings,  l: 'Matches',   cls:'accent'},
+        {v: bowling.wickets,  l: 'Wickets',   cls:'gold'},
+        {v: bowling.avg || '—', l: 'Average', cls:'green'},
+        {v: bowling.best,     l: 'Best',      cls:'accent'},
+      ]);
+    }
+
+    buildSW(strengths || [], weaknesses || []);
+
+    // Bowler dismissal alerts
+    if (D.bowler_dismissal_alerts && D.bowler_dismissal_alerts.length) {
+      document.getElementById('dismissal-alerts-card').style.display = 'block';
+      const ab = document.getElementById('dismissal-alerts-body');
+      ab.innerHTML = D.bowler_dismissal_alerts.map(a => `
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:10px 14px;display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:18px;flex-shrink:0">🚨</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fca5a5;margin-bottom:3px">Dismissed by ${a.bowler} — ${a.count} times</div>
+            <div style="font-size:11px;color:#94a3b8">${a.alert}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    if (charts && charts.error) {
+      setChartError(charts.error);
+      return;
+    }
+
+    if (charts) {
+      showChart('chart-radar',    'load-radar',    charts.radar);
+      showChart('chart-zones',    'load-zones',    charts.shot_zones);
+      showChart('chart-runs',     'load-runs',     charts.run_history);
+      showChart('chart-sr',       'load-sr',       charts.sr_history);
+      showChart('chart-phase',    'load-phase',    charts.phase_batting);
+      showChart('chart-dismissal','load-dismissal',charts.dismissals);
+      showChart('chart-eco',      'load-eco',      charts.economy_history);
+      showChart('chart-wkts',     'load-wkts',     charts.wickets_history);
+    }
+
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `
+      <div style="text-align:center;padding:40px">
+        <div style="font-size:30px;margin-bottom:10px">⚠️</div>
+        <div style="color:#ef4444;font-size:14px;font-weight:700;margin-bottom:6px">Failed to load</div>
+        <div style="color:#64748b;font-size:12px">${e.message}</div>
+      </div>`;
+  }
+}
+document.addEventListener('DOMContentLoaded', load);
+</script>
+{% endblock %}

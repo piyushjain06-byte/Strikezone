@@ -1,0 +1,513 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap');
+:root{--bg:#07090f;--s1:#0e1117;--s2:#161b26;--border:#1e2d40;--accent:#6366f1;--gold:#f59e0b;--green:#22c55e;--red:#ef4444;--blue:#38bdf8;--text:#e2e8f0;--muted:#64748b;--r:12px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 14px 80px;}
+.btn-back{display:inline-flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:13px;font-weight:600;padding:8px 16px;text-decoration:none;margin-bottom:20px;transition:.15s;}
+.btn-back:hover{color:#fff;border-color:#475569;}
+/* HERO */
+.hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#0a0d1e,#06080f,#081808);border:1px solid rgba(99,102,241,0.2);border-radius:20px;padding:32px 24px 24px;margin-bottom:22px;text-align:center;}
+.hero::before{content:'';position:absolute;top:-70px;left:50%;transform:translateX(-50%);width:600px;height:320px;background:radial-gradient(ellipse,rgba(99,102,241,0.13) 0%,transparent 70%);pointer-events:none;}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:20px;padding:4px 14px;margin-bottom:12px;}
+.hero-teams{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;margin-bottom:4px;}
+.hero-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+.hero-scores{display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;margin-bottom:14px;}
+.score-blk .t{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px;}
+.score-blk .r{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:#fff;line-height:1;}
+.score-blk .r span{color:var(--green);font-size:22px;}
+.score-blk .ov{font-size:11px;color:var(--muted);margin-top:2px;}
+.vs{font-family:'Syne',sans-serif;font-size:20px;color:var(--muted);}
+.result-chip{display:inline-block;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:6px 18px;font-size:13px;font-weight:700;color:var(--green);margin-bottom:10px;}
+.headline-box{font-style:italic;font-size:15px;color:var(--gold);background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.15);border-radius:8px;padding:10px 16px;margin-top:6px;}
+/* LOADING */
+.loading{display:flex;flex-direction:column;align-items:center;padding:80px 20px;gap:16px;}
+.spin{width:54px;height:54px;border-radius:50%;border:3px solid rgba(99,102,241,0.15);border-top-color:var(--accent);animation:spin .9s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:#fff;}
+.loading-sub{font-size:13px;color:var(--muted);text-align:center;max-width:300px;line-height:1.6;}
+.loading-steps{display:flex;flex-direction:column;gap:7px;margin-top:8px;}
+.step{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;opacity:0;animation:fadeIn .5s forwards;}
+.step:nth-child(1){animation-delay:.3s}.step:nth-child(2){animation-delay:1.2s}.step:nth-child(3){animation-delay:2.1s}.step:nth-child(4){animation-delay:3.0s}.step:nth-child(5){animation-delay:4.0s}
+@keyframes fadeIn{to{opacity:1;}}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+/* LAYOUT */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid1{margin-bottom:16px;}
+@media(max-width:700px){.grid2{grid-template-columns:1fr;}}
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.card-head{background:var(--s2);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:9px;}
+.card-icon{font-size:16px;}
+.card-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;letter-spacing:.3px;}
+.card-badge{margin-left:auto;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:20px;padding:2px 9px;}
+.card-body{padding:14px;}
+/* CHART IMAGE */
+.chart-img{width:100%;display:block;border-radius:8px;background:var(--s2);}
+.chart-loading{width:100%;height:200px;background:var(--s2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;}
+/* STAT ROW */
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;padding:14px 16px;}
+.stat-pill{flex:1;min-width:78px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 12px;text-align:center;}
+.stat-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:600;color:#fff;line-height:1;}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+/* TABS */
+.tabs{display:flex;gap:0;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:16px;}
+.tab{flex:1;padding:9px;text-align:center;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;color:var(--muted);}
+.tab.active{background:var(--accent);color:#fff;}
+.hidden{display:none;}
+/* AI INSIGHT CARDS */
+.insights-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 16px;}
+@media(max-width:600px){.insights-grid{grid-template-columns:1fr;}}
+.insight-card{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.insight-tag{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.insight-text{font-size:12px;color:#94a3b8;line-height:1.6;}
+.tag-bat{color:var(--blue);}
+.tag-bowl{color:#a78bfa;}
+.tag-key{color:var(--gold);}
+/* RATINGS */
+.ratings-list{display:flex;flex-direction:column;gap:10px;padding:14px 16px;}
+.rating-row{display:flex;align-items:center;gap:14px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.r-score{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;min-width:46px;text-align:center;line-height:1;}
+.r-info{flex:1;}
+.r-name{font-weight:700;color:#fff;font-size:13px;}
+.r-role{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.r-note{font-size:12px;color:#94a3b8;line-height:1.5;}
+.r-bar-wrap{height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:8px;}
+.r-bar{height:3px;border-radius:2px;transition:width 1.4s ease;}
+.rs-high{color:var(--green);}
+.rs-mid{color:var(--gold);}
+.rs-low{color:var(--muted);}
+/* MOM */
+.mom-strip{background:linear-gradient(90deg,rgba(245,158,11,0.1),rgba(245,158,11,0.02));border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+.mom-trophy{font-size:30px;}
+.mom-info .lbl{font-size:10px;color:var(--gold);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+.mom-info .name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;}
+.mom-info .reason{font-size:12px;color:#94a3b8;margin-top:3px;}
+/* VERDICT */
+.verdict-card{background:linear-gradient(135deg,#0f0a20,#07090f);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:20px;margin-bottom:16px;text-align:center;}
+.verdict-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;}
+.verdict-text{font-size:14px;color:#cbd5e1;line-height:1.75;}
+.tp-box{margin-top:12px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.14);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--gold);font-style:italic;}
+/* ML BADGE */
+.ml-badge{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:2px 9px;margin-left:auto;}
+/* COMPARE */
+.compare-section{padding:14px 16px;display:flex;flex-direction:column;gap:14px;}
+.compare-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;}
+.compare-label .v1{color:var(--accent);}
+.compare-label .v2{color:var(--gold);}
+.compare-track{height:10px;background:var(--s2);border-radius:5px;overflow:hidden;display:flex;}
+.compare-fill1{height:100%;background:var(--accent);}
+.compare-fill2{height:100%;background:var(--gold);}
+.mb16{margin-bottom:16px;}
+</style>
+
+<div class="wrap">
+<a href="{% url 'match_scorecard' match.id %}" class="btn-back">← Back to Scorecard</a>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">🤖 ML-Powered Analysis</div>
+  <div id="match-type-badge" style="display:none;margin:6px auto 10px;padding:6px 18px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;width:fit-content;"></div>
+  <div class="hero-teams" id="hero-title">{{ match.tournament.tournament_name }}</div>
+  <div class="hero-sub">{{ match.tournament.tournament_name }} · {{ match.match_date }} · {{ match.venue }}</div>
+  <div class="hero-scores">
+    <div class="score-blk"><div class="t" id="t1-name">—</div><div class="r" id="s1r">—</div><div class="ov" id="s1o"></div></div>
+    <div class="vs">VS</div>
+    <div class="score-blk"><div class="t" id="t2-name">—</div><div class="r" id="s2r">—</div><div class="ov" id="s2o"></div></div>
+  </div>
+  <div id="result-chip"></div>
+  <div class="headline-box" id="headline">⏳ Running ML analysis...</div>
+</div>
+
+<!-- LOADING -->
+<div id="loading" class="loading">
+  <div class="spin"></div>
+  <div class="loading-title">Running Machine Learning Analysis</div>
+  <div class="loading-sub">Generating 10 charts using Python · matplotlib · scikit-learn · numpy</div>
+  <div class="loading-steps">
+    <div class="step"><span class="dot"></span>Loading ball-by-ball data...</div>
+    <div class="step"><span class="dot"></span>Running KMeans clustering on overs...</div>
+    <div class="step"><span class="dot"></span>Computing win probability (Logistic Regression)...</div>
+    <div class="step"><span class="dot"></span>Building batting impact scatter (StandardScaler)...</div>
+    <div class="step"><span class="dot"></span>Rendering charts & calling AI analyst...</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main" style="display:none">
+
+  <!-- MOM -->
+  <div class="mom-strip" id="mom-strip" style="display:none">
+    <div class="mom-trophy">🏆</div>
+    <div class="mom-info">
+      <div class="lbl">Player of the Match</div>
+      <div class="name" id="mom-name"></div>
+      <div class="reason" id="mom-reason"></div>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict-card" id="verdict-card" style="display:none">
+    <div class="verdict-title">Match Verdict</div>
+    <div class="verdict-text" id="verdict-text"></div>
+    <div class="tp-box" id="tp-text"></div>
+  </div>
+
+  <!-- KNOCKOUT PRESSURE NOTE -->
+  <div class="verdict-card" id="knockout-card" style="display:none;border-color:rgba(239,68,68,0.35);background:linear-gradient(135deg,#1a0505,#07090f);">
+    <div class="verdict-title" style="color:#ef4444;">⚡ Knockout Pressure Analysis</div>
+    <div class="verdict-text" id="knockout-text" style="color:#fca5a5;"></div>
+  </div>
+
+  <!-- WIN PROBABILITY — full width -->
+  <div class="card grid1" id="winprob-card">
+    <div class="card-head">
+      <span class="card-icon">📉</span>
+      <span class="card-title">Win Probability — Ball by Ball</span>
+      <span class="ml-badge">🧠 Logistic Regression</span>
+    </div>
+    <div class="card-body" style="padding:10px">
+      <img id="chart-winprob" class="chart-img" src="" alt="Win Probability Chart" style="display:none">
+      <div class="chart-loading" id="load-winprob">Generating...</div>
+    </div>
+  </div>
+
+  <!-- RUN RATE — full width -->
+  <div class="card grid1">
+    <div class="card-head">
+      <span class="card-icon">📈</span>
+      <span class="card-title">Run Rate Progression — Both Innings</span>
+      <span class="ml-badge">🧠 KMeans Clustering</span>
+    </div>
+    <div class="card-body" style="padding:10px">
+      <img id="chart-rr" class="chart-img" src="" alt="Run Rate Chart" style="display:none">
+      <div class="chart-loading" id="load-rr">Generating...</div>
+    </div>
+  </div>
+
+  <!-- BATTING IMPACT — full width -->
+  <div class="card grid1">
+    <div class="card-head">
+      <span class="card-icon">🏏</span>
+      <span class="card-title">Batting Impact — Runs vs Strike Rate</span>
+      <span class="ml-badge">🧠 KMeans + StandardScaler</span>
+    </div>
+    <div class="card-body" style="padding:10px">
+      <img id="chart-bat" class="chart-img" src="" alt="Batting Impact" style="display:none">
+      <div class="chart-loading" id="load-bat">Generating...</div>
+    </div>
+  </div>
+
+  <!-- PRESSURE INDEX — full width -->
+  <div class="card grid1">
+    <div class="card-head">
+      <span class="card-icon">🔥</span>
+      <span class="card-title">Bowling Pressure Index — Per Over</span>
+      <span class="ml-badge">📊 Rolling Average</span>
+    </div>
+    <div class="card-body" style="padding:10px">
+      <img id="chart-pressure" class="chart-img" src="" alt="Pressure Index" style="display:none">
+      <div class="chart-loading" id="load-pressure">Generating...</div>
+    </div>
+  </div>
+
+  <!-- PHASE COMPARISON + BOWLING HEATMAP -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-icon">⏱</span>
+        <span class="card-title">Phase Battle</span>
+      </div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-phase" class="chart-img" src="" alt="Phase Comparison" style="display:none">
+        <div class="chart-loading" id="load-phase">Generating...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-icon">🌡</span>
+        <span class="card-title">Bowling Heatmap</span>
+        <span class="ml-badge">📊 Normalized</span>
+      </div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-heatmap" class="chart-img" src="" alt="Bowling Heatmap" style="display:none">
+        <div class="chart-loading" id="load-heatmap">Generating...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WAGON WHEELS SIDE BY SIDE -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🎯</span><span class="card-title" id="ww1-title">Wagon Wheel — Inn 1</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-wagon1" class="chart-img" src="" alt="Wagon Wheel 1" style="display:none">
+        <div class="chart-loading" id="load-wagon1">Generating...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🎯</span><span class="card-title" id="ww2-title">Wagon Wheel — Inn 2</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-wagon2" class="chart-img" src="" alt="Wagon Wheel 2" style="display:none">
+        <div class="chart-loading" id="load-wagon2">Generating...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARTNERSHIPS + SCORING PATTERN -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🤝</span><span class="card-title">Partnership Contributions</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-partners" class="chart-img" src="" alt="Partnerships" style="display:none">
+        <div class="chart-loading" id="load-partners">Generating...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🍩</span><span class="card-title">Scoring Pattern</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-donut" class="chart-img" src="" alt="Scoring Pattern" style="display:none">
+        <div class="chart-loading" id="load-donut">Generating...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAYER RADAR — full width -->
+  <div class="card grid1">
+    <div class="card-head">
+      <span class="card-icon">🕸</span>
+      <span class="card-title">Player Skill Radar</span>
+      <span class="ml-badge">📊 Multi-Metric</span>
+    </div>
+    <div class="card-body" style="padding:10px">
+      <img id="chart-radar" class="chart-img" src="" alt="Player Radar" style="display:none">
+      <div class="chart-loading" id="load-radar">Generating...</div>
+    </div>
+  </div>
+
+  <!-- HEAD TO HEAD -->
+  <div class="card grid1" id="compare-card">
+    <div class="card-head"><span class="card-icon">⚖️</span><span class="card-title">Head to Head Stats</span></div>
+    <div class="compare-section" id="compare-body"></div>
+  </div>
+
+  <!-- AI INSIGHTS -->
+  <div class="card grid1">
+    <div class="card-head"><span class="card-icon">🧠</span><span class="card-title">AI Tactical Insights</span></div>
+    <div class="insights-grid" id="insights-grid"></div>
+  </div>
+
+  <!-- PLAYER RATINGS -->
+  <div class="card grid1" id="ratings-card">
+    <div class="card-head"><span class="card-icon">⭐</span><span class="card-title">Player Impact Ratings</span></div>
+    <div class="ratings-list" id="ratings-list"></div>
+  </div>
+
+</div><!-- end #main -->
+</div><!-- end .wrap -->
+
+<script>
+const MATCH_ID = {{ match.id }};
+
+function showChart(imgId, loadId, b64) {
+  if (!b64) return;
+  const img = document.getElementById(imgId);
+  const load = document.getElementById(loadId);
+  if (img && b64) {
+    img.src = 'data:image/png;base64,' + b64;
+    img.style.display = 'block';
+    if (load) load.style.display = 'none';
+  }
+}
+
+function buildCompare(inn1, inn2) {
+  const c = document.getElementById('compare-body');
+  if (!c || !inn2) { document.getElementById('compare-card').style.display='none'; return; }
+  const ms = [
+    {label:'Dot Ball %', v1:inn1.dot_pct, v2:inn2.dot_pct, u:'%'},
+    {label:'Boundary %', v1:inn1.boundary_pct, v2:inn2.boundary_pct, u:'%'},
+    {label:'Total Runs',  v1:inn1.total, v2:inn2.total, u:''},
+    {label:'Wickets Lost',v1:inn1.wickets, v2:inn2.wickets, u:''},
+    {label:'Extras',      v1:inn1.extras, v2:inn2.extras, u:''},
+  ];
+  c.innerHTML = ms.map(m => {
+    const tot = (m.v1+m.v2)||1, p1 = Math.round(m.v1/tot*100);
+    return `<div>
+      <div class="compare-label">
+        <span class="v1">${inn1.team}: ${m.v1}${m.u}</span>
+        <span style="color:var(--muted);font-size:11px">${m.label}</span>
+        <span class="v2">${m.v2}${m.u} :${inn2.team}</span>
+      </div>
+      <div class="compare-track">
+        <div class="compare-fill1" style="width:${p1}%"></div>
+        <div class="compare-fill2" style="width:${100-p1}%"></div>
+      </div></div>`;
+  }).join('');
+}
+
+function buildInsights(ai, t1, t2) {
+  const g = document.getElementById('insights-grid');
+  const items = [
+    {tag:'tag-bat',  label:`${t1} Batting`,    text:ai.team1_batting_insight},
+    {tag:'tag-bat',  label:`${t2} Batting`,    text:ai.team2_batting_insight},
+    {tag:'tag-bowl', label:`${t1} Bowling`,    text:ai.team1_bowling_insight},
+    {tag:'tag-bowl', label:`${t2} Bowling`,    text:ai.team2_bowling_insight},
+    {tag:'tag-key',  label:'Best Spell',        text:ai.best_spell},
+    {tag:'tag-key',  label:'Top Partnership',   text:ai.top_partnership},
+    {tag:'tag-key',  label:'Why They Won',      text:ai.winner_reason},
+    {tag:'tag-key',  label:'What Went Wrong',   text:ai.loser_reason},
+  ];
+  if (g) g.innerHTML = items.map(i =>
+    `<div class="insight-card"><div class="insight-tag ${i.tag}">${i.label}</div><div class="insight-text">${i.text||'—'}</div></div>`
+  ).join('');
+}
+
+function buildRatings(rs) {
+  const c = document.getElementById('ratings-list');
+  if (!c || !rs || !rs.length) { const card = document.getElementById('ratings-card'); if(card) card.style.display='none'; return; }
+  c.innerHTML = rs.map(r => {
+    const s = Math.min(10, Math.max(0, parseFloat(r.score)));
+    const cls = s>=8?'rs-high':s>=6?'rs-mid':'rs-low';
+    const col = s>=8?'#22c55e':s>=6?'#f59e0b':'#64748b';
+    return `<div class="rating-row">
+      <div class="r-score ${cls}">${s.toFixed(1)}<span style="font-size:10px;color:var(--muted)">/10</span></div>
+      <div class="r-info">
+        <div class="r-role">${r.role||''}</div>
+        <div class="r-name">${r.name}</div>
+        <div class="r-note">${r.note||''}</div>
+        <div class="r-bar-wrap"><div class="r-bar" style="width:${s*10}%;background:${col}"></div></div>
+      </div></div>`;
+  }).join('');
+}
+
+async function load() {
+  try {
+    const res = await fetch(`/api/match/${MATCH_ID}/analysis/`);
+    const D = await res.json();
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+
+    const {match, innings1, innings2, ai, charts} = D;
+
+    // ── Always derive team names from innings (batting order), NOT match.team1/team2
+    // This is the only source of truth — toss determines who bats first,
+    // which may be match.team2, causing all labels to swap.
+    const t1 = innings1.team;                          // team that batted 1st
+    const t2 = innings2 ? innings2.team : match.team2; // team that batted 2nd
+
+    // Hero — fill team names dynamically
+    document.getElementById('hero-title').textContent = `${t1} vs ${t2}`;
+    document.getElementById('t1-name').textContent = t1;
+    document.getElementById('t2-name').textContent = t2;
+
+    // Scores
+    document.getElementById('s1r').innerHTML = `${innings1.total}<span>/${innings1.wickets}</span>`;
+    document.getElementById('s1o').textContent = `(${innings1.overs} ov)`;
+    if (innings2) {
+      document.getElementById('s2r').innerHTML = `${innings2.total}<span>/${innings2.wickets}</span>`;
+      document.getElementById('s2o').textContent = innings2.target
+        ? `(${innings2.overs} ov)  Target: ${innings2.target}`
+        : `(${innings2.overs} ov)`;
+    }
+    if (match.result) document.getElementById('result-chip').innerHTML =
+      `<div class="result-chip">${match.result}</div>`;
+    document.getElementById('headline').textContent = `"${ai.headline}"`;
+
+    // Knockout badge
+    if (match.is_knockout && match.knockout_label) {
+      const badge = document.getElementById('match-type-badge');
+      badge.style.display = 'block';
+      const isFinal = match.knockout_stage && match.knockout_stage.toLowerCase().includes('final') && !match.knockout_stage.toLowerCase().includes('semi') && !match.knockout_stage.toLowerCase().includes('quarter') && !match.knockout_stage.toLowerCase().includes('pre');
+      const isSF = match.knockout_stage && match.knockout_stage.toLowerCase().includes('semi');
+      if (isFinal) {
+        badge.style.background = 'linear-gradient(90deg,#f59e0b,#ef4444)';
+        badge.style.color = '#fff';
+        badge.style.boxShadow = '0 0 16px rgba(245,158,11,0.4)';
+      } else if (isSF) {
+        badge.style.background = 'linear-gradient(90deg,#7c3aed,#4f46e5)';
+        badge.style.color = '#fff';
+      } else {
+        badge.style.background = 'rgba(239,68,68,0.15)';
+        badge.style.border = '1px solid rgba(239,68,68,0.4)';
+        badge.style.color = '#ef4444';
+      }
+      badge.textContent = match.knockout_label;
+    }
+    if (match.mom) {
+      document.getElementById('mom-strip').style.display = 'flex';
+      document.getElementById('mom-name').textContent = match.mom;
+      document.getElementById('mom-reason').textContent = ai.player_of_match_reason || '';
+    }
+
+    if (ai.verdict) {
+      document.getElementById('verdict-card').style.display = 'block';
+      document.getElementById('verdict-text').textContent = ai.verdict;
+      document.getElementById('tp-text').textContent = `⚡ Turning Point: ${ai.turning_point||''}`;
+    }
+
+    // Knockout pressure note
+    if (match.is_knockout && ai.knockout_pressure_note) {
+      document.getElementById('knockout-card').style.display = 'block';
+      document.getElementById('knockout-text').textContent = ai.knockout_pressure_note;
+    }
+
+    // Wagon wheel titles
+    const el1 = document.getElementById('ww1-title');
+    const el2 = document.getElementById('ww2-title');
+    if (el1) el1.textContent = `Wagon Wheel — ${innings1.team}`;
+    if (el2 && innings2) el2.textContent = `Wagon Wheel — ${innings2.team}`;
+
+    // Win probability (hidden if no 2nd innings)
+    if (!innings2) {
+      const wpc = document.getElementById('winprob-card');
+      if (wpc) wpc.style.display = 'none';
+    }
+
+    // Check if ML libraries are installed
+    if (charts && charts.error) {
+      const hint = charts.install_hint || '';
+      document.querySelectorAll('.chart-loading').forEach(el => {
+        el.style.color = '#f59e0b';
+        el.innerHTML = `⚠️ ${charts.error}<br><span style="font-size:11px;color:#64748b;font-family:monospace">${hint}</span>`;
+      });
+    }
+
+    // Inject all ML charts
+    if (charts && !charts.error) {
+      showChart('chart-rr',       'load-rr',       charts.run_rate);
+      showChart('chart-winprob',  'load-winprob',  charts.win_probability);
+      showChart('chart-bat',      'load-bat',      charts.batting_impact);
+      showChart('chart-pressure', 'load-pressure', charts.pressure_index);
+      showChart('chart-phase',    'load-phase',    charts.phase_comparison);
+      showChart('chart-heatmap',  'load-heatmap',  charts.bowling_heatmap);
+      showChart('chart-wagon1',   'load-wagon1',   charts.wagon1);
+      showChart('chart-wagon2',   'load-wagon2',   charts.wagon2);
+      showChart('chart-partners', 'load-partners', charts.partnerships);
+      showChart('chart-donut',    'load-donut',    charts.scoring_pattern);
+      showChart('chart-radar',    'load-radar',    charts.player_radar);
+    }
+
+    buildCompare(innings1, innings2);
+    buildInsights(ai, t1, t2);   // t1 = batted 1st, t2 = batted 2nd — always correct
+    buildRatings(ai.player_ratings || []);
+
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `
+      <div style="text-align:center;padding:40px">
+        <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+        <div style="color:#ef4444;font-size:15px;font-weight:700;margin-bottom:8px">Failed to load analysis</div>
+        <div style="color:#64748b;font-size:13px;margin-bottom:14px">${e.message || 'Unknown error'}</div>
+        <div style="color:#f59e0b;font-size:12px;background:#1a1200;border:1px solid #3a2600;border-radius:8px;padding:10px 16px;display:inline-block;font-family:monospace">
+          Check Django console for the real error.<br>
+          Most likely fix: <strong>pip install matplotlib scikit-learn numpy pandas</strong>
+        </div>
+      </div>`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', load);
+</script>
+{% endblock %}

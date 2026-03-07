@@ -260,6 +260,53 @@
     text-align: center; color: var(--muted); font-size: 14px;
   }
   .hint-text { font-size: 12px; color: var(--muted); margin-top: 8px; font-style: italic; }
+
+  /* ── PLAYER PILL ACTIONS ── */
+  .player-pill { display: inline-flex; align-items: center; gap: 0; }
+  .pill-actions { display: inline-flex; gap: 4px; margin-left: 8px; }
+  .pill-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer; border-radius: 6px;
+    width: 24px; height: 22px; font-size: 13px; line-height: 1;
+    transition: background .15s, transform .1s;
+  }
+  .pill-btn:hover { transform: scale(1.15); }
+  .pill-edit { background: rgba(99,102,241,0.18); border: 1px solid rgba(99,102,241,0.35); }
+  .pill-edit:hover { background: rgba(99,102,241,0.35); }
+  .pill-del  { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35); }
+  .pill-del:hover  { background: rgba(239,68,68,0.35); }
+
+  /* ── EDIT PLAYER MODAL ── */
+  .ep-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+  }
+  .ep-overlay.open { display: flex; }
+  .ep-modal {
+    background: #0e1117; border: 1px solid #1e2d40;
+    border-radius: 16px; padding: 24px; width: 100%; max-width: 420px;
+    margin: 16px;
+  }
+  .ep-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 18px; }
+  .ep-field { margin-bottom: 14px; }
+  .ep-label { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: block; }
+  .ep-input {
+    width: 100%; background: #161b26; border: 1px solid #1e2d40;
+    border-radius: 10px; color: #e2e8f0; font-size: 14px;
+    padding: 10px 14px; outline: none; transition: border-color .15s;
+  }
+  .ep-input:focus { border-color: #6366f1; }
+  .ep-select { width: 100%; background: #161b26; border: 1px solid #1e2d40; border-radius: 10px; color: #e2e8f0; font-size: 14px; padding: 10px 14px; outline: none; }
+  .ep-check-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .ep-check-row label { color: #94a3b8; font-size: 13px; cursor: pointer; }
+  .ep-btns { display: flex; gap: 10px; margin-top: 20px; }
+  .ep-save { flex: 1; background: #6366f1; color: #fff; border: none; border-radius: 10px; padding: 11px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+  .ep-save:hover { opacity: .85; }
+  .ep-cancel { background: #1e2d40; color: #94a3b8; border: none; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .ep-cancel:hover { background: #263548; }
+  .ep-error { color: #ef4444; font-size: 12px; margin-top: 10px; display: none; }
+
 </style>
 
 <div class="mc-wrap">
@@ -427,11 +474,17 @@
               <span class="player-count-badge">{{ td.player_count }} player{{ td.player_count|pluralize }}</span>
             </div>
             {% if td.roster %}
-            <div class="player-pills" style="margin-left:18px; margin-top:6px;">
+            <div class="player-pills" style="margin-left:18px; margin-top:8px;">
               {% for r in td.roster %}
-                <span class="player-pill {% if r.is_captain %}captain{% endif %}">
-                  {% if r.is_captain %}👑 {% endif %}{{ r.player.player_name }}
+              <span class="player-pill {% if r.is_captain %}captain{% endif %}">
+                {% if r.is_captain %}👑 {% endif %}{{ r.player.player_name }}
+                <span class="pill-actions">
+                  <button class="pill-btn pill-edit" title="Edit player"
+                    onclick="openEditPlayer({{ r.player.id }}, '{{ r.player.player_name|escapejs }}', '{{ r.player.mobile_number|default:'' }}', '{{ r.player.role|default:'BATSMAN' }}', {{ r.player.jersey_number|default:'null' }}, {{ r.id }}, {{ r.is_captain|yesno:'true,false' }}, {{ r.is_vice_captain|yesno:'true,false' }})">✏️</button>
+                  <button class="pill-btn pill-del" title="Remove from roster"
+                    onclick="confirmDeletePlayer({{ r.player.id }}, '{{ r.player.player_name|escapejs }}', {{ r.id }})">🗑️</button>
                 </span>
+              </span>
               {% endfor %}
             </div>
             {% endif %}
@@ -520,6 +573,165 @@
       if (badge) card.classList.add('open');
     });
   });
+</script>
+
+
+<!-- ── EDIT PLAYER MODAL ── -->
+<div class="ep-overlay" id="ep-overlay">
+  <div class="ep-modal">
+    <div class="ep-title">✏️ Edit Player</div>
+    <div class="ep-field">
+      <label class="ep-label">Player Name</label>
+      <input class="ep-input" id="ep-name" type="text" placeholder="Full name">
+    </div>
+    <div class="ep-field">
+      <label class="ep-label">Mobile Number</label>
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:11px;color:#f59e0b;display:flex;gap:6px;align-items:flex-start;">
+        ⚠️ <span>This mobile number is used for OTP login. Changing it will affect how the player logs in.</span>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:6px;">Current: <span id="ep-mobile-current" style="color:#94a3b8;font-weight:600;"></span></div>
+      <input class="ep-input" id="ep-mobile" type="text" placeholder="10-digit mobile">
+      <div id="ep-mobile-confirm-wrap" style="display:none;margin-top:8px;">
+        <div style="font-size:12px;color:#f59e0b;margin-bottom:6px;">Type <strong>CONFIRM</strong> to allow mobile number change:</div>
+        <input class="ep-input" id="ep-mobile-confirm" type="text" placeholder="Type CONFIRM">
+      </div>
+    </div>
+    <div class="ep-field">
+      <label class="ep-label">Role</label>
+      <select class="ep-select" id="ep-role">
+        <option value="BATSMAN">Batsman</option>
+        <option value="BOWLER">Bowler</option>
+        <option value="ALL_ROUNDER">All Rounder</option>
+        <option value="WICKET_KEEPER">Wicket Keeper</option>
+      </select>
+    </div>
+    <div class="ep-field">
+      <label class="ep-label">Jersey Number</label>
+      <input class="ep-input" id="ep-jersey" type="number" placeholder="Optional">
+    </div>
+    <div class="ep-check-row">
+      <input type="checkbox" id="ep-captain">
+      <label for="ep-captain">👑 Captain</label>
+      <input type="checkbox" id="ep-vc" style="margin-left:12px;">
+      <label for="ep-vc">🥈 Vice Captain</label>
+    </div>
+    <div class="ep-error" id="ep-error"></div>
+    <div class="ep-btns">
+      <button class="ep-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="ep-save" onclick="saveEditPlayer()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let _epPlayerId = null, _epRosterId = null;
+
+let _epOriginalMobile = '';
+
+function openEditPlayer(playerId, name, mobile, role, jersey, rosterId, isCaptain, isVc) {
+  _epPlayerId = playerId;
+  _epRosterId = rosterId;
+  _epOriginalMobile = mobile || '';
+  document.getElementById('ep-name').value    = name;
+  document.getElementById('ep-mobile').value  = mobile || '';
+  document.getElementById('ep-mobile-current').textContent = mobile || '(none)';
+  document.getElementById('ep-mobile-confirm').value = '';
+  document.getElementById('ep-mobile-confirm-wrap').style.display = 'none';
+  document.getElementById('ep-role').value    = role || 'BATSMAN';
+  document.getElementById('ep-jersey').value  = jersey !== null ? jersey : '';
+  document.getElementById('ep-captain').checked = isCaptain;
+  document.getElementById('ep-vc').checked      = isVc;
+  document.getElementById('ep-error').style.display = 'none';
+  document.getElementById('ep-overlay').classList.add('open');
+  document.getElementById('ep-name').focus();
+
+  // Watch mobile field for changes
+  document.getElementById('ep-mobile').oninput = function() {
+    const changed = this.value.trim() !== _epOriginalMobile;
+    document.getElementById('ep-mobile-confirm-wrap').style.display = changed ? 'block' : 'none';
+    if (!changed) document.getElementById('ep-mobile-confirm').value = '';
+  };
+}
+
+function closeEditModal() {
+  document.getElementById('ep-overlay').classList.remove('open');
+}
+
+// Close on overlay click
+document.getElementById('ep-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+
+async function saveEditPlayer() {
+  const name = document.getElementById('ep-name').value.trim();
+  if (!name) { showEpError('Player name is required'); return; }
+
+  const newMobile = document.getElementById('ep-mobile').value.trim();
+  const mobileChanged = newMobile !== _epOriginalMobile;
+  if (mobileChanged) {
+    const confirm = document.getElementById('ep-mobile-confirm').value.trim();
+    if (confirm !== 'CONFIRM') {
+      showEpError('Type CONFIRM in the box to allow mobile number change');
+      return;
+    }
+  }
+
+  const btn = document.querySelector('.ep-save');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+
+  try {
+    const res = await fetch(`/admin/player/${_epPlayerId}/edit/`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
+      body: JSON.stringify({
+        player_name:     name,
+        mobile_number:   mobileChanged ? newMobile : null,
+        role:            document.getElementById('ep-role').value,
+        jersey_number:   document.getElementById('ep-jersey').value || null,
+        roster_id:       _epRosterId,
+        is_captain:      document.getElementById('ep-captain').checked,
+        is_vice_captain: document.getElementById('ep-vc').checked,
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeEditModal();
+      location.reload();
+    } else {
+      showEpError(data.error || 'Save failed');
+    }
+  } catch(e) {
+    showEpError('Network error');
+  } finally {
+    btn.textContent = 'Save Changes'; btn.disabled = false;
+  }
+}
+
+async function confirmDeletePlayer(playerId, name, rosterId) {
+  if (!confirm(`Remove "${name}" from this roster?\n\nThis only removes them from this tournament, not from the system.`)) return;
+  try {
+    const res = await fetch(`/admin/player/${playerId}/delete/`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')},
+      body: JSON.stringify({roster_id: rosterId})
+    });
+    const data = await res.json();
+    if (data.success) location.reload();
+    else alert('Delete failed: ' + (data.error || ''));
+  } catch(e) {
+    alert('Network error');
+  }
+}
+
+function showEpError(msg) {
+  const el = document.getElementById('ep-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function getCookie(name) {
+  const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return v ? v.pop() : '';
+}
 </script>
 
 {% endblock %}

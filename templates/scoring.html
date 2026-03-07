@@ -681,7 +681,10 @@
             <span class="wkt-icon">🚫</span><span class="wkt-label">Obstruct</span>
           </button>
           <button class="wkt-type-btn" onclick="selectWicketType('RETIRED')">
-            <span class="wkt-icon">🚶</span><span class="wkt-label">Retired</span>
+            <span class="wkt-icon">🚶</span><span class="wkt-label">Retired Out</span>
+          </button>
+          <button class="wkt-type-btn" onclick="selectWicketType('RETIRED_HURT')">
+            <span class="wkt-icon">🩹</span><span class="wkt-label">Retired Hurt</span>
           </button>
         </div>
       </div>
@@ -950,13 +953,23 @@
     if (cbBtn) cbBtn.style.display = legalBallCount > 0 ? 'none' : 'inline-block';
 
     // Sync striker ids + names from server
-    currentStrikerId    = data.striker_id;
-    currentNonStrikerId = data.non_striker_id;
-    scoringBatsmanId    = currentStrikerId;
-    if (data.striker_name)     document.getElementById('striker-name').textContent    = data.striker_name;
-    if (data.non_striker_name) document.getElementById('nonstriker-name').textContent = data.non_striker_name;
-    document.getElementById('striker-card').classList.add('active');
-    document.getElementById('nonstriker-card').classList.remove('active');
+    // On a wicket: server returns striker_id=null and striker_name='' intentionally
+    // so we don't overwrite the UI with the dismissed player's name.
+    // We only update when NOT a wicket (or innings complete — no new batsman needed).
+    if (!data.needs_new_batsman) {
+      currentStrikerId    = data.striker_id;
+      currentNonStrikerId = data.non_striker_id;
+      scoringBatsmanId    = currentStrikerId;
+      if (data.striker_name)     document.getElementById('striker-name').textContent    = data.striker_name;
+      if (data.non_striker_name) document.getElementById('nonstriker-name').textContent = data.non_striker_name;
+      document.getElementById('striker-card').classList.add('active');
+      document.getElementById('nonstriker-card').classList.remove('active');
+    } else {
+      // Wicket: only update the non-striker display (surviving batsman)
+      // Striker card will be updated when new batsman is selected
+      currentNonStrikerId = data.non_striker_id;
+      if (data.non_striker_name) document.getElementById('nonstriker-name').textContent = data.non_striker_name;
+    }
 
     // ── Update batsman runs/balls instantly ──
     const strikerRunsEl  = document.getElementById('striker-runs');
@@ -1113,20 +1126,27 @@
     document.getElementById('wicket-runs-display').textContent = '0';
     document.querySelectorAll('#wicketModal .modal-run-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.wkt-type-btn').forEach(b => b.classList.remove('selected'));
+    // Always restore run grid visibility on open (it may have been hidden)
+    const runGrid = document.querySelector('#wicketModal .modal-run-grid');
+    if (runGrid) runGrid.style.display = '';
     goToStep(1);
     showModal('wicketModal');
   }
 
   const WICKET_META = {
-    'BOWLED':           { icon:'🎯', label:'Bowled',       fielder: false },
-    'CAUGHT':           { icon:'🤲', label:'Caught',       fielder: true,  fielderLabel:'Who took the catch?' },
-    'LBW':              { icon:'🦵', label:'LBW',          fielder: false },
-    'RUN_OUT':          { icon:'🏃', label:'Run Out',      fielder: true,  fielderLabel:'Who effected the run-out?' },
-    'STUMPED':          { icon:'🧤', label:'Stumped',      fielder: true,  fielderLabel:'Wicket-keeper (stumping)' },
-    'HIT_WICKET':       { icon:'💥', label:'Hit Wicket',   fielder: false },
-    'CAUGHT_AND_BOWLED':{ icon:'🙌', label:'C & B',        fielder: false },
-    'OBSTRUCTING':      { icon:'🚫', label:'Obstruct',     fielder: false },
-    'RETIRED':          { icon:'🚶', label:'Retired',      fielder: false },
+    // runsAllowed: false = must be 0 runs (no bat contact possible)
+    // runsAllowed: true  = runs may have been completed before dismissal
+    // dismissedWho: 'striker' only, 'both' = striker or non-striker selectable
+    'BOWLED':           { icon:'🎯', label:'Bowled',         fielder: false, runsAllowed: false, dismissedWho: 'striker' },
+    'CAUGHT':           { icon:'🤲', label:'Caught',         fielder: true,  fielderLabel:'Who took the catch?',          runsAllowed: false, dismissedWho: 'striker' },
+    'LBW':              { icon:'🦵', label:'LBW',            fielder: false, runsAllowed: false, dismissedWho: 'striker' },
+    'RUN_OUT':          { icon:'🏃', label:'Run Out',        fielder: true,  fielderLabel:'Who effected the run-out?',    runsAllowed: true,  dismissedWho: 'both' },
+    'STUMPED':          { icon:'🧤', label:'Stumped',        fielder: true,  fielderLabel:'Wicket-keeper (stumping)',     runsAllowed: false, dismissedWho: 'striker' },
+    'HIT_WICKET':       { icon:'💥', label:'Hit Wicket',     fielder: false, runsAllowed: false, dismissedWho: 'striker' },
+    'CAUGHT_AND_BOWLED':{ icon:'🙌', label:'C & B',          fielder: false, runsAllowed: false, dismissedWho: 'striker' },
+    'OBSTRUCTING':      { icon:'🚫', label:'Obstruct',       fielder: false, runsAllowed: true,  dismissedWho: 'both' },
+    'RETIRED':          { icon:'🚶', label:'Retired Out',    fielder: false, runsAllowed: true,  dismissedWho: 'striker' },
+    'RETIRED_HURT':     { icon:'🩹', label:'Retired Hurt',   fielder: false, runsAllowed: true,  dismissedWho: 'striker' },
   };
 
   function selectWicketType(wtype) {
@@ -1144,26 +1164,37 @@
     // Show/hide fielder section
     const fieldSec = document.getElementById('fielder-section');
     const dismSec  = document.getElementById('dismissed-batsman-section');
+    const runGrid  = document.querySelector('#wicketModal .modal-run-grid');
+    const runsDisp = document.getElementById('wicket-runs-display-row');
 
     if (meta.fielder) {
-      fieldSec.style.display  = 'block';
+      fieldSec.style.display = 'block';
       document.getElementById('fielder-label-txt').textContent = meta.fielderLabel;
     } else {
-      fieldSec.style.display  = 'none';
+      fieldSec.style.display = 'none';
     }
 
-    // Run-out: show which batsman is out
-    if (wtype === 'RUN_OUT') {
+    // Runs section: hide and force 0 for wickets where no runs are possible
+    if (!meta.runsAllowed) {
+      wicketRuns = 0;
+      document.getElementById('wicket-runs-display').textContent = '0';
+      document.querySelectorAll('#wicketModal .modal-run-btn').forEach(b => b.classList.remove('active'));
+      if (runGrid) runGrid.style.display = 'none';
+    } else {
+      if (runGrid) runGrid.style.display = '';
+    }
+
+    // Dismissed batsman selector: show for RUN_OUT and OBSTRUCTING (both can be striker or non-striker)
+    if (meta.dismissedWho === 'both') {
       dismSec.style.display = 'block';
-      document.getElementById('runout-striker-name').textContent  =
+      document.getElementById('runout-striker-name').textContent =
         document.getElementById('striker-name').textContent;
       document.getElementById('runout-ns-name').textContent =
         document.getElementById('nonstriker-name').textContent;
-      // Default to striker
       selectDismissedBatsman('striker');
     } else {
-      dismSec.style.display   = 'none';
-      selectedDismissedWho    = 'striker';
+      dismSec.style.display  = 'none';
+      selectedDismissedWho   = 'striker';
     }
 
     goToStep(2);
@@ -1197,8 +1228,10 @@
     selectedFielderId = document.getElementById('fielder-select').value || null;
 
     // Determine dismissed batsman ID
+    // RUN_OUT and OBSTRUCTING can dismiss either the striker or non-striker
     let dismissedId = scoringBatsmanId; // default = striker (who is on strike)
-    if (selectedWicketType === 'RUN_OUT' && selectedDismissedWho === 'nonstriker') {
+    const meta = WICKET_META[selectedWicketType] || {};
+    if (meta.dismissedWho === 'both' && selectedDismissedWho === 'nonstriker') {
       dismissedId = currentNonStrikerId;
     }
 
@@ -1391,30 +1424,34 @@
       if (data.error) { showToast('Error: ' + data.error); return; }
       hideModal('newBatsmanModal');
 
-      currentStrikerId = data.new_striker_id;
-      scoringBatsmanId = data.new_striker_id;
-      document.getElementById('striker-name').textContent = data.new_striker_name;
-      document.getElementById('striker-runs').textContent = '0';
-      document.getElementById('striker-balls').textContent = '0b';
+      // ── Sync entire batting state from server (authoritative) ──
+      currentStrikerId    = data.striker_id;
+      currentNonStrikerId = data.non_striker_id;
+      scoringBatsmanId    = currentStrikerId;
+
+      document.getElementById('striker-name').textContent    = data.striker_name   || '—';
+      document.getElementById('nonstriker-name').textContent = data.non_striker_name || '—';
+      document.getElementById('striker-runs').textContent    = data.striker_runs;
+      document.getElementById('striker-balls').textContent   = data.striker_balls + 'b';
+      document.getElementById('nonstriker-runs').textContent  = data.nonstriker_runs;
+      document.getElementById('nonstriker-balls').textContent = data.nonstriker_balls + 'b';
       document.getElementById('striker-card').classList.add('active');
       document.getElementById('nonstriker-card').classList.remove('active');
 
-      // Refresh available_batsmen dropdown from server response (authoritative list)
+      // Refresh available_batsmen dropdown for next potential wicket
       const sel = document.getElementById('new-batsman-select');
       sel.innerHTML = '<option value="">— Select Batsman —</option>';
-      if (data.available_batsmen && data.available_batsmen.length > 0) {
-        data.available_batsmen.forEach(p => {
-          const opt = document.createElement('option');
-          opt.value = p.id;
-          opt.textContent = p.name;
-          sel.appendChild(opt);
-        });
-      }
+      (data.available_batsmen || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        sel.appendChild(opt);
+      });
       sel.value = '';
 
       showToast(`${data.new_striker_name} is in!`);
 
-      // If innings is done (all out), handle that
+      // Innings complete (all out)
       if (data.innings_complete) {
         inningsComplete = true;
         const banner = document.getElementById('innings-complete-banner');
@@ -1433,33 +1470,11 @@
         return;
       }
 
-      // KEY FIX: If the wicket was on the last ball of an over, NOW show the bowler modal
+      // Over ended on the wicket ball — show bowler modal.
+      // Server already swapped striker/non_striker for end-of-over,
+      // so our local state (set above from server) is already correct.
       if (pendingOverComplete) {
         pendingOverComplete = false;
-        // Rotate strike for end of over (non-striker faces next over)
-        const tmpS = currentStrikerId;
-        currentStrikerId    = currentNonStrikerId;
-        currentNonStrikerId = tmpS;
-        scoringBatsmanId    = currentStrikerId;
-        // Swap name display
-        const sName  = document.getElementById('striker-name').textContent;
-        const nsName = document.getElementById('nonstriker-name').textContent;
-        // The new batsman came in at striker end — but end of over means they swap
-        // Actually: new batsman is the one coming in at the wicket end
-        // The non-striker walks to the other end — so non-striker becomes striker for next over
-        // We already set striker to new batsman above, but for end-of-over the NON-STRIKER faces
-        // Re-swap: non_striker should face next over
-        const tmpId2 = currentStrikerId;
-        currentStrikerId = currentNonStrikerId;
-        currentNonStrikerId = tmpId2;
-        scoringBatsmanId = currentStrikerId;
-        const ns = document.getElementById('nonstriker-name').textContent;
-        document.getElementById('striker-name').textContent = ns;
-        document.getElementById('nonstriker-name').textContent = data.new_striker_name;
-        document.getElementById('striker-card').classList.add('active');
-        document.getElementById('nonstriker-card').classList.remove('active');
-
-        // Clear over balls display
         const row = document.getElementById('balls-row');
         row.innerHTML = '';
         addEmptyDots(row, 6);

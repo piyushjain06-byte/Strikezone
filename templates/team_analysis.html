@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap');
+:root{--bg:#07090f;--s1:#0e1117;--s2:#161b26;--border:#1e2d40;--accent:#f59e0b;--green:#22c55e;--red:#ef4444;--blue:#38bdf8;--purple:#a78bfa;--text:#e2e8f0;--muted:#64748b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
+.wrap{max-width:960px;margin:0 auto;padding:24px 14px 80px;}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#0a0800,#1a1200,#0a0800);border:1px solid rgba(245,158,11,0.25);border-radius:18px;padding:28px 24px;margin-bottom:20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-50px;right:-50px;width:300px;height:300px;background:radial-gradient(circle,rgba(245,158,11,0.08) 0%,transparent 70%);pointer-events:none;}
+.hero-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#92400e,#f59e0b);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#000;flex-shrink:0;border:2px solid rgba(245,158,11,0.4);}
+.hero-info{flex:1;}
+.hero-tag{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:20px;padding:3px 10px;display:inline-block;margin-bottom:8px;}
+.hero-name{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fff;line-height:1;margin-bottom:4px;}
+.btn-back{display:inline-flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:13px;font-weight:600;padding:8px 16px;text-decoration:none;margin-bottom:20px;transition:.15s;}
+.btn-back:hover{color:#fff;border-color:#475569;}
+
+/* LOADING */
+.loading{display:flex;flex-direction:column;align-items:center;padding:60px 20px;gap:14px;}
+.spin{width:48px;height:48px;border-radius:50%;border:3px solid rgba(245,158,11,0.15);border-top-color:var(--accent);animation:spin .85s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;}
+.loading-sub{font-size:12px;color:var(--muted);text-align:center;}
+.loading-steps{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.step{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;opacity:0;animation:fi .4s forwards;}
+.step:nth-child(1){animation-delay:.3s}.step:nth-child(2){animation-delay:1s}.step:nth-child(3){animation-delay:1.8s}.step:nth-child(4){animation-delay:2.6s}
+@keyframes fi{to{opacity:1;}}
+.dot{width:4px;height:4px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+
+/* STAT ROW */
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.stat-pill{flex:1;min-width:90px;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center;}
+.stat-pill.gold::before{content:'';display:block;height:2px;background:var(--accent);border-radius:2px;margin-bottom:10px;}
+.stat-pill.green::before{content:'';display:block;height:2px;background:var(--green);border-radius:2px;margin-bottom:10px;}
+.stat-pill.red::before{content:'';display:block;height:2px;background:var(--red);border-radius:2px;margin-bottom:10px;}
+.stat-pill.blue::before{content:'';display:block;height:2px;background:var(--blue);border-radius:2px;margin-bottom:10px;}
+.stat-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:600;color:#fff;line-height:1;}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.card-head{background:var(--s2);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:8px;}
+.card-icon{font-size:15px;}
+.card-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;}
+.ml-badge{margin-left:auto;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:2px 8px;}
+.card-body{padding:14px;}
+.chart-img{width:100%;display:block;border-radius:8px;}
+.chart-loading{width:100%;height:180px;background:var(--s2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:10px;}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:640px){.grid2{grid-template-columns:1fr;}}
+
+/* INSIGHTS */
+.insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 16px;}
+@media(max-width:600px){.insight-grid{grid-template-columns:1fr;}}
+.insight-col{}
+.insight-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.insight-label.win{color:var(--green);}
+.insight-label.loss{color:var(--red);}
+.insight-label.cap{color:var(--accent);}
+.insight-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;color:#94a3b8;line-height:1.5;}
+.insight-item:last-child{border-bottom:none;}
+.insight-bullet{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.insight-bullet.win{background:var(--green);}
+.insight-bullet.loss{background:var(--red);}
+
+/* CAPTAIN CARD */
+.captain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;padding:14px;}
+.cap-stat{text-align:center;background:var(--s2);border-radius:8px;padding:12px 8px;}
+.cap-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:600;color:var(--accent);}
+.cap-lbl{font-size:10px;color:var(--muted);margin-top:3px;font-weight:600;text-transform:uppercase;}
+
+/* PLAYER TABLE */
+.player-table{width:100%;border-collapse:collapse;font-size:12px;}
+.player-table th{background:var(--s2);color:var(--muted);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+.player-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--text);}
+.player-table tr:last-child td{border-bottom:none;}
+.player-table tr:hover td{background:rgba(255,255,255,0.02);}
+.badge-top{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:var(--accent);font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;margin-left:5px;}
+
+/* PERFORMER CARDS */
+.performer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:14px;}
+.performer-card{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;}
+.performer-name{font-weight:700;font-size:13px;color:#fff;margin-bottom:2px;}
+.performer-role{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.performer-stat{font-size:11px;color:var(--green);margin-top:6px;}
+
+.alert-card{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:10px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;}
+.alert-icon{font-size:16px;flex-shrink:0;}
+.alert-text{font-size:12px;color:#fca5a5;line-height:1.5;}
+
+/* TABS */
+.tabs{display:flex;gap:0;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:16px;}
+.tab{flex:1;padding:8px;text-align:center;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;color:var(--muted);}
+.tab.active{background:var(--accent);color:#000;}
+.hidden{display:none;}
+</style>
+
+<div class="wrap">
+<a href="{% url 'public_team_profile' team.id %}" class="btn-back">← Back to Team Profile</a>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-avatar">{{ team.team_name|first|upper }}</div>
+  <div class="hero-info">
+    <div class="hero-tag">📊 Team Performance Analysis</div>
+    <div class="hero-name">{{ team.team_name }}</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading" class="loading">
+  <div class="spin"></div>
+  <div class="loading-title">Analysing Team Performance</div>
+  <div class="loading-sub">Running match-by-match analysis across all tournaments.</div>
+  <div class="loading-steps">
+    <div class="step"><span class="dot"></span>Loading match history...</div>
+    <div class="step"><span class="dot"></span>Computing batting & bowling stats...</div>
+    <div class="step"><span class="dot"></span>Analysing phase performance...</div>
+    <div class="step"><span class="dot"></span>Building charts & insights...</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main" style="display:none">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('overview',this)">🏏 Overview</div>
+    <div class="tab" onclick="showTab('batting',this)">📊 Batting</div>
+    <div class="tab" onclick="showTab('bowling',this)">🎳 Bowling</div>
+    <div class="tab" onclick="showTab('insights',this)">💡 Insights</div>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  <div id="tab-overview">
+    <div class="stat-row" id="overview-stats"></div>
+
+    <div class="grid2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-head"><span class="card-icon">🏆</span><span class="card-title">Win/Loss Record</span><span class="ml-badge">📊 Chart</span></div>
+        <div class="card-body" style="padding:10px">
+          <img id="chart-winloss" class="chart-img" style="display:none">
+          <div class="chart-loading" id="load-winloss">Generating...</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-head"><span class="card-icon">🕸</span><span class="card-title">Performance Radar</span><span class="ml-badge">📊 ML</span></div>
+        <div class="card-body" style="padding:10px">
+          <img id="chart-radar" class="chart-img" style="display:none">
+          <div class="chart-loading" id="load-radar">Generating...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run rate chart -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">📈</span><span class="card-title">Run Rate Per Match</span><span class="ml-badge">Trend</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-runrate" class="chart-img" style="display:none">
+        <div class="chart-loading" id="load-runrate">Generating...</div>
+      </div>
+    </div>
+
+    <!-- Captain card -->
+    <div class="card" id="captain-card" style="display:none">
+      <div class="card-head"><span class="card-icon">👑</span><span class="card-title">Captain Analysis</span></div>
+      <div id="captain-body"></div>
+    </div>
+
+    <!-- Key performers -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">⭐</span><span class="card-title">Key Performers</span></div>
+      <div class="performer-grid" id="performers-grid"></div>
+    </div>
+
+    <!-- Underperformers -->
+    <div class="card" id="underperf-card" style="display:none">
+      <div class="card-head"><span class="card-icon">⚠️</span><span class="card-title">Players Needing Improvement</span></div>
+      <div class="card-body" id="underperf-body"></div>
+    </div>
+  </div>
+
+  <!-- BATTING TAB -->
+  <div id="tab-batting" class="hidden">
+    <!-- Phase chart -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">⏱</span><span class="card-title">Batting by Phase</span><span class="ml-badge">Powerplay · Middle · Death</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-phase" class="chart-img" style="display:none">
+        <div class="chart-loading" id="load-phase">Generating...</div>
+      </div>
+    </div>
+
+    <!-- Top batsmen chart -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🏏</span><span class="card-title">Top Batsmen</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-batsmen" class="chart-img" style="display:none">
+        <div class="chart-loading" id="load-batsmen">Generating...</div>
+      </div>
+    </div>
+
+    <!-- Batsmen table -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">📋</span><span class="card-title">Batting Stats</span></div>
+      <div class="card-body" style="padding:0;overflow-x:auto">
+        <table class="player-table" id="bat-table">
+          <thead>
+            <tr>
+              <th>Player</th><th>Inns</th><th>Runs</th><th>Avg</th><th>SR</th><th>HS</th><th>50s</th><th>6s</th>
+            </tr>
+          </thead>
+          <tbody id="bat-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOWLING TAB -->
+  <div id="tab-bowling" class="hidden">
+    <!-- Top bowlers chart -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🎳</span><span class="card-title">Top Bowlers</span></div>
+      <div class="card-body" style="padding:10px">
+        <img id="chart-bowlers" class="chart-img" style="display:none">
+        <div class="chart-loading" id="load-bowlers">Generating...</div>
+      </div>
+    </div>
+
+    <!-- Bowlers table -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">📋</span><span class="card-title">Bowling Stats</span></div>
+      <div class="card-body" style="padding:0;overflow-x:auto">
+        <table class="player-table" id="bowl-table">
+          <thead>
+            <tr>
+              <th>Player</th><th>Inns</th><th>Wickets</th><th>Economy</th><th>Avg</th><th>Best</th><th>Wides</th><th>NBs</th>
+            </tr>
+          </thead>
+          <tbody id="bowl-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS TAB -->
+  <div id="tab-insights" class="hidden">
+    <!-- Win/Loss reasons -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">💡</span><span class="card-title">Match Insights</span></div>
+      <div class="insight-grid">
+        <div class="insight-col">
+          <div class="insight-label win">✅ Why They Win</div>
+          <div id="win-reasons"></div>
+        </div>
+        <div class="insight-col">
+          <div class="insight-label loss">❌ Why They Lose</div>
+          <div id="loss-reasons"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match history table -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">📅</span><span class="card-title">Match History</span></div>
+      <div class="card-body" style="padding:0;overflow-x:auto">
+        <table class="player-table" id="match-table">
+          <thead>
+            <tr>
+              <th>Opponent</th><th>Tournament</th><th>Team Runs</th><th>Opp Runs</th><th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="match-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main -->
+</div><!-- end wrap -->
+
+<script>
+const TEAM_ID = {{ team.id }};
+
+function showTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  ['overview','batting','bowling','insights'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+  });
+}
+
+function showChart(imgId, loadId, b64) {
+  const img = document.getElementById(imgId);
+  const ld  = document.getElementById(loadId);
+  if (b64 && b64.length > 100) {
+    if (img) { img.src = 'data:image/png;base64,' + b64; img.style.display = 'block'; }
+    if (ld)  { ld.style.display = 'none'; }
+  } else {
+    if (ld) { ld.textContent = 'Not enough data yet'; }
+  }
+}
+
+function buildStats(containerId, pills) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = pills.map(p =>
+    `<div class="stat-pill ${p.cls||'gold'}"><div class="stat-val">${p.v}</div><div class="stat-lbl">${p.l}</div></div>`
+  ).join('');
+}
+
+async function load() {
+  try {
+    const res = await fetch(`/api/team/${TEAM_ID}/analysis/`);
+    const D = await res.json();
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+
+    const s = D.summary || {};
+
+    // Overview stats
+    buildStats('overview-stats', [
+      {v: s.total || 0,    l: 'Matches',   cls: 'blue'},
+      {v: s.wins || 0,     l: 'Wins',      cls: 'green'},
+      {v: s.losses || 0,   l: 'Losses',    cls: 'red'},
+      {v: (s.win_pct || 0) + '%', l: 'Win Rate', cls: 'gold'},
+      {v: s.max_win_streak || 0,  l: 'Best Streak', cls: 'gold'},
+    ]);
+
+    // Charts
+    if (D.charts) {
+      showChart('chart-winloss', 'load-winloss', D.charts.win_loss);
+      showChart('chart-radar',   'load-radar',   D.charts.radar);
+      showChart('chart-runrate', 'load-runrate', D.charts.run_rate);
+      showChart('chart-phase',   'load-phase',   D.charts.phase_batting);
+      showChart('chart-batsmen', 'load-batsmen', D.charts.top_batsmen);
+      showChart('chart-bowlers', 'load-bowlers', D.charts.top_bowlers);
+    }
+
+    // Captain
+    if (D.captain) {
+      const cap = D.captain;
+      document.getElementById('captain-card').style.display = 'block';
+      document.getElementById('captain-body').innerHTML = `
+        <div style="padding:10px 14px;font-size:12px;color:var(--muted)">
+          👑 <strong style="color:#fff">${cap.name}</strong> — Captain
+        </div>
+        <div class="captain-grid">
+          <div class="cap-stat"><div class="cap-val">${cap.matches_led}</div><div class="cap-lbl">Matches Led</div></div>
+          <div class="cap-stat"><div class="cap-val" style="color:var(--green)">${cap.wins}</div><div class="cap-lbl">Wins</div></div>
+          <div class="cap-stat"><div class="cap-val">${cap.win_pct}%</div><div class="cap-lbl">Win %</div></div>
+          <div class="cap-stat"><div class="cap-val">${cap.batting_runs}</div><div class="cap-lbl">Bat Runs</div></div>
+          <div class="cap-stat"><div class="cap-val">${cap.batting_avg}</div><div class="cap-lbl">Bat Avg</div></div>
+          <div class="cap-stat"><div class="cap-val">${cap.bowling_wickets}</div><div class="cap-lbl">Wickets</div></div>
+        </div>
+        <div style="padding:10px 14px;font-size:11px;color:var(--muted)">
+          ${cap.win_pct >= 60
+            ? '✅ Strong captain — above 60% win rate shows effective leadership.'
+            : cap.win_pct >= 40
+              ? '⚠️ Average win rate — team tactics and execution need improvement.'
+              : '❌ Below 40% win rate — captaincy and strategy require significant work.'}
+          ${cap.batting_avg >= 25 ? ' Leads from the front with bat.' : ''}
+          ${cap.bowling_wickets >= 5 ? ' Contributes with the ball too.' : ''}
+        </div>`;
+    }
+
+    // Key performers
+    const pg = document.getElementById('performers-grid');
+    if (pg && D.performers && D.performers.length) {
+      pg.innerHTML = D.performers.map(p => `
+        <div class="performer-card">
+          <div class="performer-name">${p.name}</div>
+          <div class="performer-role">${p.role}</div>
+          <div class="performer-stat">${p.stat}</div>
+        </div>`).join('');
+    } else if (pg) {
+      pg.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:12px">No standout performers yet — more matches needed.</div>';
+    }
+
+    // Underperformers
+    if (D.underperformers && D.underperformers.length) {
+      document.getElementById('underperf-card').style.display = 'block';
+      document.getElementById('underperf-body').innerHTML = D.underperformers.map(u => `
+        <div class="alert-card">
+          <span class="alert-icon">⚠️</span>
+          <div class="alert-text"><strong>${u.name}</strong> — ${u.issue}</div>
+        </div>`).join('');
+    }
+
+    // Win/loss reasons
+    const wr = document.getElementById('win-reasons');
+    const lr = document.getElementById('loss-reasons');
+    if (wr) {
+      const items = D.win_reasons && D.win_reasons.length ? D.win_reasons : ['Need more match data'];
+      wr.innerHTML = items.map(r =>
+        `<div class="insight-item"><span class="insight-bullet win"></span>${r}</div>`).join('');
+    }
+    if (lr) {
+      const items = D.loss_reasons && D.loss_reasons.length ? D.loss_reasons : ['No major loss patterns yet'];
+      lr.innerHTML = items.map(r =>
+        `<div class="insight-item"><span class="insight-bullet loss"></span>${r}</div>`).join('');
+    }
+
+    // Batting table
+    const batTbody = document.getElementById('bat-tbody');
+    if (batTbody && D.top_batsmen) {
+      batTbody.innerHTML = D.top_batsmen.map((b, i) => `
+        <tr>
+          <td><strong>${b.name}</strong>${i === 0 ? '<span class="badge-top">TOP</span>' : ''}</td>
+          <td>${b.innings}</td>
+          <td style="color:var(--accent);font-weight:700">${b.runs}</td>
+          <td>${b.avg}</td>
+          <td>${b.sr}</td>
+          <td>${b.highest}</td>
+          <td>${b.fifties}</td>
+          <td>${b.sixes}</td>
+        </tr>`).join('');
+    }
+
+    // Bowling table
+    const bowlTbody = document.getElementById('bowl-tbody');
+    if (bowlTbody && D.top_bowlers) {
+      bowlTbody.innerHTML = D.top_bowlers.map((b, i) => `
+        <tr>
+          <td><strong>${b.name}</strong>${i === 0 ? '<span class="badge-top">TOP</span>' : ''}</td>
+          <td>${b.innings}</td>
+          <td style="color:var(--green);font-weight:700">${b.wickets}</td>
+          <td>${b.economy}</td>
+          <td>${b.avg || '—'}</td>
+          <td>${b.best_w}/${b.best_r}</td>
+          <td>${b.wides}</td>
+          <td>${b.no_balls}</td>
+        </tr>`).join('');
+    }
+
+    // Match history
+    const matchTbody = document.getElementById('match-tbody');
+    if (matchTbody && D.match_records) {
+      matchTbody.innerHTML = D.match_records.slice().reverse().map(m => `
+        <tr>
+          <td><strong>${m.opponent}</strong><br><span style="font-size:10px;color:var(--muted)">${m.date}</span></td>
+          <td style="font-size:11px;color:var(--muted)">${m.tournament}</td>
+          <td>${m.team_runs}/${m.team_wickets}</td>
+          <td>${m.opp_runs}/${m.opp_wickets}</td>
+          <td style="color:${m.won ? 'var(--green)' : m.tied ? 'var(--accent)' : 'var(--red)'}">
+            ${m.won ? '✅ Won' : m.tied ? '🤝 Tied' : '❌ Lost'}
+          </td>
+        </tr>`).join('');
+    }
+
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `
+      <div style="text-align:center;padding:40px">
+        <div style="font-size:30px;margin-bottom:10px">⚠️</div>
+        <div style="color:#ef4444;font-size:14px;font-weight:700;margin-bottom:6px">Failed to load</div>
+        <div style="color:#64748b;font-size:12px">${e.message}</div>
+      </div>`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', load);
+</script>
+{% endblock %}
