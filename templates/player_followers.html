@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  :root{--bg:#0a0f1e;--surface:#111827;--surface2:#1a2235;--border:#1e2d45;--accent:#f59e0b;--muted:#64748b;--radius:14px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:#e2e8f0;font-family:'Inter',sans-serif;min-height:100vh;}
+  .wrap{max-width:620px;margin:0 auto;padding:24px 14px 60px;}
+  .back{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;margin-bottom:18px;transition:color .15s;}
+  .back:hover{color:var(--accent);}
+  .hdr{margin-bottom:20px;}
+  .hdr-tag{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:20px;padding:3px 12px;display:inline-block;margin-bottom:8px;}
+  .hdr-title{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:#fff;}
+  .hdr-sub{font-size:13px;color:var(--muted);margin-top:4px;}
+  .count-badge{display:inline-block;margin-left:8px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--accent);font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;border-radius:20px;padding:1px 12px;}
+  .list{display:flex;flex-direction:column;gap:8px;}
+  .card{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;text-decoration:none;transition:border-color .15s;}
+  .card:hover{border-color:rgba(245,158,11,.35);}
+  .av{width:42px;height:42px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#1e3a8a,#3b82f6);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:#fff;border:2px solid rgba(59,130,246,.3);overflow:hidden;}
+  .av img{width:100%;height:100%;object-fit:cover;}
+  .info{flex:1;min-width:0;}
+  .name{font-size:14px;font-weight:700;color:#fff;}
+  .since{font-size:11px;color:var(--muted);margin-top:2px;}
+  .arrow{color:var(--muted);font-size:18px;}
+  .card:hover .arrow{color:var(--accent);}
+  .empty{padding:48px 24px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
+  .empty-icon{font-size:44px;display:block;margin-bottom:12px;}
+  .empty-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;}
+  .empty-sub{font-size:13px;color:var(--muted);}
+</style>
+
+<div class="wrap">
+  <a href="{% url 'public_player_profile' player.id %}" class="back">← {{ player.player_name }}</a>
+
+  <div class="hdr">
+    <div class="hdr-tag">👥 Followers</div>
+    <div class="hdr-title">{{ player.player_name }}'s Followers <span class="count-badge">{{ follower_count }}</span></div>
+    <div class="hdr-sub">Players who follow {{ player.player_name }}</div>
+  </div>
+
+  {% if followers or guest_followers %}
+  <div class="list">
+    {% for f in followers %}
+    <a href="{% url 'public_player_profile' f.follower.id %}" class="card">
+      <div class="av">
+        {% if f.follower.photo %}<img src="{{ f.follower.photo.url }}" alt="">
+        {% else %}{{ f.follower.player_name|first|upper }}{% endif %}
+      </div>
+      <div class="info">
+        <div class="name">{{ f.follower.player_name }}</div>
+        <div class="since">Following since {{ f.created_at|date:"M d, Y" }}</div>
+      </div>
+      <div class="arrow">›</div>
+    </a>
+    {% endfor %}
+    {% for gf in guest_followers %}
+    <div class="card" style="cursor:default;opacity:0.8;">
+      <div class="av" style="background:linear-gradient(135deg,#374151,#6b7280);">👤</div>
+      <div class="info">
+        <div class="name">Fan</div>
+        <div class="since">Following since {{ gf.created_at|date:"M d, Y" }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <span class="empty-icon">👥</span>
+    <div class="empty-title">No Followers Yet</div>
+    <div class="empty-sub">{{ player.player_name }} doesn't have any followers yet.</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

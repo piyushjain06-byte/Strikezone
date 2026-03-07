@@ -206,6 +206,15 @@
   .pill-value { font-size: 14px; font-weight: 600; color: #fff; }
   .pill-value.big { font-family:'Rajdhani',sans-serif; font-size: 28px; font-weight: 700; color: var(--accent); line-height: 1; }
 
+  /* ── MOM CARD ON HOME ── */
+  .home-mom { display: flex; align-items: center; gap: 14px; padding: 14px 24px; background: linear-gradient(90deg,rgba(250,204,21,0.06),rgba(245,158,11,0.03)); border-top: 1px solid rgba(250,204,21,0.15); }
+  .home-mom-trophy { font-size: 28px; flex-shrink: 0; }
+  .home-mom-label { font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #facc15; margin-bottom: 2px; }
+  .home-mom-name { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; color: #fff; }
+  .home-mom-perf { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .home-mom-av { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(250,204,21,0.4); flex-shrink: 0; }
+  .home-mom-av-init { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg,#78350f,#f59e0b); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #000; flex-shrink: 0; border: 2px solid rgba(250,204,21,0.4); }
+
   @media (max-width:1080px) { .main-grid { grid-template-columns: 1fr; } .sidebar { position: static; } }
   @media (max-width:600px) { .fm-scores,.mc-scores { flex-direction: column; } .fm-score-half:first-child,.mc-score-half:first-child { border-right: none; border-bottom: 1px solid var(--border); } .main-grid { padding: 18px 14px 60px; } }
 </style>
@@ -367,6 +376,25 @@
   {% if mc.winner %}
   <div class="fm-result-bar">🏆 {{ mc.winner }} won by {{ mc.margin }}</div>
   {% elif mc.margin %}<div class="fm-result-bar">⚖️ {{ mc.margin }}</div>{% endif %}
+
+  {% if mc.mom %}
+  <div class="home-mom">
+    <div class="home-mom-trophy">🏅</div>
+    {% if mc.mom.player.photo %}
+      <img src="{{ mc.mom.player.photo.url }}" class="home-mom-av" alt="">
+    {% else %}
+      <div class="home-mom-av-init">{{ mc.mom.player.player_name|first|upper }}</div>
+    {% endif %}
+    <div>
+      <div class="home-mom-label">Man of the Match</div>
+      <a href="/player/{{ mc.mom.player.id }}/profile/" class="home-mom-name" style="text-decoration:none;color:#fff;">{{ mc.mom.player.player_name }}</a>
+      <div class="home-mom-perf">
+        {% if mc.mom.bat_runs %}🏏 {{ mc.mom.bat_runs }}{% if mc.mom.bat_balls %} ({{ mc.mom.bat_balls }}b){% endif %}{% endif %}
+        {% if mc.mom.bowl_wickets %}&nbsp;⚾ {{ mc.mom.bowl_wickets }}/{{ mc.mom.bowl_runs }}{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <div class="sc-toggle" id="toggle-feat" onclick="toggleSC('sc-feat','toggle-feat')">
     <span>📊 View Full Scorecard</span><span class="arr">▼</span>

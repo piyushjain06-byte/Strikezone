@@ -10,7 +10,6 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
 
-  /* ── HERO ── */
   .pp-hero{
     position:relative;overflow:hidden;
     background:linear-gradient(135deg,#050e20 0%,#091528 50%,#050e1e 100%);
@@ -23,20 +22,8 @@
     pointer-events:none;
   }
   .pp-hero-inner{max-width:1280px;margin:0 auto;position:relative;display:flex;align-items:center;gap:30px;flex-wrap:wrap;}
-  .pp-photo{
-    width:96px;height:96px;border-radius:50%;object-fit:cover;flex-shrink:0;
-    border:3px solid rgba(245,158,11,.35);
-    box-shadow:0 0 0 6px rgba(245,158,11,.08),0 0 40px rgba(59,130,246,.2);
-  }
-  .pp-av-init{
-    width:96px;height:96px;border-radius:50%;flex-shrink:0;
-    background:linear-gradient(135deg,#1e3a8a,#3b82f6);
-    display:flex;align-items:center;justify-content:center;
-    font-family:'Rajdhani',sans-serif;font-size:42px;font-weight:700;color:#fff;
-    border:3px solid rgba(59,130,246,.35);
-    box-shadow:0 0 0 6px rgba(59,130,246,.08),0 0 40px rgba(59,130,246,.2);
-  }
-  .pp-text{}
+  .pp-photo{width:96px;height:96px;border-radius:50%;object-fit:cover;flex-shrink:0;border:3px solid rgba(245,158,11,.35);box-shadow:0 0 0 6px rgba(245,158,11,.08),0 0 40px rgba(59,130,246,.2);}
+  .pp-av-init{width:96px;height:96px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#1e3a8a,#3b82f6);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-size:42px;font-weight:700;color:#fff;border:3px solid rgba(59,130,246,.35);box-shadow:0 0 0 6px rgba(59,130,246,.08),0 0 40px rgba(59,130,246,.2);}
   .pp-tag{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--info);background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:20px;padding:3px 12px;display:inline-block;margin-bottom:10px;}
   .pp-name{font-family:'Rajdhani',sans-serif;font-size:48px;font-weight:700;color:#fff;line-height:1;margin-bottom:10px;}
   .pp-chips{display:flex;flex-wrap:wrap;gap:10px;}
@@ -44,11 +31,44 @@
   .pp-chip strong{color:#fff;}
   .pp-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;transition:all .15s;position:absolute;top:0;right:0;}
   .pp-back:hover{color:var(--accent);border-color:rgba(245,158,11,.3);}
-  .btn-player-analysis{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;padding:10px 18px;text-decoration:none;box-shadow:0 4px 16px rgba(124,58,237,0.35);transition:all .2s;margin-top:14px;}
-  .btn-player-analysis:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(124,58,237,0.5);color:#fff;}
-  .btn-player-analysis svg{flex-shrink:0;}
 
-  /* ── STAT ROW ── */
+  /* hero action row */
+  .hero-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center;}
+  .btn-analysis{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;padding:10px 18px;text-decoration:none;box-shadow:0 4px 16px rgba(124,58,237,.35);transition:all .2s;cursor:pointer;}
+  .btn-analysis:hover{transform:translateY(-1px);color:#fff;}
+  .btn-analysis svg{flex-shrink:0;}
+  .btn-qr{display:inline-flex;align-items:center;gap:7px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:10px;color:#60a5fa;font-size:13px;font-weight:700;padding:10px 18px;cursor:pointer;transition:all .2s;}
+  .btn-qr:hover{background:rgba(59,130,246,.2);transform:translateY(-1px);}
+
+  /* follower pill */
+  .follower-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:8px 16px;text-decoration:none;transition:border-color .15s;}
+  .follower-pill:hover{border-color:rgba(245,158,11,.4);}
+  .fp-num{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:#fff;}
+  .fp-lbl{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+
+  /* follow button */
+  .btn-follow{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;}
+  .btn-follow-default{background:rgba(245,158,11,.12);color:var(--accent);border:1px solid rgba(245,158,11,.3);}
+  .btn-follow-default:hover{background:rgba(245,158,11,.22);}
+  .btn-follow-following{background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.3);}
+  .btn-follow-following:hover{background:rgba(239,68,68,.12);color:#ef4444;border-color:rgba(239,68,68,.3);}
+  .btn-follow:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* QR modal */
+  .qr-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;padding:20px;}
+  .qr-overlay.open{display:flex;}
+  .qr-box{background:linear-gradient(145deg,#0f1b2d,#1a2a40);border:1px solid rgba(245,158,11,.3);border-radius:20px;padding:28px;text-align:center;max-width:320px;width:100%;position:relative;}
+  .qr-title{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:16px;}
+  .qr-name{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;color:#fff;margin-top:14px;}
+  .qr-team{font-size:12px;color:var(--muted);margin-top:4px;}
+  .qr-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;}
+  .qr-close:hover{color:#fff;}
+  .qr-dl-btn{display:inline-flex;align-items:center;gap:7px;margin-top:18px;padding:10px 22px;border-radius:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:#000;font-weight:700;font-size:13px;border:none;cursor:pointer;transition:all .2s;}
+  .qr-dl-btn:hover{opacity:.88;transform:translateY(-1px);}
+  #qr-container{min-height:40px;}
+  #qr-msg{color:var(--muted);font-size:12px;padding:14px 0;}
+
+  /* stats row */
   .stat-row{max-width:1280px;margin:0 auto;padding:24px 20px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;}
   .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px;text-align:center;position:relative;overflow:hidden;}
   .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;}
@@ -66,25 +86,17 @@
   .stat-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
   .stat-sub{font-size:10px;color:var(--muted);margin-top:2px;}
 
-  /* ── BODY ── */
   .pp-body{max-width:1280px;margin:0 auto;padding:26px 20px 60px;display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start;}
   @media(max-width:900px){.pp-body{grid-template-columns:1fr;}}
-
-  /* ── SECTION ── */
   .sec{margin-bottom:28px;}
   .sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
   .sec-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:#fff;}
   .sec-count{font-size:11px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;}
-
-  /* ── TABS ── */
   .tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
   .tab-btn{padding:7px 18px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all .15s;}
   .tab-btn:hover{color:var(--accent);border-color:rgba(245,158,11,.3);}
   .tab-btn.active{background:linear-gradient(135deg,#92400e,#f59e0b);color:#000;border-color:transparent;font-weight:700;}
-  .tab-pane{display:none;}
-  .tab-pane.active{display:block;}
-
-  /* ── MATCH ROW ── */
+  .tab-pane{display:none;}.tab-pane.active{display:block;}
   .mr{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:border-color .15s;}
   .mr:hover{border-color:rgba(59,130,246,.3);}
   .mr-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px;}
@@ -96,14 +108,9 @@
   .mr-stat-l{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
   .mr-divider{width:1px;height:36px;background:var(--border);}
   .mr-dismissal{font-size:11px;color:var(--muted);font-style:italic;padding:0 16px 12px;margin-top:-4px;}
-
-  /* ── BADGE ── */
   .badge{font-size:11px;font-weight:700;border-radius:20px;padding:3px 12px;white-space:nowrap;}
   .badge-bat{color:var(--accent);background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);}
   .badge-bowl{color:var(--success);background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);}
-  .badge-mom{color:#facc15;background:rgba(250,204,21,.12);border:1px solid rgba(250,204,21,.3);}
-
-  /* ── SIDEBAR ── */
   .pp-sidebar{display:flex;flex-direction:column;gap:16px;position:sticky;top:80px;}
   .sb-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
   .sb-title{font-size:12px;font-weight:700;color:#94a3b8;padding-bottom:9px;margin-bottom:14px;border-bottom:1px solid var(--border);}
@@ -111,7 +118,6 @@
   .info-row:last-child{border-bottom:none;}
   .info-label{font-size:11px;color:var(--muted);}
   .info-val{font-size:13px;font-weight:600;color:#fff;}
-
   .tm-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
   .tm-row:last-child{border-bottom:none;}
   .tm-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#92400e,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;flex-shrink:0;}
@@ -119,35 +125,25 @@
   .tm-name{font-size:13px;font-weight:600;color:#fff;}
   .tm-tournament{font-size:10px;color:var(--muted);margin-top:1px;}
   .tm-link{font-size:11px;color:var(--accent);font-weight:600;text-decoration:none;}
-
   .mom-card{background:linear-gradient(135deg,rgba(250,204,21,.05),rgba(245,158,11,.03));border:1px solid rgba(250,204,21,.15);border-radius:10px;padding:12px;margin-bottom:8px;}
-  .mom-card:last-child{margin-bottom:0;}
   .mom-match{font-size:12px;font-weight:600;color:#fff;margin-bottom:4px;}
   .mom-perf{font-size:11px;color:var(--muted);}
-
-  /* ── TOURNAMENT AWARDS ── */
   .ta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:28px;}
   .ta-card{border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
   .ta-card.mot{background:linear-gradient(135deg,#1a1400,#2a1f00);border:1px solid rgba(250,204,21,.3);}
   .ta-card.bbat{background:linear-gradient(135deg,#0a1f0a,#0d2b10);border:1px solid rgba(16,185,129,.3);}
   .ta-card.bbol{background:linear-gradient(135deg,#0a0f2a,#0d1535);border:1px solid rgba(59,130,246,.3);}
   .ta-card::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.15;}
-  .ta-card.mot::before{background:#facc15;}
-  .ta-card.bbat::before{background:#10b981;}
-  .ta-card.bbol::before{background:#3b82f6;}
+  .ta-card.mot::before{background:#facc15;}.ta-card.bbat::before{background:#10b981;}.ta-card.bbol::before{background:#3b82f6;}
   .ta-icon{font-size:28px;margin-bottom:8px;}
   .ta-award{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
-  .ta-card.mot .ta-award{color:#facc15;}
-  .ta-card.bbat .ta-award{color:var(--success);}
-  .ta-card.bbol .ta-award{color:var(--info);}
+  .ta-card.mot .ta-award{color:#facc15;}.ta-card.bbat .ta-award{color:var(--success);}.ta-card.bbol .ta-award{color:var(--info);}
   .ta-tournament{font-size:13px;font-weight:600;color:#fff;margin-bottom:8px;}
   .ta-stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;}
   .ta-stat{display:flex;flex-direction:column;}
   .ta-stat-v{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;}
-  .ta-card.mot .ta-stat-v,.ta-card.bbat .ta-stat-v{color:var(--accent);}
-  .ta-card.bbol .ta-stat-v{color:var(--info);}
+  .ta-card.mot .ta-stat-v,.ta-card.bbat .ta-stat-v{color:var(--accent);}.ta-card.bbol .ta-stat-v{color:var(--info);}
   .ta-stat-l{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
-
   .empty{padding:28px;text-align:center;color:var(--muted);font-size:13px;}
 </style>
 
@@ -171,10 +167,37 @@
         {% endfor %}
         {% if mom_awards %}<span class="pp-chip">🏆 <strong>{{ mom_awards|length }}</strong> MOM Awards</span>{% endif %}
       </div>
-      <a href="{% url 'player_analysis' player.id %}" class="btn-player-analysis">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        {% if is_own %}My Performance Analysis{% else %}View Analysis{% endif %}
-      </a>
+
+      <div class="hero-actions">
+        <a href="{% url 'player_analysis' player.id %}" class="btn-analysis">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          {% if is_own %}My Performance Analysis{% else %}View Analysis{% endif %}
+        </a>
+
+        <!-- QR BUTTON - opens modal below -->
+        <button class="btn-qr" id="btn-open-qr">📱 Player QR Card</button>
+
+        <!-- FOLLOWER COUNT - clickable -->
+        <a href="{% url 'player_followers_list' player.id %}" class="follower-pill" id="fp-link">
+          <span class="fp-num" id="fp-num">{{ follower_count }}</span>
+          <span class="fp-lbl" id="fp-lbl">Follower{{ follower_count|pluralize }}</span>
+        </a>
+
+        <!-- FOLLOW/UNFOLLOW BUTTON - only shown when logged in and not own profile -->
+        {% if not is_own %}
+          {% if is_logged_in %}
+            <button
+              id="follow-btn"
+              class="btn-follow {% if is_following %}btn-follow-following{% else %}btn-follow-default{% endif %}"
+              data-pid="{{ player.id }}"
+              data-csrf="{{ csrf_token }}">
+              <span id="follow-txt">{% if is_following %}✓ Following{% else %}+ Follow{% endif %}</span>
+            </button>
+          {% else %}
+            <a href="{% url 'player_login' %}" class="btn-follow btn-follow-default">+ Follow</a>
+          {% endif %}
+        {% endif %}
+      </div>
     </div>
   </div>
 </div>
@@ -213,7 +236,6 @@
 <div class="pp-body">
 <div>
 
-  <!-- TOURNAMENT AWARDS -->
   {% if tournament_awards %}
   <div class="sec" style="margin-bottom:24px;">
     <div class="sec-hdr">
@@ -242,7 +264,6 @@
             {% if a.total_runs %}<div class="ta-stat"><span class="ta-stat-v">{{ a.total_runs }}</span><span class="ta-stat-l">Runs</span></div>{% endif %}
             {% if a.batting_avg %}<div class="ta-stat"><span class="ta-stat-v">{{ a.batting_avg }}</span><span class="ta-stat-l">Avg</span></div>{% endif %}
             {% if a.highest_score %}<div class="ta-stat"><span class="ta-stat-v">{{ a.highest_score }}</span><span class="ta-stat-l">HS</span></div>{% endif %}
-            {% if a.batting_sr %}<div class="ta-stat"><span class="ta-stat-v">{{ a.batting_sr }}</span><span class="ta-stat-l">SR</span></div>{% endif %}
           </div>
         </div>
         {% elif a.award_type == 'BBOL' %}
@@ -254,7 +275,6 @@
             {% if a.total_wickets %}<div class="ta-stat"><span class="ta-stat-v">{{ a.total_wickets }}</span><span class="ta-stat-l">Wickets</span></div>{% endif %}
             {% if a.bowling_avg %}<div class="ta-stat"><span class="ta-stat-v">{{ a.bowling_avg }}</span><span class="ta-stat-l">Avg</span></div>{% endif %}
             {% if a.best_bowling %}<div class="ta-stat"><span class="ta-stat-v">{{ a.best_bowling }}</span><span class="ta-stat-l">Best</span></div>{% endif %}
-            {% if a.bowling_economy %}<div class="ta-stat"><span class="ta-stat-v">{{ a.bowling_economy }}</span><span class="ta-stat-l">Econ</span></div>{% endif %}
           </div>
         </div>
         {% endif %}
@@ -263,130 +283,70 @@
   </div>
   {% endif %}
 
-  <!-- TABS -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('bat', event)">🏏 Batting</button>
-    <button class="tab-btn" onclick="switchTab('bowl', event)">⚾ Bowling</button>
-    {% if mom_awards %}<button class="tab-btn" onclick="switchTab('mom', event)">🌟 MOM Awards</button>{% endif %}
+    <button class="tab-btn active" onclick="switchTab('bat',event)">🏏 Batting</button>
+    <button class="tab-btn" onclick="switchTab('bowl',event)">⚾ Bowling</button>
+    {% if mom_awards %}<button class="tab-btn" onclick="switchTab('mom',event)">🌟 MOM Awards</button>{% endif %}
   </div>
 
-  <!-- BATTING TAB -->
   <div id="tab-bat" class="tab-pane active">
-    <div class="sec-hdr">
-      <span class="sec-title">🏏 Batting Performances</span>
-      <span class="sec-count">{{ bat_records|length }} innings</span>
-    </div>
+    <div class="sec-hdr"><span class="sec-title">🏏 Batting Performances</span><span class="sec-count">{{ bat_records|length }} innings</span></div>
     {% if bat_records %}
       {% for b in bat_records %}
       <div class="mr">
         <div class="mr-head">
-          <div>
-            <div class="mr-vs">{{ b.innings.match.team1 }} vs {{ b.innings.match.team2 }}</div>
-            <div class="mr-sub">{{ b.innings.match.tournament.tournament_name }} · {{ b.innings.match.match_date }}</div>
-          </div>
+          <div><div class="mr-vs">{{ b.innings.match.team1 }} vs {{ b.innings.match.team2 }}</div><div class="mr-sub">{{ b.innings.match.tournament.tournament_name }} · {{ b.innings.match.match_date }}</div></div>
           <span class="badge badge-bat">🏏 Batting for {{ b.innings.batting_team }}</span>
         </div>
         <div class="mr-stats">
-          <div class="mr-stat">
-            <div class="mr-stat-v">{{ b.runs }}</div>
-            <div class="mr-stat-l">Runs</div>
-          </div>
+          <div class="mr-stat"><div class="mr-stat-v">{{ b.runs }}</div><div class="mr-stat-l">Runs</div></div>
           <div class="mr-divider"></div>
-          <div class="mr-stat">
-            <div class="mr-stat-v">{{ b.balls_faced }}</div>
-            <div class="mr-stat-l">Balls</div>
-          </div>
+          <div class="mr-stat"><div class="mr-stat-v">{{ b.balls_faced }}</div><div class="mr-stat-l">Balls</div></div>
           <div class="mr-divider"></div>
-          <div class="mr-stat">
-            <div class="mr-stat-v">{{ b.fours }}</div>
-            <div class="mr-stat-l">4s</div>
-          </div>
+          <div class="mr-stat"><div class="mr-stat-v">{{ b.fours }}</div><div class="mr-stat-l">4s</div></div>
           <div class="mr-divider"></div>
-          <div class="mr-stat">
-            <div class="mr-stat-v">{{ b.sixes }}</div>
-            <div class="mr-stat-l">6s</div>
-          </div>
+          <div class="mr-stat"><div class="mr-stat-v">{{ b.sixes }}</div><div class="mr-stat-l">6s</div></div>
           <div class="mr-divider"></div>
-          <div class="mr-stat">
-            <div class="mr-stat-v">{{ b.strike_rate }}</div>
-            <div class="mr-stat-l">SR</div>
-          </div>
+          <div class="mr-stat"><div class="mr-stat-v">{{ b.strike_rate }}</div><div class="mr-stat-l">SR</div></div>
           {% if b.status == 'NOT_OUT' %}<span class="badge badge-bowl" style="margin-left:auto;">Not Out</span>{% endif %}
         </div>
-        {% if b.dismissal_info %}
-        <div class="mr-dismissal">{{ b.dismissal_info }}</div>
-        {% endif %}
+        {% if b.dismissal_info %}<div class="mr-dismissal">{{ b.dismissal_info }}</div>{% endif %}
       </div>
       {% endfor %}
-    {% else %}
-      <div class="empty">No batting records found.</div>
-    {% endif %}
+    {% else %}<div class="empty">No batting records found.</div>{% endif %}
   </div>
 
-  <!-- BOWLING TAB -->
   <div id="tab-bowl" class="tab-pane">
-    <div class="sec-hdr">
-      <span class="sec-title">⚾ Bowling Performances</span>
-      <span class="sec-count">{{ bowl_records|length }} spells</span>
-    </div>
+    <div class="sec-hdr"><span class="sec-title">⚾ Bowling Performances</span><span class="sec-count">{{ bowl_records|length }} spells</span></div>
     {% if bowl_records %}
       {% for b in bowl_records %}
       <div class="mr">
         <div class="mr-head">
-          <div>
-            <div class="mr-vs">{{ b.innings.match.team1 }} vs {{ b.innings.match.team2 }}</div>
-            <div class="mr-sub">{{ b.innings.match.tournament.tournament_name }} · {{ b.innings.match.match_date }}</div>
-          </div>
+          <div><div class="mr-vs">{{ b.innings.match.team1 }} vs {{ b.innings.match.team2 }}</div><div class="mr-sub">{{ b.innings.match.tournament.tournament_name }} · {{ b.innings.match.match_date }}</div></div>
           <span class="badge badge-bowl">⚾ Bowling vs {{ b.innings.batting_team }}</span>
         </div>
         <div class="mr-stats">
-          <div class="mr-stat">
-            <div class="mr-stat-v" style="color:var(--success);">{{ b.wickets }}</div>
-            <div class="mr-stat-l">Wickets</div>
-          </div>
+          <div class="mr-stat"><div class="mr-stat-v" style="color:var(--success);">{{ b.wickets }}</div><div class="mr-stat-l">Wickets</div></div>
           <div class="mr-divider"></div>
-          <div class="mr-stat">
-            <div class="mr-stat-v">{{ b.overs_bowled }}</div>
-            <div class="mr-stat-l">Overs</div>
-          </div>
+          <div class="mr-stat"><div class="mr-stat-v">{{ b.overs_bowled }}</div><div class="mr-stat-l">Overs</div></div>
           <div class="mr-divider"></div>
-          <div class="mr-stat">
-            <div class="mr-stat-v">{{ b.runs_given }}</div>
-            <div class="mr-stat-l">Runs</div>
-          </div>
+          <div class="mr-stat"><div class="mr-stat-v">{{ b.runs_given }}</div><div class="mr-stat-l">Runs</div></div>
           <div class="mr-divider"></div>
-          <div class="mr-stat">
-            <div class="mr-stat-v">{{ b.economy }}</div>
-            <div class="mr-stat-l">Economy</div>
-          </div>
-          {% if b.wides %}<div class="mr-divider"></div>
-          <div class="mr-stat">
-            <div class="mr-stat-v" style="color:var(--muted);">{{ b.wides }}</div>
-            <div class="mr-stat-l">Wides</div>
-          </div>{% endif %}
+          <div class="mr-stat"><div class="mr-stat-v">{{ b.economy }}</div><div class="mr-stat-l">Economy</div></div>
+          {% if b.wides %}<div class="mr-divider"></div><div class="mr-stat"><div class="mr-stat-v" style="color:var(--muted);">{{ b.wides }}</div><div class="mr-stat-l">Wides</div></div>{% endif %}
         </div>
       </div>
       {% endfor %}
-    {% else %}
-      <div class="empty">No bowling records found.</div>
-    {% endif %}
+    {% else %}<div class="empty">No bowling records found.</div>{% endif %}
   </div>
 
-  <!-- MOM TAB -->
   {% if mom_awards %}
   <div id="tab-mom" class="tab-pane">
-    <div class="sec-hdr">
-      <span class="sec-title">🏆 Man of the Match Awards</span>
-      <span class="sec-count">{{ mom_awards|length }}</span>
-    </div>
+    <div class="sec-hdr"><span class="sec-title">🏆 Man of the Match Awards</span><span class="sec-count">{{ mom_awards|length }}</span></div>
     {% for m in mom_awards %}
     <div class="mom-card">
       <div class="mom-match">{{ m.match.team1 }} vs {{ m.match.team2 }} — {{ m.match.tournament.tournament_name }}</div>
-      <div class="mom-perf">
-        {% if m.bat_runs %}🏏 {{ m.bat_runs }} runs ({{ m.bat_balls }}b){% endif %}
-        {% if m.bowl_wickets %} · ⚾ {{ m.bowl_wickets }}/{{ m.bowl_runs }} ({{ m.bowl_overs }}){% endif %}
-        · UII {{ m.uii_score }}
-      </div>
+      <div class="mom-perf">{% if m.bat_runs %}🏏 {{ m.bat_runs }} runs ({{ m.bat_balls }}b){% endif %}{% if m.bowl_wickets %} · ⚾ {{ m.bowl_wickets }}/{{ m.bowl_runs }} ({{ m.bowl_overs }}){% endif %} · UII {{ m.uii_score }}</div>
     </div>
     {% endfor %}
   </div>
@@ -394,7 +354,6 @@
 
 </div>
 
-<!-- SIDEBAR -->
 <aside class="pp-sidebar">
   <div class="sb-card">
     <div class="sb-title">📋 Player Info</div>
@@ -409,11 +368,8 @@
       </div>
       <a href="/team/{{ r.tournament_team.team.id }}/" class="tm-link">Team →</a>
     </div>
-    {% empty %}
-    <div class="empty">No team data.</div>
-    {% endfor %}
+    {% empty %}<div class="empty">No team data.</div>{% endfor %}
   </div>
-
   <div class="sb-card">
     <div class="sb-title">📊 Career Summary</div>
     <div class="info-row"><span class="info-label">Innings Batted</span><span class="info-val">{{ bat_total.innings_count|default:0 }}</span></div>
@@ -429,68 +385,132 @@
     <div class="info-row"><span class="info-label">Tournament Honours</span><span class="info-val" style="color:#facc15;">{{ tournament_awards|length }}</span></div>
   </div>
 </aside>
-
 </div>
 
+<!-- ══ QR MODAL — inside the content block ══ -->
+<div class="qr-overlay" id="qr-overlay" onclick="if(event.target===this)closeQR()">
+  <div class="qr-box">
+    <button class="qr-close" onclick="closeQR()">✕</button>
+    <div class="qr-title">⚡ StrikeZone · Player Card</div>
+    <div id="qr-container"><div id="qr-msg">Generating QR…</div></div>
+    <div class="qr-name">{{ player.player_name }}</div>
+    <div class="qr-team">{% for r in rosters|slice:":1" %}{{ r.tournament_team.team.team_name }} · {{ r.get_role_display }}{% endfor %}</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">{{ bat_total.total_runs|default:0 }} runs · {{ bowl_total.total_wickets|default:0 }} wickets · {{ mom_awards|length }} MOM</div>
+    <button class="qr-dl-btn" onclick="downloadQR()">⬇ Download Card</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script>
+// ── Tabs ──
 function switchTab(name, e) {
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  const pane = document.getElementById('tab-' + name);
+  document.querySelectorAll('.tab-pane').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  var pane = document.getElementById('tab-' + name);
   if (pane) pane.classList.add('active');
   if (e && e.target) e.target.classList.add('active');
 }
 
-// ── LIVE STAT UPDATES ─────────────────────────────────────────────────
-(function() {
-  const PLAYER_ID = {{ player.id }};
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  let fetchPending = false;
+// ── QR ──
+var qrReady = false;
 
-  function updateStat(key, value) {
-    const el = document.querySelector(`[data-stat="${key}"]`);
-    if (!el || el.textContent == value) return;
-    el.textContent = value;
-    el.style.transition = 'color 0.3s';
-    el.style.color = '#f59e0b';
-    setTimeout(() => el.style.color = '', 800);
-  }
+document.getElementById('btn-open-qr').addEventListener('click', function() {
+  document.getElementById('qr-overlay').classList.add('open');
+  if (qrReady) return;
+  var url = '{{ profile_url }}';
+  QRCode.toCanvas(url, { width: 180, margin: 2, color: { dark: '#ffffff', light: '#0f1b2d' } }, function(err, canvas) {
+    var box = document.getElementById('qr-container');
+    box.innerHTML = '';
+    if (err) {
+      box.innerHTML = '<p style="color:#ef4444;font-size:12px;padding:10px 0;">Failed: ' + err.message + '</p>';
+    } else {
+      canvas.style.borderRadius = '10px';
+      box.appendChild(canvas);
+      qrReady = true;
+    }
+  });
+});
 
-  function refreshStats() {
-    if (fetchPending) return;
-    fetchPending = true;
-    fetch(`/player/${PLAYER_ID}/stats-api/`)
-      .then(r => r.json())
-      .then(d => {
-        updateStat('total_runs',    d.total_runs);
-        updateStat('highest_score', d.highest_score);
-        updateStat('batting_sr',    d.batting_sr);
-        updateStat('total_wickets', d.total_wickets);
-        updateStat('total_sixes',   d.total_sixes);
-        updateStat('mom_count',     d.mom_count);
-        const avgEl = document.querySelector('[data-stat="bat_avg"]');
-        if (avgEl && d.batting_avg) avgEl.textContent = 'Avg ' + d.batting_avg;
-        const bAvgEl = document.querySelector('[data-stat="bowl_avg"]');
-        if (bAvgEl && d.bowling_avg) bAvgEl.textContent = 'Avg ' + d.bowling_avg;
-      })
-      .catch(() => {})
-      .finally(() => { fetchPending = false; });
-  }
+function closeQR() {
+  document.getElementById('qr-overlay').classList.remove('open');
+}
 
-  function connect() {
-    const ws = new WebSocket(`${proto}://${location.host}/ws/live/`);
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      if (msg.type === 'home_update' || msg.type === 'match_status_change') {
-        // Debounce: wait 2s after last update before fetching
-        clearTimeout(connect._t);
-        connect._t = setTimeout(refreshStats, 2000);
+function downloadQR() {
+  var src = document.querySelector('#qr-container canvas');
+  if (!src) { alert('Open QR first.'); return; }
+  var c = document.createElement('canvas');
+  c.width = 360; c.height = 480;
+  var ctx = c.getContext('2d');
+  var g = ctx.createLinearGradient(0,0,360,480);
+  g.addColorStop(0,'#0a0f1e'); g.addColorStop(1,'#1a2a40');
+  ctx.fillStyle = g;
+  ctx.roundRect(0,0,360,480,20); ctx.fill();
+  ctx.strokeStyle='rgba(245,158,11,.5)'; ctx.lineWidth=2;
+  ctx.roundRect(2,2,356,476,18); ctx.stroke();
+  ctx.fillStyle='#f59e0b'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('STRIKEZONE · PLAYER CARD',180,38);
+  ctx.drawImage(src,90,55,180,180);
+  ctx.fillStyle='#fff'; ctx.font='bold 26px sans-serif';
+  ctx.fillText('{{ player.player_name|escapejs }}',180,278);
+  ctx.fillStyle='#64748b'; ctx.font='13px sans-serif';
+  ctx.fillText('{{ bat_total.total_runs|default:0 }} runs · {{ bowl_total.total_wickets|default:0 }} wkts · {{ mom_awards|length }} MOM',180,304);
+  ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(30,322); ctx.lineTo(330,322); ctx.stroke();
+  var stats=[{l:'RUNS',v:'{{ bat_total.total_runs|default:0 }}'},{l:'WKTS',v:'{{ bowl_total.total_wickets|default:0 }}'},{l:'SR',v:'{{ sr|default:0 }}'},{l:'MOM',v:'{{ mom_awards|length }}'}];
+  stats.forEach(function(s,i){
+    var x=52+i*70;
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 22px sans-serif'; ctx.fillText(s.v,x,358);
+    ctx.fillStyle='#64748b'; ctx.font='10px sans-serif'; ctx.fillText(s.l,x,374);
+  });
+  ctx.fillStyle='rgba(245,158,11,.4)'; ctx.font='11px sans-serif';
+  ctx.fillText('strikezone.live · Scan to view profile',180,448);
+  var a=document.createElement('a');
+  a.href=c.toDataURL('image/png');
+  a.download='strikezone-player.png';
+  a.click();
+}
+
+// ── Follow / Unfollow ──
+var followBtn = document.getElementById('follow-btn');
+if (followBtn) {
+  followBtn.addEventListener('click', function() {
+    if (this.disabled) return;
+    var btn  = this;
+    var txt  = document.getElementById('follow-txt');
+    var pid  = btn.getAttribute('data-pid');
+    var csrf = btn.getAttribute('data-csrf');
+    btn.disabled = true;
+
+    fetch('/player/' + pid + '/follow/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.error) { alert(data.error); btn.disabled=false; return; }
+      document.getElementById('fp-num').textContent = data.follower_count;
+      document.getElementById('fp-lbl').textContent = data.follower_count===1 ? 'Follower' : 'Followers';
+      if (data.action === 'followed') {
+        btn.className = 'btn-follow btn-follow-following';
+        txt.textContent = '✓ Following';
+      } else {
+        btn.className = 'btn-follow btn-follow-default';
+        txt.textContent = '+ Follow';
       }
-    };
-    ws.onclose = () => setTimeout(connect, 4000);
-    ws.onerror = () => ws.close();
-  }
+      btn.disabled = false;
+    })
+    .catch(function(){ btn.disabled=false; });
+  });
+}
 
+// ── Live stat updates ──
+(function(){
+  var PID = {{ player.id }};
+  var proto = location.protocol==='https:'?'wss':'ws';
+  var pending = false;
+  function upd(k,v){ var el=document.querySelector('[data-stat="'+k+'"]'); if(!el||el.textContent==v)return; el.textContent=v; el.style.color='#f59e0b'; setTimeout(function(){el.style.color='';},800); }
+  function refresh(){ if(pending)return; pending=true; fetch('/player/'+PID+'/stats-api/').then(function(r){return r.json();}).then(function(d){ upd('total_runs',d.total_runs); upd('highest_score',d.highest_score); upd('batting_sr',d.batting_sr); upd('total_wickets',d.total_wickets); upd('total_sixes',d.total_sixes); upd('mom_count',d.mom_count); }).catch(function(){}).finally(function(){pending=false;}); }
+  function connect(){ var ws=new WebSocket(proto+'://'+location.host+'/ws/live/'); ws.onmessage=function(e){ var m=JSON.parse(e.data); if(m.type==='home_update'||m.type==='match_status_change'){clearTimeout(connect._t);connect._t=setTimeout(refresh,2000);} }; ws.onclose=function(){setTimeout(connect,4000);}; ws.onerror=function(){ws.close();}; }
   connect();
 })();
 </script>

@@ -1,428 +1,269 @@
 {% extends 'base.html' %}
 {% block content %}
-
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
-
   :root {
-    --bg: #0a0f1e; --surface: #111827; --surface2: #1a2235;
-    --border: #1e2d45; --accent: #f59e0b; --success: #10b981;
-    --danger: #ef4444; --info: #3b82f6;
-    --text: #e2e8f0; --muted: #64748b; --radius: 14px;
+    --bg:#0a0f1e; --surface:#111827; --surface2:#1a2235;
+    --border:#1e2d45; --accent:#f59e0b; --success:#10b981;
+    --danger:#ef4444; --info:#3b82f6; --text:#e2e8f0; --muted:#64748b; --radius:14px;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+  .wrap{max-width:680px;margin:0 auto;padding:20px 14px 60px;}
 
-  .td-wrap { max-width: 640px; margin: 0 auto; padding: 20px 14px 60px; }
-
-  .td-header {
-    background: linear-gradient(135deg, #1a2a4a 0%, #0f1f38 100%);
-    border: 1px solid #1e3a5f; border-radius: var(--radius);
-    padding: 22px 20px; margin-bottom: 16px; position: relative; overflow: hidden;
+  /* HEADER */
+  .t-header{
+    background:linear-gradient(135deg,#1a2a4a 0%,#0f1f38 100%);
+    border:1px solid #1e3a5f;border-radius:var(--radius);
+    padding:22px 20px;margin-bottom:16px;position:relative;overflow:hidden;
   }
-  .td-header::before {
-    content: ''; position: absolute; top: -50px; right: -50px;
-    width: 160px; height: 160px;
-    background: radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 70%);
-    border-radius: 50%; pointer-events: none;
+  .t-header::before{
+    content:'';position:absolute;top:-50px;right:-50px;
+    width:180px;height:180px;
+    background:radial-gradient(circle,rgba(245,158,11,0.08) 0%,transparent 70%);
+    border-radius:50%;pointer-events:none;
   }
-  .td-tag {
-    font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--accent); background: rgba(245,158,11,0.12);
-    border: 1px solid rgba(245,158,11,0.25); border-radius: 20px;
-    padding: 3px 12px; display: inline-block; margin-bottom: 10px;
+  .back-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:12px;font-weight:600;color:var(--muted);
+    text-decoration:none;background:rgba(255,255,255,0.05);
+    border:1px solid var(--border);border-radius:8px;
+    padding:5px 12px;margin-bottom:14px;transition:color 0.15s;
   }
-  .td-title {
-    font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700;
-    color: #fff; line-height: 1.1; margin-bottom: 16px;
+  .back-btn:hover{color:var(--accent);}
+  .t-tag{
+    font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+    color:var(--accent);background:rgba(245,158,11,0.12);
+    border:1px solid rgba(245,158,11,0.25);border-radius:20px;
+    padding:3px 12px;display:inline-block;margin-bottom:10px;
   }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .info-item {
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 10px; padding: 10px 13px;
+  .t-name{font-family:'Rajdhani',sans-serif;font-size:36px;font-weight:700;color:#fff;line-height:1.1;margin-bottom:6px;}
+  .t-sub{font-size:13px;color:var(--muted);}
+  .t-code{
+    display:inline-block;margin-top:10px;
+    font-size:11px;font-weight:700;color:#64748b;
+    background:rgba(255,255,255,0.05);border:1px solid var(--border);
+    border-radius:8px;padding:4px 12px;letter-spacing:1px;
   }
-  .info-label { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
-  .info-value { font-size: 14px; font-weight: 600; color: #fff; }
 
   /* TABS */
-  .tabs-bar {
-    display: flex; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; overflow: hidden; margin-bottom: 16px;
+  .tabs-bar{
+    display:flex;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;overflow:hidden;margin-bottom:16px;
   }
-  .tab-btn {
-    flex: 1; padding: 11px 4px; font-size: 10px; font-weight: 700;
-    letter-spacing: 0.3px; text-transform: uppercase; text-align: center;
-    cursor: pointer; border: none; background: none; color: var(--muted);
-    transition: all 0.15s; position: relative; border-right: 1px solid var(--border);
-    font-family: 'Inter', sans-serif;
+  .tab-btn{
+    flex:1;padding:12px 4px;font-size:11px;font-weight:700;
+    letter-spacing:0.3px;text-transform:uppercase;text-align:center;
+    cursor:pointer;border:none;background:none;color:var(--muted);
+    transition:all 0.15s;position:relative;border-right:1px solid var(--border);
+    font-family:'Inter',sans-serif;
   }
-  .tab-btn:last-child { border-right: none; }
-  .tab-btn.active { color: var(--accent); background: rgba(245,158,11,0.07); }
-  .tab-btn.active::after {
-    content: ''; position: absolute; bottom: 0; left: 10%; right: 10%;
-    height: 2px; background: var(--accent); border-radius: 2px 2px 0 0;
+  .tab-btn:last-child{border-right:none;}
+  .tab-btn.active{color:var(--accent);background:rgba(245,158,11,0.07);}
+  .tab-btn.active::after{
+    content:'';position:absolute;bottom:0;left:10%;right:10%;
+    height:2px;background:var(--accent);border-radius:2px 2px 0 0;
   }
-  .tab-count {
-    display: inline-block; margin-left: 3px; padding: 1px 5px;
-    border-radius: 10px; font-size: 9px; font-weight: 800;
-    background: rgba(255,255,255,0.08); color: var(--muted);
+  .tab-count{
+    display:inline-block;margin-left:4px;padding:1px 6px;
+    border-radius:10px;font-size:9px;font-weight:800;
+    background:rgba(255,255,255,0.08);color:var(--muted);
   }
-  .tab-btn.active .tab-count { background: rgba(245,158,11,0.2); color: var(--accent); }
-  .tab-btn.live-tab.has-live { color: var(--danger); }
-  .tab-btn.live-tab.has-live .tab-count { background: rgba(239,68,68,0.15); color: var(--danger); }
-  .tab-btn.live-tab.has-live.active { background: rgba(239,68,68,0.07); }
-  .tab-btn.live-tab.has-live.active::after { background: var(--danger); }
+  .tab-btn.active .tab-count{background:rgba(245,158,11,0.2);color:var(--accent);}
+  .td-tab-panel{display:none;}
+  .td-tab-panel.active{display:block;}
 
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
-
-  /* POINTS TABLE */
-  .points-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden; margin-bottom: 14px;
+  /* SQUAD */
+  .squad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;}
+  .player-card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:14px 16px;
+    display:flex;align-items:center;gap:14px;
+    text-decoration:none;transition:border-color 0.15s;
   }
-  .points-header {
-    background: linear-gradient(90deg, rgba(245,158,11,0.1), transparent);
-    padding: 12px 16px; border-bottom: 1px solid var(--border);
-    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
-    text-transform: uppercase; color: var(--accent);
+  .player-card:hover{border-color:rgba(245,158,11,0.35);}
+  .player-av{
+    width:44px;height:44px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,#1e3a8a,#3b82f6);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:#fff;
+    border:2px solid rgba(59,130,246,0.3);overflow:hidden;
   }
-  .pts-table { width: 100%; border-collapse: collapse; }
-  .pts-table th {
-    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-    color: var(--muted); padding: 9px 12px; text-align: left;
-    border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);
-  }
-  .pts-table th:not(:first-child):not(:nth-child(2)) { text-align: center; }
-  .pts-table td { padding: 11px 12px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
-  .pts-table td:not(:first-child):not(:nth-child(2)) { text-align: center; }
-  .pts-table tr:last-child td { border-bottom: none; }
-  .pts-table tr:hover td { background: rgba(255,255,255,0.02); }
-  .pts-rank { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; color: var(--muted); }
-  .pts-rank.gold { color: #fbbf24; }
-  .pts-rank.silver { color: #94a3b8; }
-  .pts-rank.bronze { color: #d97706; }
-  .pts-pts { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; color: var(--accent); }
-  .pts-nrr { font-size: 12px; font-weight: 600; }
-  .pts-nrr.pos { color: #22c55e; }
-  .pts-nrr.neg { color: #ef4444; }
+  .player-av img{width:100%;height:100%;object-fit:cover;}
+  .player-info{flex:1;min-width:0;}
+  .player-name{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;}
+  .player-badges{display:flex;gap:5px;flex-wrap:wrap;}
+  .role-badge{font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;border-radius:6px;padding:2px 7px;}
+  .role-bat {background:rgba(245,158,11,0.12);color:var(--accent);border:1px solid rgba(245,158,11,0.25);}
+  .role-bowl{background:rgba(16,185,129,0.12);color:var(--success);border:1px solid rgba(16,185,129,0.25);}
+  .role-all {background:rgba(139,92,246,0.12);color:#a78bfa;border:1px solid rgba(139,92,246,0.25);}
+  .role-wk  {background:rgba(59,130,246,0.12);color:var(--info);border:1px solid rgba(59,130,246,0.25);}
+  .cap-badge{background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);}
+  .jersey-num{font-size:13px;color:var(--muted);font-weight:700;margin-left:auto;flex-shrink:0;}
 
   /* MATCH CARDS */
-  .match-list { display: flex; flex-direction: column; gap: 10px; }
-  .match-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; overflow: hidden; transition: border-color 0.15s;
+  .match-card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;overflow:hidden;margin-bottom:10px;transition:border-color 0.15s;
   }
-  .match-card:hover { border-color: rgba(245,158,11,0.25); }
-  .mc-head { padding: 13px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-  .mc-teams { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
-  .mc-meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
-  .badge { font-size: 10px; font-weight: 700; border-radius: 20px; padding: 3px 10px; white-space: nowrap; flex-shrink: 0; }
-  .badge-live { color: var(--danger); background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); animation: blink 1.5s infinite; }
-  .badge-done { color: var(--muted); background: transparent; border: 1px solid var(--border); }
-  .badge-sched { color: var(--info); background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.5} }
-  .mc-scores { display: flex; border-top: 1px solid var(--border); }
-  .mc-score-half { flex: 1; padding: 10px 16px; }
-  .mc-score-half:first-child { border-right: 1px solid var(--border); }
-  .mc-team-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
-  .mc-score-num { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; color: #fff; line-height: 1; }
-  .mc-wkts { color: var(--accent); }
-  .mc-overs { font-size: 10px; color: var(--muted); margin-top: 2px; }
-  .mc-result {
-    padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--success);
-    background: rgba(16,185,129,0.06); border-top: 1px solid rgba(16,185,129,0.1);
+  .match-card:hover{border-color:rgba(245,158,11,0.25);}
+  .mc-head{padding:13px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .mc-teams{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;}
+  .mc-meta{font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;}
+  .badge{font-size:10px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;flex-shrink:0;}
+  .badge-done {color:var(--muted);background:transparent;border:1px solid var(--border);}
+  .badge-live {color:var(--danger);background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);animation:blink 1.5s infinite;}
+  .badge-sched{color:var(--info);background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+  .mc-scores{display:flex;border-top:1px solid var(--border);}
+  .mc-score-half{flex:1;padding:10px 16px;}
+  .mc-score-half:first-child{border-right:1px solid var(--border);}
+  .mc-team-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+  .mc-score-num{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#fff;}
+  .mc-wkts{color:var(--accent);}
+  .mc-overs{font-size:10px;color:var(--muted);margin-top:2px;}
+  .mc-result{padding:8px 16px;font-size:12px;font-weight:600;color:var(--success);background:rgba(16,185,129,0.06);border-top:1px solid rgba(16,185,129,0.1);}
+  .mc-actions{padding:9px 16px;border-top:1px solid var(--border);display:flex;gap:8px;}
+  .btn-action{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:7px 13px;border-radius:8px;font-size:12px;font-weight:700;
+    text-decoration:none;transition:all 0.15s;
   }
-  .mc-actions { padding: 9px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
-  .btn-action {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 7px 13px; border-radius: 8px; font-size: 12px; font-weight: 700;
-    text-decoration: none; border: none; cursor: pointer; transition: all 0.15s;
-    font-family: 'Inter', sans-serif;
-  }
-  .btn-live-watch { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
-  .btn-live-watch:hover { background: rgba(239,68,68,0.2); }
-  .btn-scorecard { background: rgba(245,158,11,0.08); color: var(--accent); border: 1px solid rgba(245,158,11,0.2); }
-  .btn-scorecard:hover { background: rgba(245,158,11,0.18); }
-  .btn-start-match { background: rgba(16,185,129,0.1); color: var(--success); border: 1px solid rgba(16,185,129,0.25); }
-  .btn-start-match:hover { background: rgba(16,185,129,0.2); }
-  .btn-analysis { background: rgba(139,92,246,0.08); color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
-  .btn-analysis:hover { background: rgba(139,92,246,0.18); }
+  .btn-sc  {background:rgba(245,158,11,0.08);color:var(--accent);border:1px solid rgba(245,158,11,0.2);}
+  .btn-sc:hover{background:rgba(245,158,11,0.18);}
+  .btn-lw  {background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.25);}
+  .btn-lw:hover{background:rgba(239,68,68,0.2);}
 
-  /* TEAMS */
-  .teams-list {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden; margin-top: 14px;
+  .empty-state{
+    padding:40px 24px;text-align:center;
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
   }
-  .teams-section-title {
-    font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-    color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--border);
-    background: rgba(255,255,255,0.02);
-  }
-  .team-row {
-    display: flex; align-items: center; gap: 14px; padding: 12px 16px;
-    border-bottom: 1px solid var(--border); text-decoration: none; transition: background 0.15s;
-  }
-  .team-row:last-child { border-bottom: none; }
-  .team-row:hover { background: var(--surface2); }
-  .team-num { font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; color: var(--muted); min-width: 24px; }
-  .team-name { font-size: 14px; font-weight: 600; color: #fff; flex: 1; }
-  .team-arrow { color: var(--muted); font-size: 16px; }
-  .team-row:hover .team-arrow { color: var(--accent); }
-
-  .empty-state {
-    padding: 40px 24px; text-align: center;
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  }
-  .empty-icon { font-size: 40px; display: block; margin-bottom: 10px; }
-  .empty-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
-  .empty-sub { font-size: 13px; color: var(--muted); }
-
-  .btn-history {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; background: linear-gradient(135deg, #b45309, #f59e0b);
-    border: none; border-radius: var(--radius); color: #000;
-    font-size: 14px; font-weight: 700; padding: 14px; text-decoration: none;
-    transition: opacity 0.15s; letter-spacing: 0.3px; margin-bottom: 10px;
-  }
-  .btn-history:hover { opacity: 0.88; }
+  .empty-icon{font-size:40px;display:block;margin-bottom:10px;}
+  .empty-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;}
+  .empty-sub{font-size:13px;color:var(--muted);}
 </style>
 
-<div class="td-wrap">
+<div class="wrap">
 
   <!-- HEADER -->
-  <div class="td-header">
-    <div class="td-tag">🏏 Tournament</div>
-    <div class="td-title">{{ tournament.tournament_name }}</div>
-    <div class="info-grid">
-      <div class="info-item"><div class="info-label">Type</div><div class="info-value">{{ tournament.get_tournament_type_display }}</div></div>
-      <div class="info-item"><div class="info-label">Overs</div><div class="info-value">{{ tournament.number_of_overs }} ov</div></div>
-      <div class="info-item"><div class="info-label">Start Date</div><div class="info-value">{{ tournament.start_date|default:"TBD" }}</div></div>
-      <div class="info-item"><div class="info-label">End Date</div><div class="info-value">{{ tournament.end_date|default:"TBD" }}</div></div>
-    </div>
+  <div class="t-header">
+    <a href="{% url 'tournamentdetails' tournament.id %}" class="back-btn">← {{ tournament.tournament_name }}</a>
+    <div class="t-tag">🏏 Team</div>
+    <div class="t-name">{{ team.team_name }}</div>
+    <div class="t-sub">{{ tournament.tournament_name }}</div>
+    <div class="t-code">{{ team.team_code }}</div>
   </div>
 
-  <!-- TABS BAR -->
-  <div class="tabs-bar">
-    <button class="tab-btn active" onclick="switchTab('points',this)">Points<br><span class="tab-count">{{ leaderboard|length }}</span></button>
-    <button class="tab-btn live-tab {% if live_matches %}has-live{% endif %}" onclick="switchTab('live',this)">Live<br><span class="tab-count">{{ live_matches|length }}</span></button>
-    <button class="tab-btn" onclick="switchTab('upcoming',this)">Upcoming<br><span class="tab-count">{{ upcoming_matches|length }}</span></button>
-    <button class="tab-btn" onclick="switchTab('completed',this)">Completed<br><span class="tab-count">{{ completed_matches|length }}</span></button>
-    <button class="tab-btn" onclick="switchTab('history',this)">History</button>
+  <!-- TABS -->
+  <div class="tabs-bar" id="teamTabs">
+    <button class="tab-btn active" onclick="tdTab('squad',this)">
+      Squad <span class="tab-count">{{ roster|length }}</span>
+    </button>
+    <button class="tab-btn" onclick="tdTab('matches',this)">
+      Matches
+    </button>
   </div>
 
-  <!-- POINTS TABLE TAB -->
-  <div class="tab-panel active" id="tab-points">
-    {% if leaderboard %}
-    <div class="points-card">
-      <div class="points-header">🏆 Points Table</div>
-      <table class="pts-table">
-        <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>L</th><th>Pts</th><th>NRR</th></tr></thead>
-        <tbody>
-          {% for entry in leaderboard %}
-          <tr>
-            <td><span class="pts-rank {% if entry.rank == 1 %}gold{% elif entry.rank == 2 %}silver{% elif entry.rank == 3 %}bronze{% endif %}">{{ entry.rank }}</span></td>
-            <td>
-              <a href="{% url 'teamdetails' tournament.id entry.team.id %}" style="color:#fff;text-decoration:none;font-weight:700;">{{ entry.team.team_name }}</a>
-              <div style="font-size:10px;color:var(--muted);">{{ entry.team.team_code }}</div>
-            </td>
-            <td style="color:var(--muted);font-weight:600;">{{ entry.played }}</td>
-            <td style="color:#22c55e;font-weight:700;">{{ entry.wins }}</td>
-            <td style="color:#ef4444;font-weight:700;">{{ entry.losses }}</td>
-            <td><span class="pts-pts">{{ entry.points }}</span></td>
-            <td><span class="pts-nrr {% if entry.nrr >= 0 %}pos{% else %}neg{% endif %}">{{ entry.nrr_display }}</span></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="empty-state">
-      <span class="empty-icon">📋</span>
-      <div class="empty-title">No Data Yet</div>
-      <div class="empty-sub">Points table will appear once matches begin.</div>
-    </div>
-    {% endif %}
-    <div class="teams-list">
-      <div class="teams-section-title">Participating Teams</div>
-      {% for team in teams %}
-      <a href="{% url 'teamdetails' tournament.id team.id %}" class="team-row">
-        <div class="team-num">{{ forloop.counter }}</div>
-        <div class="team-name">{{ team.team_name }} <span style="color:var(--muted);font-size:12px;">({{ team.team_code }})</span></div>
-        <div class="team-arrow">›</div>
+  <!-- SQUAD TAB -->
+  <div class="td-tab-panel active" id="tdp-squad">
+    {% if roster %}
+    <div class="squad-grid">
+      {% for r in roster %}
+      <a href="{% url 'public_player_profile' r.player.id %}" class="player-card">
+        <div class="player-av">
+          {% if r.player.photo %}<img src="{{ r.player.photo.url }}" alt="{{ r.player.player_name }}">
+          {% else %}{{ r.player.player_name|first|upper }}{% endif %}
+        </div>
+        <div class="player-info">
+          <div class="player-name">{{ r.player.player_name }}</div>
+          <div class="player-badges">
+            {% if r.role == 'BATSMAN' %}<span class="role-badge role-bat">Batsman</span>
+            {% elif r.role == 'BOWLER' %}<span class="role-badge role-bowl">Bowler</span>
+            {% elif r.role == 'ALLROUNDER' %}<span class="role-badge role-all">All-Rounder</span>
+            {% elif r.role == 'WICKETKEEPER' %}<span class="role-badge role-wk">Keeper</span>{% endif %}
+            {% if r.is_captain %}<span class="role-badge cap-badge">👑 Captain</span>{% endif %}
+            {% if r.is_vice_captain %}<span class="role-badge cap-badge">⭐ VC</span>{% endif %}
+          </div>
+        </div>
+        {% if r.jersey_number %}<div class="jersey-num">#{{ r.jersey_number }}</div>{% endif %}
       </a>
-      {% empty %}
-      <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">No teams added yet.</div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- LIVE TAB -->
-  <div class="tab-panel" id="tab-live">
-    {% if live_matches %}
-    <div class="match-list">
-      {% for lm in live_matches %}
-      <div class="match-card" style="border-color:rgba(239,68,68,0.25);">
-        <div class="mc-head">
-          <div>
-            <div class="mc-teams">{{ lm.match.team1.team_name }} vs {{ lm.match.team2.team_name }}</div>
-            <div class="mc-meta"><span>📍 {{ lm.match.venue }}</span><span>📅 {{ lm.match.match_date }}</span></div>
-          </div>
-          <span class="badge badge-live">● LIVE</span>
-        </div>
-        {% if lm.inn1 %}
-        <div class="mc-scores">
-          <div class="mc-score-half">
-            <div class="mc-team-lbl">{{ lm.inn1.batting_team }}</div>
-            <div class="mc-score-num">{{ lm.inn1.total_runs }}/<span class="mc-wkts">{{ lm.inn1.total_wickets }}</span></div>
-            <div class="mc-overs">{{ lm.inn1.overs_completed }} overs</div>
-          </div>
-          {% if lm.inn2 %}
-          <div class="mc-score-half">
-            <div class="mc-team-lbl">{{ lm.inn2.batting_team }}</div>
-            <div class="mc-score-num">{{ lm.inn2.total_runs }}/<span class="mc-wkts">{{ lm.inn2.total_wickets }}</span></div>
-            <div class="mc-overs">{{ lm.inn2.overs_completed }} ov · Target: {{ lm.inn2.target }}</div>
-          </div>
-          {% endif %}
-        </div>
-        {% endif %}
-        <div class="mc-actions">
-          <a href="{% url 'public_live_scorecard' lm.match.id %}" class="btn-action btn-live-watch">🔴 Watch Live</a>
-        </div>
-      </div>
       {% endfor %}
     </div>
     {% else %}
     <div class="empty-state">
-      <span class="empty-icon">🔴</span>
-      <div class="empty-title">No Live Matches</div>
-      <div class="empty-sub">There are no matches in progress right now.</div>
+      <span class="empty-icon">👥</span>
+      <div class="empty-title">No Players Yet</div>
+      <div class="empty-sub">No players have been added to this team's roster.</div>
     </div>
     {% endif %}
   </div>
 
-  <!-- UPCOMING TAB -->
-  <div class="tab-panel" id="tab-upcoming">
-    {% if upcoming_matches %}
-    <div class="match-list">
-      {% for um in upcoming_matches %}
-      <div class="match-card">
-        <div class="mc-head">
-          <div>
-            <div class="mc-teams">{{ um.match.team1.team_name }} vs {{ um.match.team2.team_name }}</div>
-            <div class="mc-meta"><span>📍 {{ um.match.venue }}</span><span>📅 {{ um.match.match_date }}</span></div>
+  <!-- MATCHES TAB -->
+  <div class="td-tab-panel" id="tdp-matches">
+    {% with team_matches=team.team1_matches.all|add:team.team2_matches.all %}
+    {% if team_matches %}
+      {% for match in tournament.matches.all %}
+        {% if match.team1 == team or match.team2 == team %}
+        {% with result=match.result %}
+        <div class="match-card">
+          <div class="mc-head">
+            <div>
+              <div class="mc-teams">{{ match.team1.team_name }} vs {{ match.team2.team_name }}</div>
+              <div class="mc-meta">
+                <span>📍 {{ match.venue }}</span>
+                <span>📅 {{ match.match_date }}</span>
+              </div>
+            </div>
+            {% if result %}<span class="badge badge-done">✔ Done</span>
+            {% else %}<span class="badge badge-sched">Scheduled</span>{% endif %}
           </div>
-          <span class="badge badge-sched">Scheduled</span>
-        </div>
-        <div class="mc-actions">
-          {% if is_admin %}
-          <a href="{% url 'match_start' %}" class="btn-action btn-start-match">▶ Start Match</a>
-          {% else %}
-          <span style="font-size:12px;color:var(--muted);padding:4px 2px;">⏳ Awaiting kickoff</span>
-          {% endif %}
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">
-      <span class="empty-icon">📋</span>
-      <div class="empty-title">No Upcoming Matches</div>
-      <div class="empty-sub">All scheduled matches have been played or are currently live.</div>
-    </div>
-    {% endif %}
-  </div>
 
-  <!-- COMPLETED TAB -->
-  <div class="tab-panel" id="tab-completed">
-    {% if completed_matches %}
-    <div class="match-list">
-      {% for cm in completed_matches %}
-      <div class="match-card">
-        <div class="mc-head">
-          <div>
-            <div class="mc-teams">{{ cm.match.team1.team_name }} vs {{ cm.match.team2.team_name }}</div>
-            <div class="mc-meta"><span>📍 {{ cm.match.venue }}</span><span>📅 {{ cm.match.match_date }}</span></div>
-          </div>
-          <span class="badge badge-done">✔ Done</span>
-        </div>
-        {% if cm.inn1 %}
-        <div class="mc-scores">
-          <div class="mc-score-half">
-            <div class="mc-team-lbl">{{ cm.inn1.batting_team }}</div>
-            <div class="mc-score-num">{{ cm.inn1.total_runs }}/<span class="mc-wkts">{{ cm.inn1.total_wickets }}</span></div>
-            <div class="mc-overs">{{ cm.inn1.overs_completed }} overs</div>
-          </div>
-          {% if cm.inn2 %}
-          <div class="mc-score-half">
-            <div class="mc-team-lbl">{{ cm.inn2.batting_team }}</div>
-            <div class="mc-score-num">{{ cm.inn2.total_runs }}/<span class="mc-wkts">{{ cm.inn2.total_wickets }}</span></div>
-            <div class="mc-overs">{{ cm.inn2.overs_completed }} overs</div>
+          {% with innings=match.innings.all %}
+          {% if innings %}
+          <div class="mc-scores">
+            {% for inn in innings %}
+            <div class="mc-score-half">
+              <div class="mc-team-lbl">{{ inn.batting_team }}</div>
+              <div class="mc-score-num">{{ inn.total_runs }}/<span class="mc-wkts">{{ inn.total_wickets }}</span></div>
+              <div class="mc-overs">{{ inn.overs_completed }} overs{% if inn.target %} · Target: {{ inn.target }}{% endif %}</div>
+            </div>
+            {% endfor %}
           </div>
           {% endif %}
+          {% endwith %}
+
+          {% if result %}
+          <div class="mc-result">🏆 {{ result.result_summary }}</div>
+          {% endif %}
+          <div class="mc-actions">
+            {% if result %}
+            <a href="{% url 'match_scorecard' match.id %}" class="btn-action btn-sc">📊 Scorecard</a>
+            {% endif %}
+          </div>
         </div>
+        {% endwith %}
         {% endif %}
-        {% if cm.margin %}
-        <div class="mc-result">🏆 {{ cm.margin }}</div>
-        {% endif %}
-        <div class="mc-actions">
-          <a href="{% url 'match_scorecard' cm.match.id %}" class="btn-action btn-scorecard">📊 View Scorecard</a>
-          <a href="{% url 'match_analysis_view' cm.match.id %}" class="btn-action btn-analysis">🤖 ML Analysis</a>
-        </div>
-      </div>
       {% endfor %}
-    </div>
     {% else %}
     <div class="empty-state">
-      <span class="empty-icon">✅</span>
-      <div class="empty-title">No Completed Matches</div>
-      <div class="empty-sub">Completed matches will appear here.</div>
+      <span class="empty-icon">🏏</span>
+      <div class="empty-title">No Matches Yet</div>
+      <div class="empty-sub">Matches for this team will appear here once scheduled.</div>
     </div>
     {% endif %}
-  </div>
-
-  <!-- HISTORY TAB -->
-  <div class="tab-panel" id="tab-history">
-    <a href="{% url 'tournament_history' tournament.id %}" class="btn-history">
-      📊 &nbsp;View Full Tournament History & Points Table
-    </a>
-    {% if tournament_complete %}
-    <a href="{% url 'tournament_awards' tournament.id %}" class="btn-history" style="background:linear-gradient(135deg,rgba(251,191,36,0.18),rgba(251,191,36,0.06));border:1px solid rgba(251,191,36,0.4);color:#fbbf24;">
-      🏆 &nbsp;Tournament Honours & Awards
-    </a>
-    {% endif %}
-    <div class="empty-state" style="border-radius:var(--radius);">
-      <span class="empty-icon">📜</span>
-      <div class="empty-title">Tournament History</div>
-      <div class="empty-sub">Click the button above to view the full match-by-match history, leaderboard and NRR breakdown.</div>
-    </div>
+    {% endwith %}
   </div>
 
 </div>
 
 <script>
-function switchTab(name, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
+function tdTab(name, btn) {
+  // scoped — only touches THIS page's panels, not tournamentdetails panels
+  document.querySelectorAll('.td-tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('#teamTabs .tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('tdp-' + name).classList.add('active');
   btn.classList.add('active');
-  sessionStorage.setItem('td_tab_{{ tournament.id }}', name);
 }
-(function() {
-  const saved = sessionStorage.getItem('td_tab_{{ tournament.id }}');
-  if (saved) {
-    const btn = document.querySelector('.tab-btn[onclick*="\''+ saved +'\'"] ');
-    // fallback: match by tab name
-    document.querySelectorAll('.tab-btn').forEach(b => {
-      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("\'" + saved + "\'")) {
-        switchTab(saved, b);
-      }
-    });
-  } {% if live_matches %} else {
-    const lb = document.querySelector('.tab-btn.live-tab');
-    if (lb) switchTab('live', lb);
-  } {% endif %}
-})();
 </script>
 
 {% endblock %}

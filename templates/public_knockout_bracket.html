@@ -127,6 +127,18 @@
                 {% if km.winner == km.team1 %}🏆{% endif %}
               </div>
             </div>
+            {% if km.match %}
+              {% with inn=km.match.innings.all %}
+                {% for i in inn %}
+                  {% if i.batting_team == km.team1 %}
+                    <div style="text-align:right;">
+                      <div class="bm-score">{{ i.total_runs }}/{{ i.total_wickets }}</div>
+                      <div class="bm-label" style="text-align:right;">{{ i.overs_completed }} ov</div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              {% endwith %}
+            {% endif %}
           </div>
 
           <!-- TEAM 2 -->
@@ -138,6 +150,18 @@
                 {% if km.winner == km.team2 %}🏆{% endif %}
               </div>
             </div>
+            {% if km.match %}
+              {% with inn=km.match.innings.all %}
+                {% for i in inn %}
+                  {% if i.batting_team == km.team2 %}
+                    <div style="text-align:right;">
+                      <div class="bm-score">{{ i.total_runs }}/{{ i.total_wickets }}</div>
+                      <div class="bm-label" style="text-align:right;">{{ i.overs_completed }} ov</div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              {% endwith %}
+            {% endif %}
           </div>
 
           <!-- FOOTER -->
@@ -159,6 +183,13 @@
               {% endif %}
             </div>
           </div>
+          {% if km.match and km.is_completed %}
+            {% with r=km.match.result %}
+              {% if r.result_summary %}
+              <div style="padding:4px 12px 8px;font-size:11px;color:#64748b;font-style:italic;">{{ r.result_summary }}</div>
+              {% endif %}
+            {% endwith %}
+          {% endif %}
         </div>
         {% endfor %}
       </div>

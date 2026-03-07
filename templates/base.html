@@ -196,7 +196,53 @@
     }
     .btn-inline-form { display: inline; }
 
-    /* Hamburger */
+    /* ── NOTIFICATION BELL ── */
+    .notif-btn {
+      position: relative; background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 18px; padding: 6px; line-height: 1;
+      transition: color 0.15s; flex-shrink: 0; border-radius: 8px;
+    }
+    .notif-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .notif-dot {
+      display: none; position: absolute; top: 4px; right: 4px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #ef4444; border: 2px solid var(--bg);
+    }
+    .notif-dot.show { display: block; }
+    .notif-count {
+      display: none; position: absolute; top: 2px; right: 2px;
+      min-width: 16px; height: 16px; border-radius: 8px;
+      background: #ef4444; color: #fff; font-size: 9px; font-weight: 800;
+      align-items: center; justify-content: center; border: 1.5px solid var(--bg);
+      line-height: 1; padding: 0 3px;
+    }
+    .notif-count.show { display: flex; }
+    .notif-panel {
+      display: none; position: absolute; top: calc(100% + 10px); right: 0;
+      width: 320px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      z-index: 9999; overflow: hidden;
+    }
+    .notif-panel.open { display: block; }
+    .notif-panel-head {
+      padding: 13px 16px; font-size: 13px; font-weight: 700; color: #fff;
+      border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+    }
+    .notif-clear { font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer; background: none; border: none; }
+    .notif-clear:hover { color: var(--accent); }
+    .notif-list { max-height: 340px; overflow-y: auto; }
+    .notif-item {
+      padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      cursor: pointer; transition: background 0.12s;
+    }
+    .notif-item:hover { background: var(--surface2); }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item-title { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+    .notif-item-body { font-size: 12px; color: var(--muted); }
+    .notif-item-time { font-size: 10px; color: #475569; margin-top: 3px; }
+    .notif-item.unread { background: rgba(245,158,11,0.04); border-left: 2px solid rgba(245,158,11,0.4); }
+    .notif-empty { padding: 28px 16px; text-align: center; font-size: 13px; color: var(--muted); }
+    .notif-wrap { position: relative; flex-shrink: 0; }
     .hamburger {
       display: none; background: none; border: none; cursor: pointer;
       padding: 6px; color: var(--muted); flex-direction: column; gap: 5px;
@@ -441,6 +487,23 @@
     <button class="hamburger" id="hamburger" aria-label="Toggle menu">
       <span></span><span></span><span></span>
     </button>
+
+    <!-- NOTIFICATION BELL -->
+    <div class="notif-wrap" id="notif-wrap">
+      <button class="notif-btn" id="notif-btn" aria-label="Notifications" onclick="toggleNotifPanel(event)">
+        🔔
+        <span class="notif-count" id="notif-count"></span>
+      </button>
+      <div class="notif-panel" id="notif-panel">
+        <div class="notif-panel-head">
+          <span>🔔 Notifications</span>
+          <button class="notif-clear" onclick="clearNotifs()">Clear all</button>
+        </div>
+        <div class="notif-list" id="notif-list">
+          <div class="notif-empty" id="notif-empty">No notifications yet</div>
+        </div>
+      </div>
+    </div>
   </header>
 
   <!-- MOBILE NAV -->
@@ -900,6 +963,129 @@
       connectMatchGlobal();
     }
 
+  })();
+  </script>
+
+  <!-- ── NOTIFICATION SYSTEM ── -->
+  <script>
+  (function() {
+    const MAX = 30;
+    let notifs = JSON.parse(localStorage.getItem('sz_notifs') || '[]');
+    let unread = parseInt(localStorage.getItem('sz_notifs_unread') || '0');
+
+    function save() { localStorage.setItem('sz_notifs', JSON.stringify(notifs.slice(0, MAX))); }
+    function saveUnread() { localStorage.setItem('sz_notifs_unread', unread); }
+
+    function addNotif(title, body, url) {
+      const n = { title, body, url: url || '#', time: Date.now(), read: false };
+      notifs.unshift(n);
+      unread++;
+      save(); saveUnread();
+      renderBell();
+      renderList();
+    }
+
+    function renderBell() {
+      const c = document.getElementById('notif-count');
+      if (!c) return;
+      if (unread > 0) {
+        c.textContent = unread > 9 ? '9+' : unread;
+        c.classList.add('show');
+      } else {
+        c.classList.remove('show');
+      }
+    }
+
+    function renderList() {
+      const list = document.getElementById('notif-list');
+      const empty = document.getElementById('notif-empty');
+      if (!list) return;
+      list.innerHTML = '';
+      if (notifs.length === 0) {
+        list.appendChild(empty || document.createTextNode(''));
+        const e = document.createElement('div');
+        e.className = 'notif-empty';
+        e.textContent = 'No notifications yet';
+        list.appendChild(e);
+        return;
+      }
+      notifs.forEach((n, i) => {
+        const item = document.createElement('div');
+        item.className = 'notif-item' + (n.read ? '' : ' unread');
+        item.innerHTML = `
+          <div class="notif-item-title">${n.title}</div>
+          <div class="notif-item-body">${n.body}</div>
+          <div class="notif-item-time">${timeAgo(n.time)}</div>`;
+        item.addEventListener('click', () => {
+          notifs[i].read = true;
+          save();
+          if (n.url && n.url !== '#') window.location.href = n.url;
+        });
+        list.appendChild(item);
+      });
+    }
+
+    function timeAgo(ts) {
+      const d = Math.floor((Date.now() - ts) / 1000);
+      if (d < 60) return 'Just now';
+      if (d < 3600) return Math.floor(d/60) + 'm ago';
+      if (d < 86400) return Math.floor(d/3600) + 'h ago';
+      return Math.floor(d/86400) + 'd ago';
+    }
+
+    window.toggleNotifPanel = function(e) {
+      e.stopPropagation();
+      const panel = document.getElementById('notif-panel');
+      const isOpen = panel.classList.toggle('open');
+      if (isOpen) {
+        unread = 0; saveUnread(); renderBell();
+        notifs.forEach(n => n.read = true); save(); renderList();
+      }
+    };
+
+    window.clearNotifs = function() {
+      notifs = []; unread = 0; save(); saveUnread();
+      renderBell(); renderList();
+    };
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('notif-wrap');
+      if (wrap && !wrap.contains(e.target)) {
+        const panel = document.getElementById('notif-panel');
+        if (panel) panel.classList.remove('open');
+      }
+    });
+
+    // Listen to existing live WS for match events
+    const _origConnectHomeLive = window.connectHomeLive;
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    function connectNotifWS() {
+      const ws = new WebSocket(`${proto}://${location.host}/ws/live/`);
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'match_status_change') {
+            const d = msg.data;
+            if (d.status === 'live' || d.status === 'started') {
+              addNotif('🔴 Match Started', `${d.team1 || 'Match'} is now LIVE!`, `/match/${d.match_id}/live/`);
+            } else if (d.status === 'completed') {
+              addNotif('✅ Match Completed', d.result || 'A match just finished.', d.match_id ? `/match/${d.match_id}/scorecard/` : '#');
+            }
+          }
+          if (msg.type === 'milestone') {
+            addNotif('🏅 Milestone!', msg.data.text || 'A player hit a milestone!', '#');
+          }
+        } catch(err) {}
+      };
+      ws.onclose = () => setTimeout(connectNotifWS, 5000);
+      ws.onerror = () => ws.close();
+    }
+    connectNotifWS();
+
+    // Init
+    renderBell();
+    renderList();
   })();
   </script>
 

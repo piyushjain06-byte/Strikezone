@@ -24,7 +24,8 @@ from .views_match     import match_result, restart_match, tournament_awards, tou
 from .views_auth      import (admin_login, admin_logout, player_login, send_otp_sms,
                                player_request_otp, player_verify_otp, player_register, player_logout)
 from .views_player    import (player_stats, player_stats_api, player_matches,
-                               public_player_profile, edit_player, delete_player)
+                               public_player_profile, edit_player, delete_player,
+                               toggle_follow, player_followers_list)
 from .views_knockout  import (get_tournament_leaderboard, all_league_matches_completed,
                                knockout_bracket, setup_knockout_stage, start_knockout_match,
                                auto_advance_knockout, link_knockout_matches, public_knockout_bracket)

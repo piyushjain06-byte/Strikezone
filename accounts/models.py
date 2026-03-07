@@ -31,6 +31,8 @@ class GuestUser(models.Model):
     plan               = models.CharField(max_length=20, choices=PLAN_CHOICES, default=PLAN_FREE)
     plan_expires_at    = models.DateTimeField(null=True, blank=True)
     role               = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_USER)
+    display_name       = models.CharField(max_length=100, blank=True, default='')
+    photo              = models.ImageField(upload_to='guest_photos/', null=True, blank=True)
 
     class Meta:
         verbose_name_plural = 'Guest Users'
@@ -75,3 +77,44 @@ class GuestUser(models.Model):
         if self.is_plan_expired():
             return self.PLAN_FREE
         return self.plan
+
+
+# ─── Player Follow System ────────────────────────────────────────────────────
+class PlayerFollow(models.Model):
+    follower  = models.ForeignKey(
+        'teams.PlayerDetails', on_delete=models.CASCADE,
+        related_name='following_set'
+    )
+    following = models.ForeignKey(
+        'teams.PlayerDetails', on_delete=models.CASCADE,
+        related_name='followers_set'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('follower', 'following')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.follower.player_name} → {self.following.player_name}"
+
+
+# ─── Guest Follow System ─────────────────────────────────────────────────────
+class GuestFollow(models.Model):
+    """Stores follows made by guests (GuestUser) who have no PlayerDetails."""
+    guest     = models.ForeignKey(
+        GuestUser, on_delete=models.CASCADE,
+        related_name='guest_following_set'
+    )
+    following = models.ForeignKey(
+        'teams.PlayerDetails', on_delete=models.CASCADE,
+        related_name='guest_followers_set'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('guest', 'following')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Guest({self.guest.mobile_number}) → {self.following.player_name}"

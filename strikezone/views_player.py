@@ -18,7 +18,7 @@ from teams.models import TeamDetails, PlayerDetails, TournamentTeam, TournamentR
 from matches.models import CreateMatch, MatchStart, MatchResult, ManOfTheMatch
 from scoring.models import Innings, Over, Ball, BattingScorecard, BowlingScorecard
 from knockout.models import KnockoutStage, KnockoutMatch
-from accounts.models import GuestUser
+from accounts.models import GuestUser, PlayerFollow
 
 from strikezone.forms import MatchForm, TournamentForm, TeamForm, PlayerForm
 from strikezone.services import begin_innings, start_over, record_ball, undo_last_ball
@@ -38,15 +38,79 @@ def player_stats(request):
     if not player_id:
         return redirect('player_login')
 
-    is_guest = str(player_id).startswith('guest') or not str(player_id).isdigit()
+    is_guest_session = str(player_id) == 'guest' or not str(player_id).isdigit()
 
-    if is_guest:
+    # ── AUTO-UPGRADE: if session is guest but a PlayerDetails now exists for their mobile ──
+    if is_guest_session:
+        mobile = request.session.get('player_mobile', '')
+        if mobile:
+            real_player = PlayerDetails.objects.filter(mobile_number=mobile).first()
+            if real_player:
+                # Promote session to real player
+                request.session['player_id']   = real_player.id
+                request.session['player_name'] = real_player.player_name
+                player_id        = real_player.id
+                is_guest_session = False
+
+    # ── GUEST PROFILE VIEW / EDIT ──
+    if is_guest_session:
+        mobile = request.session.get('player_mobile', '')
+        guest  = GuestUser.objects.filter(mobile_number=mobile).first() if mobile else None
+
+        if not guest:
+            return render(request, 'player_stats.html', {
+                'player': None, 'is_guest': True,
+                'player_name': request.session.get('player_name', 'Guest'),
+                'guest': None,
+            })
+
+        if request.method == 'POST':
+            # Photo upload
+            if request.FILES.get('photo'):
+                guest.photo = request.FILES['photo']
+                guest.save(update_fields=['photo'])
+                messages.success(request, 'Profile photo updated!')
+                return redirect('player_stats')
+
+            # Profile fields update
+            if request.POST.get('update_profile'):
+                new_name   = (request.POST.get('display_name') or '').strip()
+                new_mobile = (request.POST.get('mobile_number') or '').strip()
+
+                if not new_name:
+                    messages.error(request, 'Name cannot be empty.')
+                    return redirect('player_stats')
+
+                if new_mobile and (len(new_mobile) < 10 or not new_mobile.replace('+', '').isdigit()):
+                    messages.error(request, 'Enter a valid mobile number (at least 10 digits).')
+                    return redirect('player_stats')
+
+                if new_mobile and new_mobile != guest.mobile_number:
+                    if GuestUser.objects.filter(mobile_number=new_mobile).exclude(id=guest.id).exists():
+                        messages.error(request, 'This mobile number is already registered.')
+                        return redirect('player_stats')
+                    if PlayerDetails.objects.filter(mobile_number=new_mobile).exists():
+                        messages.error(request, 'This mobile number is already linked to a player.')
+                        return redirect('player_stats')
+                    guest.mobile_number = new_mobile
+                    request.session['player_mobile'] = new_mobile
+
+                guest.display_name = new_name
+                guest.save(update_fields=['display_name', 'mobile_number'])
+                request.session['player_name'] = new_name
+                messages.success(request, 'Profile updated successfully.')
+                return redirect('player_stats')
+
+        display_name = guest.display_name or request.session.get('player_name', 'Guest')
         return render(request, 'player_stats.html', {
             'player': None,
-            'player_name': request.session.get('player_name', 'Guest'),
             'is_guest': True,
+            'guest': guest,
+            'guest_display_name': display_name,
+            'guest_mobile': guest.mobile_number,
         })
 
+    # ── REAL PLAYER VIEW ──
     player = get_object_or_404(PlayerDetails, id=int(player_id))
 
     # Handle profile updates
@@ -69,12 +133,10 @@ def player_stats(request):
                 messages.error(request, "Enter a valid mobile number (at least 10 digits).")
                 return redirect('player_stats')
 
-            # Mobile is optional at model level, but if provided it must be unique
             if new_mobile and PlayerDetails.objects.filter(mobile_number=new_mobile).exclude(id=player.id).exists():
                 messages.error(request, "This mobile number is already used by another player.")
                 return redirect('player_stats')
 
-            # Update core fields
             player.player_name = new_name
             player.mobile_number = new_mobile or None
             player.save(update_fields=['player_name', 'mobile_number'])
@@ -156,9 +218,18 @@ def player_stats(request):
         .order_by('-id')[:10]
     )
 
+    # Followers: registered players + guests
+    from accounts.models import GuestFollow
+    player_followers = PlayerFollow.objects.filter(following=player).select_related('follower').order_by('-created_at')
+    guest_followers  = GuestFollow.objects.filter(following=player).select_related('guest').order_by('-created_at')
+    follower_count   = player_followers.count() + guest_followers.count()
+
     return render(request, 'player_stats.html', {
         'player': player,
         'is_guest': False,
+        'my_followers': player_followers,
+        'my_guest_followers': guest_followers,
+        'follower_count': follower_count,
         'teams_played': list(teams_played),
         'total_matches': total_matches,
         'total_innings_b': total_innings_b,
@@ -423,7 +494,17 @@ def public_player_profile(request, player_id):
         bowl_avg = round(bowl_total['total_runs_given'] / bowl_total['total_wickets'], 2)
 
     session_player_id = request.session.get('player_id')
-    is_own = (str(session_player_id) == str(player_id))
+    is_own        = (str(session_player_id) == str(player_id))
+    is_logged_in  = bool(session_player_id and str(session_player_id).isdigit())
+    follower_count = PlayerFollow.objects.filter(following=player).count()
+    is_following  = False
+    if is_logged_in and not is_own:
+        try:
+            me = PlayerDetails.objects.get(id=int(session_player_id))
+            is_following = PlayerFollow.objects.filter(follower=me, following=player).exists()
+        except PlayerDetails.DoesNotExist:
+            pass
+    profile_url = request.build_absolute_uri(f'/player/{player.id}/profile/')
     return render(request, 'player_profile.html', {
         'player': player,
         'rosters': rosters,
@@ -437,6 +518,10 @@ def public_player_profile(request, player_id):
         'mom_awards': mom_awards,
         'tournament_awards': tournament_awards,
         'is_own': is_own,
+        'is_logged_in': is_logged_in,
+        'follower_count': follower_count,
+        'is_following': is_following,
+        'profile_url': profile_url,
     })
 
 
@@ -518,3 +603,37 @@ def delete_player(request, player_id):
             player.delete()
             return JsonResponse({'success': True, 'action': 'deleted'})
     return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+
+# ── Follow toggle ────────────────────────────────────────────────────────
+def toggle_follow(request, player_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    session_player_id = request.session.get('player_id')
+    if not session_player_id or not str(session_player_id).isdigit():
+        return JsonResponse({'error': 'Login required.'}, status=401)
+    if int(session_player_id) == player_id:
+        return JsonResponse({'error': 'Cannot follow yourself.'}, status=400)
+    follower  = get_object_or_404(PlayerDetails, id=int(session_player_id))
+    following = get_object_or_404(PlayerDetails, id=player_id)
+    obj = PlayerFollow.objects.filter(follower=follower, following=following).first()
+    if obj:
+        obj.delete()
+        action = 'unfollowed'
+    else:
+        PlayerFollow.objects.create(follower=follower, following=following)
+        action = 'followed'
+    return JsonResponse({
+        'action': action,
+        'follower_count': PlayerFollow.objects.filter(following=following).count(),
+    })
+
+
+# ── Followers list ───────────────────────────────────────────────────────
+def player_followers_list(request, player_id):
+    player    = get_object_or_404(PlayerDetails, id=player_id)
+    followers = PlayerFollow.objects.filter(following=player).select_related('follower').order_by('-created_at')
+    return render(request, 'player_followers.html', {
+        'player': player,
+        'followers': followers,
+        'follower_count': followers.count(),
+    })

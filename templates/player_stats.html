@@ -256,7 +256,7 @@
   <!-- TOP BAR -->
   <div class="top-bar">
     <div style="font-size:13px; color:var(--muted);">
-      👋 Hello, <strong style="color:#fff;">{% if player %}{{ player.player_name }}{% else %}{{ player_name }}{% endif %}</strong>
+      👋 Hello, <strong style="color:#fff;">{% if player %}{{ player.player_name }}{% elif guest_display_name %}{{ guest_display_name }}{% else %}Guest{% endif %}</strong>
     </div>
     <div class="top-bar-actions">
       {% if not is_guest %}
@@ -271,14 +271,94 @@
   </div>
 
 
-  <!-- ── GUEST VIEW ── -->
+  <!-- ── GUEST PROFILE VIEW ── -->
   {% if is_guest %}
+
+  {% if guest %}
+  <!-- Guest has a GuestUser record — show editable profile -->
+
+  <!-- Hero card -->
+  <div class="player-hero">
+    <div class="hero-top">
+      <div style="position:relative;">
+        {% if guest.photo %}
+          <img src="{{ guest.photo.url }}" alt="photo"
+               style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(34,197,94,0.4);">
+        {% else %}
+          <div class="player-avatar">{{ guest_display_name|first|upper }}</div>
+        {% endif %}
+        <label for="photo-upload" title="Change photo"
+               style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;background:#22c55e;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;">📷</label>
+      </div>
+      <div class="hero-info">
+        <div class="player-name-big">{{ guest_display_name|default:"Guest" }}</div>
+        <div class="player-meta">
+          <span>📱 {{ guest.mobile_number }}</span>
+        </div>
+        <span class="role-badge">Fan Account</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo upload form -->
+  <form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" id="photo-upload" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="this.form.submit()">
+  </form>
+
+  <!-- Edit profile card -->
+  <div class="profile-card">
+    <h3>✏️ Edit Profile</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:4px;">
+      Set your name and number so a team manager can find and add you to a team.
+      Once added, your full cricket stats will appear here automatically.
+    </p>
+    {% if messages %}
+      {% for msg in messages %}
+        <div style="margin:8px 0;padding:8px 12px;border-radius:8px;font-size:13px;
+          {% if msg.tags == 'error' %}background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;
+          {% else %}background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#4ade80;{% endif %}">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    {% endif %}
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="update_profile" value="1">
+      <div class="profile-field">
+        <label>Display Name</label>
+        <input class="profile-input" type="text" name="display_name"
+               value="{{ guest_display_name }}" placeholder="Your name" required>
+      </div>
+      <div class="profile-field">
+        <label>Mobile Number</label>
+        <input class="profile-input" type="tel" name="mobile_number"
+               value="{{ guest_mobile }}" placeholder="10-digit mobile" required>
+      </div>
+      <button type="submit" class="profile-save-btn">Save Profile</button>
+    </form>
+  </div>
+
+  <!-- Pending team info -->
+  <div style="background:var(--surface);border:1px solid rgba(59,130,246,.25);border-radius:12px;padding:14px 16px;margin-top:10px;display:flex;gap:12px;align-items:flex-start;">
+    <span style="font-size:22px;">⏳</span>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#60a5fa;margin-bottom:3px;">Waiting to join a team?</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;">
+        Share your mobile number <strong style="color:#cbd5e1;">{{ guest.mobile_number }}</strong> with your team manager.
+        Once they add you, your stats and profile will unlock automatically next time you log in.
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Rare edge case: guest session but no GuestUser row -->
   <div class="guest-card">
     <div class="icon">🔍</div>
-    <h2>No Player Found</h2>
-    <p>Your mobile number is not registered with any player in our system.<br>
-    Please contact your team admin to get your number added.</p>
+    <h2>Session Error</h2>
+    <p>Could not find your account. Please log out and log in again.</p>
   </div>
+  {% endif %}
 
   {% else %}
 
@@ -309,6 +389,47 @@
     {% csrf_token %}
     <input type="file" id="photo-upload" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="this.form.submit()">
   </form>
+
+  <!-- ── FOLLOWERS STRIP ── -->
+  {% if not is_guest and player %}
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <a href="{% url 'player_followers_list' player.id %}"
+       style="display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;">
+      <span style="font-size:13px;font-weight:700;color:#fff;">{{ follower_count }}</span>
+      <span style="font-size:12px;color:var(--muted);font-weight:600;">Follower{{ follower_count|pluralize }}</span>
+    </a>
+    {% if my_followers or my_guest_followers %}
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;">
+      {% for f in my_followers|slice:":6" %}
+      <span title="{{ f.follower.player_name }}"
+            style="display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px 3px 4px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#1e3a8a,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0;">
+          {% if f.follower.photo %}<img src="{{ f.follower.photo.url }}" style="width:100%;height:100%;object-fit:cover;">
+          {% else %}{{ f.follower.player_name|first|upper }}{% endif %}
+        </div>
+        <span style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;">{{ f.follower.player_name }}</span>
+      </span>
+      {% endfor %}
+      {% with shown=my_followers|slice:":6"|length %}{% if shown < 6 %}
+        {% for gf in my_guest_followers %}{% if forloop.counter0|add:shown < 6 %}
+        <span title="Fan" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px 3px 4px;">
+          <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#374151,#6b7280);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">👤</div>
+          <span style="font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;">Fan</span>
+        </span>
+        {% endif %}{% endfor %}
+      {% endif %}{% endwith %}
+      {% if follower_count > 6 %}
+      <a href="{% url 'player_followers_list' player.id %}"
+         style="font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;">
+        +{{ follower_count|add:"-6" }} more
+      </a>
+      {% endif %}
+    </div>
+    {% else %}
+    <span style="font-size:12px;color:var(--muted);">No followers yet — share your profile!</span>
+    {% endif %}
+  </div>
+  {% endif %}
 
   <!-- ── MY QR MODAL ── -->
   <div class="qr-modal" id="qr-modal">

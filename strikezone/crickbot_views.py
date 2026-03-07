@@ -23,15 +23,16 @@ CACHE_TTL = 300  # seconds — rebuild context after 5 min or new match data
 # ─── INTENT CATEGORIES ───────────────────────────────────────────────────────
 # Each maps to which context slice(s) to include
 INTENT_CONTEXT_MAP = {
-    "batting_stats":     "compact",          # averages, scores, strike rate
-    "bowling_stats":     "compact",          # wickets, economy, who dismissed
-    "fielding_stats":    "compact",          # catches, run-outs
-    "match_detail":      "detailed",         # full scorecard, ball-by-ball
-    "teammate_info":     "compact",          # squad, opening partner suggestions
-    "strategy":          "compact",          # coach advice, weaknesses
-    "tournament_info":   "compact",          # standings, other matches
-    "tournament_wide":   "tournament_wide",  # ALL matches: MOM, top scorers, results
-    "general":           "compact",          # anything else
+    "batting_stats":     "compact",
+    "bowling_stats":     "compact",
+    "fielding_stats":    "compact",
+    "match_detail":      "detailed",
+    "teammate_info":     "compact",
+    "strategy":          "compact",
+    "tournament_info":   "compact",
+    "tournament_wide":   "tournament_wide",
+    "social_stats":      "compact",       # followers, fans, who follows whom
+    "general":           "compact",
 }
 
 
@@ -91,7 +92,16 @@ TOURNAMENT_WIDE_KEYWORDS = [
     "tournament stats", "tournament data",
 ]
 
-def _is_tournament_wide(message):
+SOCIAL_KEYWORDS = [
+    "follower", "followers", "following", "follow",
+    "fan", "fans", "who follows", "how many followers",
+    "my followers", "his followers", "her followers",
+    "popular", "most followed", "social",
+]
+
+def _is_social(message):
+    msg = message.lower()
+    return any(kw in msg for kw in SOCIAL_KEYWORDS)
     """Fast keyword pre-check — returns True if message is clearly tournament-wide."""
     msg = message.lower()
     return any(kw in msg for kw in TOURNAMENT_WIDE_KEYWORDS)
@@ -107,6 +117,8 @@ def classify_intent(message, last_user_msg=None):
     # 1. Fast keyword pre-check — no Groq call needed
     if _is_tournament_wide(message):
         return "tournament_wide"
+    if _is_social(message):
+        return "social_stats"
 
     # 2. If message is very short (follow-up like "any other team", "what about rcb")
     #    combine with last user message so classifier has context
@@ -131,6 +143,7 @@ def classify_intent(message, last_user_msg=None):
         "players from other teams, anyone from a specific team, leaderboard, points table, "
         "who won matches, tournament stats, other teams stats)\n"
         "- tournament_info (standings, other teams, other matches)\n"
+        "- social_stats (followers, fans, who follows a player, how many followers, most followed)\n"
         "- general (greetings, other)\n\n"
         f"Message: {combined}\n\nCategory:"
     )
@@ -361,8 +374,60 @@ def build_tournament_wide_context(player):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  COMPACT PLAYER CONTEXT  — ~2,000 tokens
+#  FOLLOWER CONTEXT  — who follows each player in the tournament
 # ─────────────────────────────────────────────────────────────────────────────
+def build_follower_context(player):
+    """
+    Returns a summary of follower counts for the logged-in player
+    and all players in their tournament(s).
+    """
+    from accounts.models import PlayerFollow, GuestFollow
+    from teams.models import TournamentRoster, PlayerDetails
+
+    lines = ["FOLLOWER DATA:"]
+
+    # Logged-in player's own followers
+    pf_count = PlayerFollow.objects.filter(following=player).count()
+    gf_count = GuestFollow.objects.filter(following=player).count()
+    total    = pf_count + gf_count
+    lines.append(
+        f"  {player.player_name} has {total} follower(s) "
+        f"({pf_count} registered player(s), {gf_count} guest fan(s))."
+    )
+
+    # Who follows the logged-in player
+    player_followers = list(
+        PlayerFollow.objects.filter(following=player)
+        .select_related('follower').values_list('follower__player_name', flat=True)
+    )
+    if player_followers:
+        lines.append(f"  Followed by: {', '.join(player_followers)}")
+
+    # All other players in same tournament(s) with their counts
+    rosters = TournamentRoster.objects.filter(player=player).select_related(
+        'tournament_team__tournament'
+    )
+    seen_ids = {player.id}
+    for roster in rosters:
+        tournament = roster.tournament_team.tournament
+        peers = TournamentRoster.objects.filter(
+            tournament_team__tournament=tournament
+        ).select_related('player').exclude(player__id__in=seen_ids)
+
+        for p in peers:
+            seen_ids.add(p.player.id)
+            pc = PlayerFollow.objects.filter(following=p.player).count()
+            gc = GuestFollow.objects.filter(following=p.player).count()
+            t  = pc + gc
+            lines.append(
+                f"  {p.player.player_name}: {t} follower(s) "
+                f"({pc} player(s), {gc} guest(s))"
+            )
+
+    return "\n".join(lines)
+
+
+
 def build_player_context_compact(player):
     from teams.models import TournamentRoster, TournamentTeam
     from matches.models import CreateMatch
@@ -599,6 +664,13 @@ def build_player_context_compact(player):
         db_str = ", ".join(f"{name} ({cnt}x)" for name, cnt in sorted_db[:5])
         lines.append(f"DISMISSED BY (most): {db_str}")
 
+    # Follower data
+    try:
+        lines.append("")
+        lines.append(build_follower_context(player))
+    except Exception:
+        pass
+
     return "\n".join(lines)
 
 
@@ -775,6 +847,17 @@ def build_admin_context():
     lines.append("\n=== PLAYERS ===")
     for p in PlayerDetails.objects.all():
         lines.append(f"  {p.player_name} (ID:{p.id})")
+
+    # Follower counts for all players
+    try:
+        from accounts.models import PlayerFollow, GuestFollow
+        lines.append("\n=== FOLLOWER COUNTS ===")
+        for p in PlayerDetails.objects.all():
+            pc = PlayerFollow.objects.filter(following=p).count()
+            gc = GuestFollow.objects.filter(following=p).count()
+            lines.append(f"  {p.player_name}: {pc + gc} total ({pc} players, {gc} guests)")
+    except Exception:
+        pass
 
     return "\n".join(lines)
 
@@ -969,8 +1052,11 @@ def crickbot_chat_api(request):
             intent       = classify_intent(user_message, last_user_msg=last_user_msg)
             context_type = INTENT_CONTEXT_MAP.get(intent, "compact")
 
-            # 2. Get cached context (build once, reuse across messages)
-            ctx = get_cached_context(player, context_type)
+            # 2. Get context — social_stats always fresh (no cache), others cached
+            if intent == "social_stats":
+                ctx = build_follower_context(player)
+            else:
+                ctx = get_cached_context(player, context_type)
 
             # 3. Build coach insights (lightweight, not cached — always fresh)
             coach_notes = ""

@@ -521,6 +521,120 @@ def public_team_profile(request, team_id):
 # ─────────────────────────────────────────────────────────────────
 # PUBLIC PLAYER PROFILE  –  /player/<player_id>/profile/
 # ─────────────────────────────────────────────────────────────────
+def public_player_profile(request, player_id):
+    from django.db.models import Sum, Count, Max, Q
+
+    player = get_object_or_404(PlayerDetails, id=player_id)
+
+    # Is this the logged-in player viewing their own profile?
+    is_own = (request.session.get('player_id') == player.id)
+
+    # All rosters this player has been in
+    rosters = TournamentRoster.objects.filter(
+        player=player
+    ).select_related('tournament_team__team', 'tournament_team__tournament').order_by('-id')
+
+    # All innings IDs this player participated in (batting or bowling)
+    bat_innings_ids = BattingScorecard.objects.filter(player=player).exclude(status='DNB').values_list('innings_id', flat=True)
+    # ── BATTING ──
+    bat_records = (
+        BattingScorecard.objects
+        .filter(batsman=player)
+        .exclude(status='DNB')
+        .select_related('innings__match__team1', 'innings__match__team2',
+                        'innings__match__tournament', 'innings__batting_team')
+        .order_by('-innings__match__match_date', '-id')
+    )
+
+    bat_totals = bat_records.aggregate(
+        total_runs=Sum('runs'),
+        total_balls=Sum('balls_faced'),
+        total_fours=Sum('fours'),
+        total_sixes=Sum('sixes'),
+        innings_count=Count('id'),
+        highest=Max('runs'),
+    )
+    total_runs   = bat_totals['total_runs'] or 0
+    total_balls  = bat_totals['total_balls'] or 0
+    total_fours  = bat_totals['total_fours'] or 0
+    total_sixes  = bat_totals['total_sixes'] or 0
+    innings_count = bat_totals['innings_count'] or 0
+    highest      = bat_totals['highest'] or 0
+
+    outs = bat_records.filter(status='OUT').count()
+    bat_avg = round(total_runs / outs, 2) if outs > 0 else (total_runs if innings_count > 0 else 0)
+    sr      = round((total_runs / total_balls) * 100, 2) if total_balls > 0 else 0
+
+    bat_total = {
+        'total_runs': total_runs,
+        'total_balls': total_balls,
+        'total_fours': total_fours,
+        'total_sixes': total_sixes,
+        'innings_count': innings_count,
+        'highest': highest,
+    }
+
+    # ── BOWLING ──
+    bowl_records = (
+        BowlingScorecard.objects
+        .filter(bowler=player)
+        .select_related('innings__match__team1', 'innings__match__team2',
+                        'innings__match__tournament', 'innings__batting_team')
+        .order_by('-innings__match__match_date', '-id')
+    )
+
+    bowl_totals = bowl_records.aggregate(
+        total_wickets=Sum('wickets'),
+        total_runs_given=Sum('runs_given'),
+        innings_count=Count('id'),
+    )
+    total_wickets    = bowl_totals['total_wickets'] or 0
+    total_runs_given = bowl_totals['total_runs_given'] or 0
+    bowl_innings     = bowl_totals['innings_count'] or 0
+
+    bowl_avg  = round(total_runs_given / total_wickets, 2) if total_wickets > 0 else None
+    best_spell = None
+    for b in bowl_records:
+        if best_spell is None or b.wickets > best_spell.wickets or (b.wickets == best_spell.wickets and b.runs_given < best_spell.runs_given):
+            best_spell = b
+
+    bowl_total = {
+        'total_wickets': total_wickets,
+        'total_runs_given': total_runs_given,
+        'innings_count': bowl_innings,
+        'best': f"{best_spell.wickets}/{best_spell.runs_given}" if best_spell else '–',
+    }
+
+    # ── MOM AWARDS ──
+    mom_awards = ManOfTheMatch.objects.filter(
+        player=player
+    ).select_related('match__team1', 'match__team2', 'match__tournament').order_by('-match__match_date')
+
+    # ── TOURNAMENT AWARDS ──
+    tournament_awards = TournamentAward.objects.filter(
+        player=player
+    ).select_related('tournament').order_by('-tournament__start_date')
+
+    # Profile URL for QR code
+    profile_url = request.build_absolute_uri(f'/player/{player.id}/profile/')
+
+    return render(request, 'player_profile.html', {
+        'player': player,
+        'is_own': is_own,
+        'rosters': rosters,
+        'bat_records': bat_records,
+        'bowl_records': bowl_records,
+        'bat_total': bat_total,
+        'bowl_total': bowl_total,
+        'bat_avg': bat_avg,
+        'sr': sr,
+        'bowl_avg': bowl_avg,
+        'mom_awards': mom_awards,
+        'tournament_awards': tournament_awards,
+        'profile_url': profile_url,
+    })
+
+
 def global_search_api(request):
     from django.db.models import Count, Q
 

@@ -152,6 +152,7 @@ def home(request):
                 'is_knockout': is_knockout,
                 'knockout_label': knockout_label,
                 'match_number': match_number,
+                'mom': ManOfTheMatch.objects.filter(match=m).select_related('player').first(),
             }
 
             if status == 'COMPLETED':
@@ -436,6 +437,34 @@ def tournamentdetails(request, id):
         key=lambda x: x['economy']
     )
 
+    # Teams that have been assigned to at least one knockout match (any stage)
+    # These are the "qualified" teams — chosen by the manager
+    ko_team_ids = set()
+    for km in KnockoutMatch.objects.filter(
+        stage__tournament=tournament
+    ).select_related('team1', 'team2'):
+        if km.team1_id:
+            ko_team_ids.add(km.team1_id)
+        if km.team2_id:
+            ko_team_ids.add(km.team2_id)
+
+    # Only show Q badge if all league matches are complete
+    # League matches = matches NOT linked to a knockout stage
+    league_match_ids = set(
+        CreateMatch.objects.filter(tournament=tournament).values_list('id', flat=True)
+    ) - set(
+        KnockoutMatch.objects.filter(
+            stage__tournament=tournament
+        ).exclude(match__isnull=True).values_list('match_id', flat=True)
+    )
+    all_league_done = not CreateMatch.objects.filter(
+        id__in=league_match_ids
+    ).exclude(
+        id__in=MatchResult.objects.values_list('match_id', flat=True)
+    ).exists() if league_match_ids else False
+
+    qualified_team_ids = ko_team_ids if (all_league_done and ko_team_ids) else set()
+
     return render(request, 'tournamentdetails.html', {
         'tournament': tournament,
         'teams': teams,
@@ -449,6 +478,7 @@ def tournamentdetails(request, id):
         'top_strike_rates': top_strike_rates,
         'top_wicket_takers': top_wicket_takers,
         'top_economy': top_economy,
+        'qualified_team_ids': qualified_team_ids,
     })
 
 
