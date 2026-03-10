@@ -101,10 +101,10 @@
     }
 
     /* Auth */
-    .auth-buttons { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+    .auth-buttons { display: flex; gap: 7px; flex-shrink: 0; align-items: center; }
 
     .btn {
-      padding: 7px 14px; border-radius: 9px;
+      padding: 8px 16px; border-radius: 9px;
       font-size: 13px; font-weight: 600;
       text-decoration: none; transition: all 0.15s;
       cursor: pointer; border: none; font-family: 'Inter', sans-serif;
@@ -132,56 +132,6 @@
       border-color: rgba(59,130,246,0.45);
       color: #bfdbfe;
     }
-
-    /* ── USER AVATAR DROPDOWN ── */
-    .user-menu-wrap { position: relative; flex-shrink: 0; }
-    .user-avatar-btn {
-      display: flex; align-items: center; gap: 7px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px; padding: 5px 10px 5px 6px;
-      cursor: pointer; transition: all 0.15s; color: var(--text);
-      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
-    }
-    .user-avatar-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); }
-    .user-avatar-btn .avatar-circle {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: linear-gradient(135deg, #b45309, #f59e0b);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 800; color: #000; flex-shrink: 0;
-    }
-    .user-avatar-btn .avatar-circle.admin-av {
-      background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: #fff;
-    }
-    .user-avatar-btn .chevron {
-      font-size: 10px; color: var(--muted); transition: transform 0.2s;
-    }
-    .user-menu-wrap.open .chevron { transform: rotate(180deg); }
-    .user-dropdown {
-      display: none; position: absolute; top: calc(100% + 8px); right: 0;
-      min-width: 200px; background: var(--surface);
-      border: 1px solid var(--border); border-radius: 12px;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.5); z-index: 9999; overflow: hidden;
-    }
-    .user-menu-wrap.open .user-dropdown { display: block; }
-    .ud-header {
-      padding: 12px 14px 10px;
-      border-bottom: 1px solid var(--border);
-      font-size: 12px; color: var(--muted);
-    }
-    .ud-header strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 3px; }
-    .ud-item {
-      display: flex; align-items: center; gap: 9px;
-      padding: 9px 14px; font-size: 13px; font-weight: 500;
-      color: #cbd5e1; text-decoration: none; transition: background 0.12s; cursor: pointer;
-      border: none; background: none; width: 100%; font-family: 'Inter', sans-serif;
-    }
-    .ud-item:hover { background: var(--surface2); color: #fff; }
-    .ud-item.danger { color: #fca5a5; }
-    .ud-item.danger:hover { background: rgba(239,68,68,0.08); color: #fecaca; }
-    .ud-item.highlight { color: var(--accent); }
-    .ud-item.highlight:hover { background: rgba(245,158,11,0.08); }
-    .ud-divider { height: 1px; background: var(--border); margin: 3px 0; }
 
     /* ── PLAN BADGE ── */
     .plan-badge {
@@ -235,9 +185,14 @@
     }
     .nav-tab-locked:hover .lock-tooltip { display: block; }
     .logout-btn {
-      background: rgba(239,68,68,0.08);
+      background: rgba(239,68,68,0.1);
       color: #fca5a5;
-      border: 1px solid rgba(239,68,68,0.2);
+      border: 1px solid rgba(239,68,68,0.25);
+    }
+    .logout-btn:hover {
+      background: rgba(239,68,68,0.16);
+      border-color: rgba(239,68,68,0.35);
+      color: #fecaca;
     }
     .btn-inline-form { display: inline; }
 
@@ -312,24 +267,70 @@
     /* ── MOBILE NAV OVERLAY ── */
     .mobile-nav {
       display: none; position: fixed;
-      top: var(--header-h); inset-inline: 0; bottom: 0;
-      background: rgba(8,12,24,0.99);
+      top: var(--header-h); right: 0; bottom: 0;
+      width: min(300px, 85vw);
+      background: #0b0f1a;
       z-index: 850; flex-direction: column;
-      padding: 16px; gap: 5px;
+      border-left: 1px solid var(--border);
       border-top: 1px solid var(--border);
       overflow-y: auto;
+      box-shadow: -8px 0 32px rgba(0,0,0,0.5);
     }
     .mobile-nav.open { display: flex; }
+    .mn-links { padding: 8px 12px; flex: 1; }
+    .mn-section-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: #475569;
+      padding: 12px 8px 6px; display: block;
+    }
     .mobile-nav .nav-tab {
-      padding: 15px 16px; font-size: 15px;
-      border: 1px solid var(--border); border-radius: 11px;
-      background: var(--surface);
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 12px; font-size: 14px; font-weight: 500;
+      border-radius: 9px; color: var(--text);
+      border: none; background: transparent;
+      transition: background 0.15s;
     }
-    .mobile-nav .nav-tab:hover { background: rgba(245,158,11,0.06); }
-    .mobile-nav .auth-row {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;
+    .mobile-nav .nav-tab:hover { background: rgba(255,255,255,0.05); }
+    .mn-footer { border-top: 1px solid var(--border); padding: 14px 12px; }
+    .mn-user-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px;
+      background: var(--surface); margin-bottom: 10px;
     }
-    .mobile-nav .btn { text-align: center; padding: 14px; font-size: 14px; }
+    .mn-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg,#92400e,#f59e0b);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #000; flex-shrink: 0;
+    }
+    .mn-admin-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg,#1e3a5f,#6366f1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .mn-user-info { flex: 1; min-width: 0; }
+    .mn-user-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mn-user-plan { font-size: 10px; color: var(--accent); font-weight: 600; }
+    .mn-actions { display: flex; flex-direction: column; gap: 6px; }
+    .mn-btn {
+      display: block; width: 100%; padding: 10px 14px;
+      border-radius: 9px; font-size: 13px; font-weight: 600;
+      text-align: center; cursor: pointer; border: none;
+      font-family: inherit; transition: opacity 0.15s; text-decoration: none;
+    }
+    .mn-btn:hover { opacity: 0.85; }
+    .mn-btn-primary { background: var(--accent); color: #000; }
+    .mn-btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .mn-btn-danger { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+    .mn-btn-admin { background: rgba(99,102,241,0.12); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2); }
+    .mn-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    /* backdrop */
+    .mn-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 849;
+    }
+    .mn-backdrop.open { display: block; }
 
     /* ── DJANGO MESSAGES ── */
     .messages-wrap { max-width: 900px; margin: 14px auto 0; padding: 0 16px; }
@@ -349,7 +350,7 @@
       display: flex; align-items: center; gap: 8px;
       background: var(--surface2); border: 1px solid var(--border);
       border-radius: 10px; padding: 0 12px; height: 36px;
-      transition: border-color .2s, box-shadow .2s; width: 180px;
+      transition: border-color .2s, box-shadow .2s; width: 220px;
     }
     .search-box:focus-within {
       border-color: rgba(245,158,11,.5);
@@ -491,73 +492,41 @@
 
     <div class="auth-buttons">
       {% if request.session.player_id %}
-        {# ── PLAYER LOGGED IN: single avatar dropdown ── #}
-        <div class="user-menu-wrap" id="player-menu-wrap">
-          <button class="user-avatar-btn" onclick="toggleUserMenu('player-menu-wrap')">
-            <div class="avatar-circle">{{ request.session.player_name|default:"P"|slice:":1"|upper }}</div>
-            <span>{{ request.session.player_name|default:"Player"|truncatechars:14 }}</span>
-            <span class="chevron">▾</span>
-          </button>
-          <div class="user-dropdown">
-            <div class="ud-header">
-              <strong>{{ request.session.player_name|default:"Player" }}</strong>
-              <span class="plan-badge {{ user_plan }}" style="display:inline-flex;margin-top:2px;">
-                {% if user_plan == 'pro_plus' %}⚡{% elif user_plan == 'pro' %}✦{% else %}◇{% endif %}
-                {{ user_plan_label }}
-              </span>
-            </div>
-            <a href="{% url 'player_stats' %}" class="ud-item">👤 My Profile</a>
-            {% if request.session.player_mobile and is_employee %}
-              <a href="{% url 'employee_dashboard' %}" class="ud-item">👔 Dashboard</a>
-            {% endif %}
-            <a href="{% url 'upgrade_plan' %}" class="ud-item highlight">⚡ Upgrade Plan</a>
-            <div class="ud-divider"></div>
-            <form method="post" action="{% url 'player_logout' %}" style="display:contents;">
-              {% csrf_token %}
-              <button type="submit" class="ud-item danger">🚪 Logout</button>
-            </form>
-          </div>
-        </div>
-
-        {# Hide admin login when player is already logged in — no point showing it #}
-
+        <span class="plan-badge {{ user_plan }}">
+          {% if user_plan == 'pro_plus' %}⚡{% elif user_plan == 'pro' %}✦{% else %}◇{% endif %}
+          {{ user_plan_label }}
+        </span>
+        {% if request.session.player_mobile and is_employee %}
+          <a href="{% url 'employee_dashboard' %}" class="btn login-btn" style="font-size:12px;padding:6px 12px;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);">👔 Dashboard</a>
+        {% endif %}
+        <a href="{% url 'upgrade_plan' %}" class="btn login-btn" style="font-size:12px;padding:6px 12px;">Upgrade</a>
+        <a href="{% url 'player_stats' %}" class="btn login-btn">
+          {{ request.session.player_name|default:"Player" }}
+        </a>
+        <form class="btn-inline-form" method="post" action="{% url 'player_logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn logout-btn">Player Logout</button>
+        </form>
       {% else %}
-        <a href="{% url 'player_login' %}" class="btn login-btn">Login</a>
+        <a href="{% url 'player_login' %}" class="btn login-btn">Player Login</a>
         <a href="{% url 'player_register' %}" class="btn register-btn">Register</a>
       {% endif %}
 
       {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
-        {# ── ADMIN LOGGED IN: single admin dropdown ── #}
-        <div class="user-menu-wrap" id="admin-menu-wrap">
-          <button class="user-avatar-btn" onclick="toggleUserMenu('admin-menu-wrap')">
-            <div class="avatar-circle admin-av">A</div>
-            <span>Admin</span>
-            <span class="chevron">▾</span>
-          </button>
-          <div class="user-dropdown">
-            <div class="ud-header">
-              <strong>{{ request.user.username }}</strong>
-              <span class="plan-badge {{ user_plan }}" style="display:inline-flex;margin-top:2px;">
-                {% if user_plan == 'pro_plus' %}⚡{% elif user_plan == 'pro' %}✦{% else %}◇{% endif %}
-                {{ user_plan_label }}
-              </span>
-            </div>
-            <a href="{% url 'manage_cricket' %}" class="ud-item">⚙️ Manage Cricket</a>
-            {% if request.user.is_superuser %}
-              <a href="{% url 'ceo_dashboard' %}" class="ud-item highlight">👑 CEO Dashboard</a>
-            {% endif %}
-            <div class="ud-divider"></div>
-            <form method="post" action="{% url 'admin_logout' %}" style="display:contents;">
-              {% csrf_token %}
-              <button type="submit" class="ud-item danger">🚪 Admin Logout</button>
-            </form>
-          </div>
-        </div>
-      {% else %}
-        {# Show Admin Login only when NO player session is active #}
-        {% if not request.session.player_id %}
-          <a href="{% url 'admin_login' %}" class="btn admin-btn" style="font-size:12px;padding:6px 12px;">Admin</a>
+        <span class="plan-badge {{ user_plan }}">
+          {% if user_plan == 'pro_plus' %}⚡{% elif user_plan == 'pro' %}✦{% else %}◇{% endif %}
+          {{ user_plan_label }}
+        </span>
+        {% if request.user.is_superuser %}
+          <a href="{% url 'ceo_dashboard' %}" class="btn login-btn" style="font-size:12px;padding:6px 12px;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);">👑 CEO</a>
         {% endif %}
+        <a href="{% url 'manage_cricket' %}" class="btn admin-btn">Admin</a>
+        <form class="btn-inline-form" method="post" action="{% url 'admin_logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn logout-btn">Admin Logout</button>
+        </form>
+      {% else %}
+        <a href="{% url 'admin_login' %}" class="btn admin-btn">Admin Login</a>
       {% endif %}
     </div>
 
@@ -583,88 +552,103 @@
     </div>
   </header>
 
-  <!-- MOBILE NAV -->
+  <!-- MOBILE NAV BACKDROP -->
+  <div class="mn-backdrop" id="mn-backdrop" onclick="closeMobileNav()"></div>
+
+  <!-- MOBILE NAV DRAWER -->
   <div class="mobile-nav" id="mobile-nav">
-    {% for i in categories %}
-      {% if i.category_name == 'Manage Cricket' or i.category_name == 'Create Match' or i.category_name == 'Start Tournament' %}
-        {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser or request.session.player_id %}
+
+    <div class="mn-links">
+      <span class="mn-section-label">Navigation</span>
+
+      {% for i in categories %}
+        {% if i.category_name == 'Manage Cricket' or i.category_name == 'Create Match' or i.category_name == 'Start Tournament' %}
           {% if can_manage %}
-            <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Create Match' %}{% url 'create_match' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
-               class="nav-tab">{{ i.category_name }}</a>
-          {% elif request.user.is_staff or request.user.is_superuser %}
-            <a href="{% url 'upgrade_plan' %}" class="nav-tab" style="opacity:0.45;">🔒 {{ i.category_name }} <small style="font-size:10px;color:#a78bfa;">(Pro Plus)</small></a>
+            <a href="{% if i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Create Match' %}{% url 'create_match' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
+               class="nav-tab" onclick="closeMobileNav()">
+              {% if i.category_name == 'Manage Cricket' %}⚙️{% elif i.category_name == 'Create Match' %}🏏{% elif i.category_name == 'Start Tournament' %}🚀{% endif %}
+              {{ i.category_name }}
+            </a>
           {% endif %}
+        {% elif i.category_name == 'My Profile' or i.category_name == 'My Matches' %}
+          {# skip — shown in footer #}
+        {% else %}
+          <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% else %}#{% endif %}"
+             class="nav-tab" onclick="closeMobileNav()">
+            {% if i.category_name == 'Home' %}🏠{% elif i.category_name == 'Tournaments' %}🏆{% endif %}
+            {{ i.category_name }}
+          </a>
         {% endif %}
-      {% elif i.category_name == 'My Profile' %}
-        {% if request.session.player_id and not request.user.is_staff and not request.user.is_superuser %}
-          <a href="{% url 'player_stats' %}" class="nav-tab">My Profile</a>
-        {% endif %}
-      {% elif i.category_name == 'My Matches' %}
-        {% if request.session.player_id and not request.user.is_staff and not request.user.is_superuser %}
-          <a href="{% url 'player_matches' %}" class="nav-tab">My Matches</a>
-        {% endif %}
-      {% else %}
-        <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% else %}#{% endif %}"
-           class="nav-tab">{{ i.category_name }}</a>
-      {% endif %}
-    {% endfor %}
+      {% endfor %}
 
-    {# Hardcoded management links for Pro Plus players #}
-    {% if request.session.player_id and not request.user.is_staff and not request.user.is_superuser %}
-      {% if can_manage %}
-        <a href="{% url 'manage_cricket' %}" class="nav-tab">Manage Cricket</a>
-        <a href="{% url 'create_match' %}" class="nav-tab">Create Match</a>
-        <a href="{% url 'start_tournament' %}" class="nav-tab">Start Tournament</a>
+      {# Player manage links #}
+      {% if request.session.player_id and not request.user.is_staff and not request.user.is_superuser %}
+        {% if can_manage %}
+          <a href="{% url 'manage_cricket' %}" class="nav-tab" onclick="closeMobileNav()">⚙️ Manage Cricket</a>
+          <a href="{% url 'create_match' %}" class="nav-tab" onclick="closeMobileNav()">🏏 Create Match</a>
+          <a href="{% url 'start_tournament' %}" class="nav-tab" onclick="closeMobileNav()">🚀 Start Tournament</a>
+        {% endif %}
       {% endif %}
-    {% endif %}
 
-    {% if request.user.is_staff or request.user.is_superuser %}
+      {# CrickBot #}
       {% if can_use_crickbot %}
-        <a href="{% url 'crickbot' %}" class="nav-tab" style="color:#22c55e;font-weight:600;">🏏 CrickBot</a>
+        <a href="{% url 'crickbot' %}" class="nav-tab" style="color:#22c55e;" onclick="closeMobileNav()">🤖 CrickBot</a>
       {% else %}
-        <a href="{% url 'upgrade_plan' %}" class="nav-tab" style="opacity:0.45;">🔒 🏏 CrickBot <small style="font-size:10px;color:#60a5fa;">(Pro)</small></a>
+        <a href="{% url 'upgrade_plan' %}" class="nav-tab" style="opacity:0.5;" onclick="closeMobileNav()">🔒 CrickBot <small style="font-size:10px;color:#a78bfa;">(Pro)</small></a>
       {% endif %}
-    {% elif request.session.player_id %}
-      {% if can_use_crickbot %}
-        <a href="{% url 'crickbot' %}" class="nav-tab" style="color:#22c55e;font-weight:600;">🏏 CrickBot</a>
-      {% else %}
-        <a href="{% url 'upgrade_plan' %}" class="nav-tab" style="opacity:0.45;">🔒 🏏 CrickBot <small style="font-size:10px;color:#60a5fa;">(Pro)</small></a>
-      {% endif %}
-    {% endif %}
-    <div class="auth-row">
-      {% if request.session.player_id %}
-        <span class="plan-badge {{ user_plan }}" style="margin-bottom:6px;display:inline-flex;">
-          {% if user_plan == 'pro_plus' %}⚡{% elif user_plan == 'pro' %}✦{% else %}◇{% endif %}
-          {{ user_plan_label }}
-        </span>
-        <a href="{% url 'upgrade_plan' %}" class="btn register-btn" style="width:100%;text-align:center;margin-bottom:4px;">Upgrade Plan</a>
-        <a href="{% url 'player_stats' %}" class="btn login-btn">
-          {{ request.session.player_name|default:"Player" }}
-        </a>
-        <form method="post" action="{% url 'player_logout' %}">
-          {% csrf_token %}
-          <button type="submit" class="btn logout-btn" style="width: 100%;">Player Logout</button>
-        </form>
-      {% else %}
-        <a href="{% url 'player_login' %}"    class="btn login-btn">Player Login</a>
-        <a href="{% url 'player_register' %}" class="btn register-btn">Register</a>
+
+      {# Player profile shortcuts #}
+      {% if request.session.player_id and not request.user.is_staff and not request.user.is_superuser %}
+        <span class="mn-section-label" style="margin-top:8px;">My Account</span>
+        <a href="{% url 'player_stats' %}" class="nav-tab" onclick="closeMobileNav()">👤 My Profile</a>
+        <a href="{% url 'player_matches' %}" class="nav-tab" onclick="closeMobileNav()">📋 My Matches</a>
       {% endif %}
     </div>
 
-    <div class="auth-row">
-      {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
-        <span class="plan-badge {{ user_plan }}" style="margin-bottom:6px;display:inline-flex;">
-          {% if user_plan == 'pro_plus' %}⚡{% elif user_plan == 'pro' %}✦{% else %}◇{% endif %}
-          {{ user_plan_label }}
-        </span>
-        <a href="{% url 'manage_cricket' %}" class="btn admin-btn">Admin</a>
-        <form method="post" action="{% url 'admin_logout' %}">
-          {% csrf_token %}
-          <button type="submit" class="btn logout-btn" style="width: 100%;">Admin Logout</button>
-        </form>
+    <!-- FOOTER: user info + actions -->
+    <div class="mn-footer">
+      {% if request.session.player_id and not request.user.is_staff and not request.user.is_superuser %}
+        <div class="mn-user-row">
+          <div class="mn-avatar">{{ request.session.player_name|first|upper }}</div>
+          <div class="mn-user-info">
+            <div class="mn-user-name">{{ request.session.player_name|default:"Player" }}</div>
+            <div class="mn-user-plan">
+              {% if user_plan == 'pro_plus' %}⚡ Pro Plus{% elif user_plan == 'pro' %}✦ Pro{% else %}◇ Free{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="mn-actions">
+          <a href="{% url 'upgrade_plan' %}" class="mn-btn mn-btn-primary" onclick="closeMobileNav()">⚡ Upgrade Plan</a>
+          <form method="post" action="{% url 'player_logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="mn-btn mn-btn-danger">Logout</button>
+          </form>
+        </div>
+
+      {% elif request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
+        <div class="mn-user-row">
+          <div class="mn-admin-avatar">🛡️</div>
+          <div class="mn-user-info">
+            <div class="mn-user-name">{{ request.user.username }}</div>
+            <div class="mn-user-plan" style="color:#a5b4fc;">Admin</div>
+          </div>
+        </div>
+        <div class="mn-actions">
+          <a href="{% url 'manage_cricket' %}" class="mn-btn mn-btn-admin" onclick="closeMobileNav()">⚙️ Manage Cricket</a>
+          <form method="post" action="{% url 'admin_logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="mn-btn mn-btn-danger">Logout</button>
+          </form>
+        </div>
+
       {% else %}
-        <a href="{% url 'admin_login' %}" class="btn admin-btn">Admin Login</a>
-        <a href="{% url 'home' %}" class="btn login-btn">Back Home</a>
+        <div class="mn-actions">
+          <div class="mn-row2">
+            <a href="{% url 'player_login' %}" class="mn-btn mn-btn-ghost" onclick="closeMobileNav()">Login</a>
+            <a href="{% url 'player_register' %}" class="mn-btn mn-btn-primary" onclick="closeMobileNav()">Register</a>
+          </div>
+          <a href="{% url 'admin_login' %}" class="mn-btn mn-btn-admin" style="margin-top:4px;" onclick="closeMobileNav()">🛡️ Admin Login</a>
+        </div>
       {% endif %}
     </div>
   </div>
@@ -688,7 +672,19 @@
   <script>
     const hamburger = document.getElementById('hamburger');
     const mobileNav = document.getElementById('mobile-nav');
-    hamburger.addEventListener('click', () => mobileNav.classList.toggle('open'));
+    const mnBackdrop = document.getElementById('mn-backdrop');
+
+    hamburger.addEventListener('click', () => {
+      mobileNav.classList.toggle('open');
+      mnBackdrop.classList.toggle('open');
+      document.body.style.overflow = mobileNav.classList.contains('open') ? 'hidden' : '';
+    });
+
+    function closeMobileNav() {
+      mobileNav.classList.remove('open');
+      mnBackdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    }
 
     // Auto-close mobile nav on link click
     mobileNav.querySelectorAll('a').forEach(a => {
@@ -699,22 +695,6 @@
     const path = window.location.pathname;
     document.querySelectorAll('.nav-tab').forEach(link => {
       if (link.getAttribute('href').trim() === path) link.classList.add('active');
-    });
-
-    // User avatar dropdown toggle
-    window.toggleUserMenu = function(id) {
-      const wrap = document.getElementById(id);
-      const isOpen = wrap.classList.toggle('open');
-      // Close all other open menus
-      document.querySelectorAll('.user-menu-wrap').forEach(w => {
-        if (w.id !== id) w.classList.remove('open');
-      });
-    };
-    // Close dropdowns on outside click
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.user-menu-wrap')) {
-        document.querySelectorAll('.user-menu-wrap').forEach(w => w.classList.remove('open'));
-      }
     });
   </script>
   <script>
