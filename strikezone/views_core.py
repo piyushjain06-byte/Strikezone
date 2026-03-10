@@ -72,9 +72,20 @@ def home(request):
     top_bowlers = []
 
     if selected_tournament:
-        all_tournament_matches = CreateMatch.objects.filter(
-            tournament=selected_tournament
-        ).select_related('team1', 'team2').order_by('-match_date')
+        # Fetch once in descending order (newest first) for display
+        all_tournament_matches = list(
+            CreateMatch.objects.filter(
+                tournament=selected_tournament
+            ).select_related('team1', 'team2').order_by('-match_date', '-id')
+        )
+
+        # Build a separate ascending-order league match list purely for numbering
+        league_matches_asc = [
+            m for m in sorted(
+                [x for x in all_tournament_matches if not hasattr(x, 'knockout_match')],
+                key=lambda x: x.id
+            )
+        ]
 
         for m in all_tournament_matches:
             inn1 = Innings.objects.filter(match=m, innings_number=1).first()
@@ -124,12 +135,9 @@ def home(request):
                 km = m.knockout_match
                 knockout_label = f"{km.stage.get_stage_display()} · Match {km.match_number}"
             else:
-                league_matches_qs = [
-                    x for x in all_tournament_matches
-                    if not hasattr(x, 'knockout_match')
-                ]
+                # Use ascending list so Match 1 = first match created, regardless of display order
                 try:
-                    match_number = league_matches_qs.index(m) + 1
+                    match_number = league_matches_asc.index(m) + 1
                 except ValueError:
                     match_number = None
 
@@ -156,12 +164,20 @@ def home(request):
             }
 
             if status == 'COMPLETED':
+                # Sort key: when inn2 was last updated (= completion time)
+                card['_completed_at'] = inn2.updated_at if inn2 else None
                 completed_matches.append(card)
             elif status == 'LIVE':
                 live_matches.append(card)
             else:
                 # TOSS_DONE, IN_PROGRESS (between innings), SCHEDULED all go to pending
                 pending_matches.append(card)
+
+        # Sort completed matches: most recently finished first
+        completed_matches.sort(
+            key=lambda c: c['_completed_at'] or c['match'].id,
+            reverse=True
+        )
 
         all_innings_ids = Innings.objects.filter(
             match__tournament=selected_tournament

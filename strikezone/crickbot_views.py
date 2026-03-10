@@ -17,8 +17,15 @@ from subscriptions.decorators import require_plan
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 groq_client = Groq(api_key=GROQ_API_KEY)
+# Primary model + fallbacks tried in order when rate limits hit
 GROQ_MODEL = "llama-3.3-70b-versatile"
-CACHE_TTL = 300  # seconds — rebuild context after 5 min or new match data
+GROQ_FALLBACK_MODELS = [
+    "llama-3.1-8b-instant",                        # smaller Llama, separate TPD limit
+    "meta-llama/llama-4-scout-17b-16e-instruct",   # Llama 4 Scout preview, separate limit
+    "meta-llama/llama-4-maverick-17b-128e-instruct", # Llama 4 Maverick preview
+    "qwen/qwen-3-32b",                             # Qwen 3 preview, separate limit
+]
+CACHE_TTL = 0    # always rebuild fresh — no stale data
 
 # ─── INTENT CATEGORIES ───────────────────────────────────────────────────────
 # Each maps to which context slice(s) to include
@@ -99,12 +106,38 @@ SOCIAL_KEYWORDS = [
     "popular", "most followed", "social",
 ]
 
+THIRD_PERSON_TRIGGERS = [
+    # pronouns meaning "about someone else"
+    " him ", " his ", " her ", " their ", " he ", " she ",
+    "about rohit", "about virat", "about dhoni", "about hardik",
+    "about bumrah", "about jadeja", "about kohli", "about sharma",
+    "give me rohit", "give me virat", "give me kohli", "give me sharma",
+    # "percentage of him/her/rohit" type questions
+    "percentage of ", "% of ", "how does rohit", "how does virat",
+    "is rohit", "is virat", "is kohli", "is dhoni", "is hardik",
+    "rohit's", "virat's", "kohli's", "dhoni's", "bumrah's", "sharma's",
+    # comparison follow-ups
+    "who is better", "who is best", "who performed", "who has more",
+    "better among", "best among", "compare them", "between them",
+    "among them", "which one", "who scored more", "who took more",
+    "better player", "worse player", "stronger player",
+    "what about kl", "what about rohit", "what about virat",
+    "and what about", "how about him", "how about her",
+]
+
+def _is_tournament_wide(message):
+    """Fast keyword pre-check — returns True if message is clearly tournament-wide."""
+    msg = message.lower()
+    if any(kw in msg for kw in TOURNAMENT_WIDE_KEYWORDS):
+        return True
+    # Third-person questions about another player → need full tournament data
+    if any(kw in msg for kw in THIRD_PERSON_TRIGGERS):
+        return True
+    return False
+
 def _is_social(message):
     msg = message.lower()
     return any(kw in msg for kw in SOCIAL_KEYWORDS)
-    """Fast keyword pre-check — returns True if message is clearly tournament-wide."""
-    msg = message.lower()
-    return any(kw in msg for kw in TOURNAMENT_WIDE_KEYWORDS)
 
 
 def classify_intent(message, last_user_msg=None):
@@ -120,10 +153,9 @@ def classify_intent(message, last_user_msg=None):
     if _is_social(message):
         return "social_stats"
 
-    # 2. If message is very short (follow-up like "any other team", "what about rcb")
-    #    combine with last user message so classifier has context
+    # 2. Combine with last message for follow-ups so classifier has full context
     combined = message
-    if last_user_msg and len(message.split()) <= 6:
+    if last_user_msg and len(message.split()) <= 10:
         combined = f"{last_user_msg} / follow-up: {message}"
         # Re-check keywords on combined
         if _is_tournament_wide(combined):
@@ -217,8 +249,18 @@ def build_tournament_all_player_stats(tournament, my_team):
                 if balls_bowled > 0:
                     bowl_str = f"BOWL {wk_total}W/{runs_given}R eco:{_eco(runs_given,balls_bowled)}"
 
+                # Hat-tricks
+                ht_count = 0
+                try:
+                    from scoring.models import HatTrick as _HT
+                    ht_count = _HT.objects.filter(
+                        bowler=p, match__tournament=tournament
+                    ).count()
+                except Exception:
+                    pass
+                ht_str = f" HAT-TRICKS:{ht_count}" if ht_count else ""
                 stats = " | ".join(filter(None, [bat_str, bowl_str])) or "No match data yet"
-                lines.append(f"      {p.player_name}{cap} [{role}]: {stats}")
+                lines.append(f"      {p.player_name}{cap} [{role}]: {stats}{ht_str}")
 
     except Exception as e:
         lines.append(f"    (Could not load full player stats: {e})")
@@ -226,11 +268,204 @@ def build_tournament_all_player_stats(tournament, my_team):
     return "\n".join(lines)
 
 
+
+
+def _build_ball_stats_for_tournament(tournament):
+    """
+    Returns a dict: player_name -> { batting: {...}, bowling: {...}, fielding: {...} }
+    Computed from Ball model — gives percentages for boundary/running/dot/wicket type etc.
+    """
+    from scoring.models import Ball
+    from django.db.models import Count, Sum, Q
+
+    stats = {}  # player_name -> data
+
+    def _ps(name):
+        if name not in stats:
+            stats[name] = {
+                'bat_balls': 0, 'bat_runs': 0,
+                'fours': 0, 'sixes': 0, 'ones': 0, 'twos': 0, 'threes': 0, 'dots': 0,
+                'bowl_balls': 0, 'bowl_runs': 0,
+                'dot_balls_bowled': 0, 'wides': 0, 'no_balls': 0,
+                'bowl_wickets': 0,
+                'wicket_types': {},   # how dismissed: {BOWLED:2, CAUGHT:3, ...}
+                'catches': 0, 'runouts': 0, 'stumpings': 0,
+            }
+        return stats[name]
+
+    balls = Ball.objects.filter(
+        over__innings__match__tournament=tournament
+    ).select_related('batsman', 'bowler', 'fielder').iterator()
+
+    for b in balls:
+        # ── BATTING ──
+        bname = b.batsman.player_name if b.batsman else None
+        if bname and b.is_legal_ball:
+            p = _ps(bname)
+            p['bat_balls'] += 1
+            p['bat_runs']  += b.runs_off_bat
+            r = b.runs_off_bat
+            if r == 0:   p['dots']   += 1
+            elif r == 1: p['ones']   += 1
+            elif r == 2: p['twos']   += 1
+            elif r == 3: p['threes'] += 1
+            elif r == 4: p['fours']  += 1
+            elif r >= 6: p['sixes']  += 1
+
+        # ── BOWLING ──
+        bowler = b.bowler.player_name if b.bowler else None
+        if bowler:
+            p = _ps(bowler)
+            if b.ball_type == 'WIDE':
+                p['wides'] += 1
+            elif b.ball_type == 'NO_BALL':
+                p['no_balls'] += 1
+            if b.is_legal_ball:
+                p['bowl_balls'] += 1
+                p['bowl_runs']  += b.total_runs
+                if b.runs_off_bat == 0 and b.extra_runs == 0:
+                    p['dot_balls_bowled'] += 1
+            if b.is_wicket and b.wicket_type not in ('RUN_OUT', 'NONE', None):
+                p['bowl_wickets'] += 1
+                wt = b.wicket_type or 'UNKNOWN'
+                p['wicket_types'][wt] = p['wicket_types'].get(wt, 0) + 1
+
+        # ── FIELDING ──
+        if b.is_wicket and b.fielder:
+            fname = b.fielder.player_name
+            p = _ps(fname)
+            if b.wicket_type == 'CAUGHT':    p['catches']   += 1
+            elif b.wicket_type == 'RUN_OUT': p['runouts']   += 1
+            elif b.wicket_type == 'STUMPED': p['stumpings'] += 1
+
+    # Build formatted lines
+    result = {}
+    for name, d in stats.items():
+        lines = []
+
+        # Batting breakdown
+        if d['bat_balls'] > 0:
+            tb = d['bat_balls']
+            boundary_runs = d['fours'] * 4 + d['sixes'] * 6
+            running_runs  = d['bat_runs'] - boundary_runs
+            bdry_pct  = round(boundary_runs / d['bat_runs'] * 100, 1) if d['bat_runs'] else 0
+            run_pct   = round(running_runs  / d['bat_runs'] * 100, 1) if d['bat_runs'] else 0
+            dot_pct   = round(d['dots'] / tb * 100, 1)
+            bdry_ball_pct = round((d['fours'] + d['sixes']) / tb * 100, 1)
+            lines.append(
+                f"BAT: {d['bat_runs']}R off {tb}b | "
+                f"Boundary runs {bdry_pct}% ({boundary_runs}R from {d['fours']}x4 {d['sixes']}x6) | "
+                f"Running {run_pct}% ({running_runs}R via 1s:{d['ones']} 2s:{d['twos']} 3s:{d['threes']}) | "
+                f"Dot ball faced {dot_pct}% | Boundary ball freq {bdry_ball_pct}%"
+            )
+
+        # Bowling breakdown
+        if d['bowl_balls'] > 0:
+            tb = d['bowl_balls']
+            dot_pct  = round(d['dot_balls_bowled'] / tb * 100, 1)
+            wkt_freq = round(d['bowl_wickets'] / tb * 6 * 100, 1) if tb else 0  # wickets per 100 balls
+            wt_str   = " ".join(f"{k}:{v}" for k, v in d['wicket_types'].items()) if d['wicket_types'] else "none"
+            lines.append(
+                f"BOWL: {d['bowl_wickets']}W from {tb}b ({d['bowl_balls']//6}.{d['bowl_balls']%6}ov) {d['bowl_runs']}R | "
+                f"Dot% {dot_pct}% | Wides:{d['wides']} NoBalls:{d['no_balls']} | "
+                f"Wicket types: {wt_str} | Wicket every {round(tb/d['bowl_wickets'],1) if d['bowl_wickets'] else "N/A"} balls"
+            )
+
+        # Fielding
+        total_fielding = d['catches'] + d['runouts'] + d['stumpings']
+        if total_fielding > 0:
+            lines.append(
+                f"FIELD: Catches:{d['catches']} RunOuts:{d['runouts']} Stumpings:{d['stumpings']}"
+            )
+
+        if lines:
+            result[name] = " || ".join(lines)
+
+    return result
+
+def _build_points_table(tournament, all_matches):
+    """
+    Build a points table from completed match results.
+    Returns list of dicts sorted by points desc, then NRR desc.
+    """
+    from matches.models import MatchResult
+    from scoring.models import Innings
+
+    table = {}  # team_name -> {played, won, lost, tied, no_result, points, nrr_runs_for, nrr_balls_for, nrr_runs_against, nrr_balls_against}
+
+    # Seed all teams
+    from teams.models import TournamentTeam
+    for tt in TournamentTeam.objects.filter(tournament=tournament).select_related('team'):
+        name = tt.team.team_name
+        table[name] = dict(played=0, won=0, lost=0, tied=0, nr=0, points=0,
+                           rf=0, bf=0, ra=0, ba=0)  # runs/balls for/against
+
+    for m in all_matches:
+        try:
+            mr = m.result
+        except Exception:
+            continue  # not completed
+
+        t1 = m.team1.team_name
+        t2 = m.team2.team_name
+        for tn in [t1, t2]:
+            if tn not in table:
+                table[tn] = dict(played=0, won=0, lost=0, tied=0, nr=0, points=0,
+                                 rf=0, bf=0, ra=0, ba=0)
+
+        winner = mr.winner.team_name if mr.winner else None
+        table[t1]['played'] += 1
+        table[t2]['played'] += 1
+
+        if winner == t1:
+            table[t1]['won'] += 1; table[t1]['points'] += 2
+            table[t2]['lost'] += 1
+        elif winner == t2:
+            table[t2]['won'] += 1; table[t2]['points'] += 2
+            table[t1]['lost'] += 1
+        elif winner is None:
+            # tie or no result
+            table[t1]['tied'] += 1; table[t1]['points'] += 1
+            table[t2]['tied'] += 1; table[t2]['points'] += 1
+
+        # NRR — use innings scores
+        try:
+            inns = list(Innings.objects.filter(match=m).select_related('batting_team').order_by('innings_number'))
+            if len(inns) == 2:
+                inn1, inn2 = inns[0], inns[1]
+                def _b2f(inn):
+                    # balls to overs as float for NRR
+                    return inn.total_balls / 6.0 if inn.total_balls else 1.0
+                t_inn1 = inn1.batting_team.team_name
+                t_inn2 = inn2.batting_team.team_name
+                # team batting in inn1
+                if t_inn1 in table:
+                    table[t_inn1]['rf'] += inn1.total_runs
+                    table[t_inn1]['bf'] += inn1.total_balls or 1
+                    table[t_inn1]['ra'] += inn2.total_runs
+                    table[t_inn1]['ba'] += inn2.total_balls or 1
+                if t_inn2 in table:
+                    table[t_inn2]['rf'] += inn2.total_runs
+                    table[t_inn2]['bf'] += inn2.total_balls or 1
+                    table[t_inn2]['ra'] += inn1.total_runs
+                    table[t_inn2]['ba'] += inn1.total_balls or 1
+        except Exception:
+            pass
+
+    # Compute NRR
+    for row in table.values():
+        rpo_for     = (row['rf'] / row['bf'] * 6) if row['bf'] else 0
+        rpo_against = (row['ra'] / row['ba'] * 6) if row['ba'] else 0
+        row['nrr'] = round(rpo_for - rpo_against, 3)
+
+    sorted_table = sorted(table.items(), key=lambda x: (-x[1]['points'], -x[1]['nrr']))
+    return sorted_table
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  TOURNAMENT-WIDE CONTEXT — ALL matches, ALL MOM, ALL results, leaderboard
 #  Used when player asks about the whole tournament, not just their own stats
 # ─────────────────────────────────────────────────────────────────────────────
-def build_tournament_wide_context(player):
+def build_tournament_wide_context(player, query_message=''):
     """
     Builds full tournament context covering every match, every result,
     every MOM award, and a leaderboard of all players' stats.
@@ -265,6 +500,18 @@ def build_tournament_wide_context(player):
         lines.append(f"Teams: {', '.join(team_names)}")
         lines.append("")
 
+        # ── POINTS TABLE / STANDINGS ──
+        all_matches_pts = list(CreateMatch.objects.filter(tournament=t).select_related('team1','team2'))
+        standings = _build_points_table(t, all_matches_pts)
+        lines.append("POINTS TABLE (current standings):")
+        lines.append("  Pos  Team                    P   W   L   T  Pts   NRR")
+        for pos, (tname, row) in enumerate(standings, 1):
+            lines.append(
+                f"  {pos:<4} {tname:<24} {row['played']:<3} {row['won']:<3} "
+                f"{row['lost']:<3} {row['tied']:<3} {row['points']:<5} {row['nrr']:+.3f}"
+            )
+        lines.append("")
+
         # ── ALL MATCH RESULTS + MOM ──
         lines.append("ALL MATCH RESULTS & MAN OF THE MATCH:")
         all_matches = CreateMatch.objects.filter(tournament=t).select_related(
@@ -296,18 +543,25 @@ def build_tournament_wide_context(player):
             lines.append(f"    Result: {result_str}")
             lines.append(f"    MOM: {mom_str}")
 
-            # Innings summary
+            # Hat-tricks in this match
             try:
-                for inn in Innings.objects.filter(match=m).select_related(
-                    'batting_team', 'bowling_team'
-                ).order_by('innings_number'):
+                from scoring.models import HatTrick
+                hts = HatTrick.objects.filter(match=m).select_related(
+                    'bowler', 'victim1', 'victim2', 'victim3'
+                )
+                for ht in hts:
                     lines.append(
-                        f"    INN{inn.innings_number}: {inn.batting_team.team_name} "
-                        f"{inn.total_runs}/{inn.total_wickets} ({inn.overs_completed} ov)"
+                        f"    HAT-TRICK: {ht.bowler.player_name} dismissed {ht.victims_display()}"
                     )
             except Exception:
                 pass
-            lines.append("")
+
+            try:
+                inns = list(Innings.objects.filter(match=m).select_related('batting_team').order_by('innings_number'))
+                scores = [f"{inn.batting_team.team_name} {inn.total_runs}/{inn.total_wickets}" for inn in inns]
+                if scores: lines.append(f"    Scores: {' | '.join(scores)}")
+            except Exception:
+                pass
 
         # ── PLAYER LEADERBOARD (batting) ──
         lines.append("BATTING LEADERBOARD (all players, all matches in this tournament):")
@@ -327,13 +581,10 @@ def build_tournament_wide_context(player):
                 bat_totals[n]["outs"] += 1
 
         sorted_bat = sorted(bat_totals.items(), key=lambda x: x[1]["runs"], reverse=True)
-        for rank, (name, s) in enumerate(sorted_bat[:15], 1):
+        for rank, (name, s) in enumerate(sorted_bat[:10], 1):
             avg = _avg(s["runs"], s["outs"])
             sr  = _sr(s["runs"], s["balls"])
-            lines.append(
-                f"  {rank:>2}. {name:<25} {s['runs']}R  avg:{avg}  SR:{sr}  "
-                f"4s:{s['fours']}  6s:{s['sixes']}  ({s['inns']} innings)"
-            )
+            lines.append(f"  {rank}. {name} {s['runs']}R avg:{avg} SR:{sr} 4s:{s['fours']} 6s:{s['sixes']}")
 
         lines.append("")
 
@@ -352,15 +603,54 @@ def build_tournament_wide_context(player):
             bowl_totals[n]["balls"] += int(ov) * 6 + round((ov % 1) * 10)
 
         sorted_bowl = sorted(bowl_totals.items(), key=lambda x: x[1]["wkts"], reverse=True)
-        for rank, (name, s) in enumerate(sorted_bowl[:15], 1):
+        for rank, (name, s) in enumerate(sorted_bowl[:10], 1):
             eco = _eco(s["runs"], s["balls"])
-            overs = f"{s['balls']//6}.{s['balls']%6}"
-            lines.append(
-                f"  {rank:>2}. {name:<25} {s['wkts']}W  {s['runs']}R  "
-                f"eco:{eco}  ({overs} ov)"
-            )
+            lines.append(f"  {rank}. {name} {s['wkts']}W {s['runs']}R eco:{eco}")
 
         lines.append("")
+
+        # ── DETAILED BALL STATS (batting %, bowling %, fielding %) ──
+        # Only build for players mentioned in message + top 5 to save tokens
+        lines.append("PLAYER BALL-LEVEL BREAKDOWN (boundary%, running%, dot%, wicket types):")
+        try:
+            ball_stats = _build_ball_stats_for_tournament(t)
+            # Always include players whose name appears in the user message
+            msg_lower = (query_message or '').lower()
+            priority = [n for n in ball_stats if any(
+                part in msg_lower for part in n.lower().split() if len(part) > 3
+            )]
+            # Also include top 5 run-scorers and top 5 wicket-takers from leaderboards
+            top_bat_names = [name for name, _ in sorted_bat[:5]]
+            top_bowl_names = [name for name, _ in sorted_bowl[:5]]
+            include = set(priority) | set(top_bat_names) | set(top_bowl_names)
+            for pname in sorted(include):
+                if pname in ball_stats:
+                    lines.append(f"  {pname}: {ball_stats[pname]}")
+            # If player asked about someone not in top lists, include them
+            for pname, stat_line in ball_stats.items():
+                if pname in priority and pname not in include:
+                    lines.append(f"  {pname}: {stat_line}")
+        except Exception as e:
+            lines.append(f"  (ball stats unavailable: {e})")
+        lines.append("")
+
+        # ── HAT-TRICKS IN TOURNAMENT ──
+        try:
+            from scoring.models import HatTrick as _HT
+            ht_all = _HT.objects.filter(match__tournament=t).select_related(
+                'bowler','match__team1','match__team2','victim1','victim2','victim3'
+            )
+            if ht_all.exists():
+                lines.append("HAT-TRICKS IN THIS TOURNAMENT:")
+                for ht in ht_all:
+                    lines.append(
+                        f"  {ht.bowler.player_name} vs "
+                        f"{ht.match.team1.team_name} vs {ht.match.team2.team_name} "
+                        f"({ht.match.match_date}): dismissed {ht.victims_display()}"
+                    )
+                lines.append("")
+        except Exception:
+            pass
 
         # ── TOURNAMENT AWARDS ──
         awards = TournamentAward.objects.filter(tournament=t).select_related('player')
@@ -472,8 +762,20 @@ def build_player_context_compact(player):
             ]
             lines.append(f"  Squad: {', '.join(names)}")
 
-        # All players' stats in this tournament
-        lines.append(build_tournament_all_player_stats(t, my_team))
+        # Points table — so player can ask about standings
+        try:
+            _all_m = list(CreateMatch.objects.filter(tournament=t).select_related('team1','team2'))
+            _standings = _build_points_table(t, _all_m)
+            pts_lines = []
+            for pos, (tname, row) in enumerate(_standings, 1):
+                marker = " <MY TEAM>" if tname == my_team.team_name else ""
+                pts_lines.append(
+                    f"  {pos}. {tname}{marker}: {row['played']}P {row['won']}W {row['lost']}L "
+                    f"{row['points']}pts NRR:{row['nrr']:+.3f}"
+                )
+            lines.append("  STANDINGS: " + " | ".join(pts_lines))
+        except Exception:
+            pass
 
         tourn = dict(runs=0, balls=0, fours=0, sixes=0, outs=0,
                      wickets=0, balls_bowled=0, runs_given=0,
@@ -637,6 +939,22 @@ def build_player_context_compact(player):
             f"    FIELD: Catches: {tourn['catches']} | Run-outs: {tourn['runouts']} | MOM: {tourn['mom']}"
         )
 
+        # Hat-tricks this player took in this tournament
+        try:
+            from scoring.models import HatTrick as _HT
+            ht_qs = _HT.objects.filter(
+                bowler=player, match__tournament=t
+            ).select_related('match__team1','match__team2','victim1','victim2','victim3')
+            if ht_qs.exists():
+                lines.append(f"    HAT-TRICKS: {ht_qs.count()}")
+                for ht in ht_qs:
+                    lines.append(
+                        f"      Hat-trick vs {ht.match.team1.team_name} vs {ht.match.team2.team_name} "
+                        f"({ht.match.match_date}): dismissed {ht.victims_display()}"
+                    )
+        except Exception:
+            pass
+
         for aw in TournamentAward.objects.filter(tournament=t, player=player):
             lines.append(f"  AWARD: {aw.get_award_type_display()}")
 
@@ -657,6 +975,67 @@ def build_player_context_compact(player):
         f"  Wickets: {career['wickets']} | Eco: {c_eco} | "
         f"Catches: {career['catches']} | Run-outs: {career['runouts']} | MOM: {career['mom']}"
     )
+
+    # Career hat-tricks
+    try:
+        from scoring.models import HatTrick as _HT
+        all_hts = _HT.objects.filter(bowler=player).select_related(
+            'match__team1','match__team2','match__tournament',
+            'victim1','victim2','victim3'
+        )
+        if all_hts.exists():
+            lines.append(f"  HAT-TRICKS (career): {all_hts.count()}")
+            for ht in all_hts:
+                lines.append(
+                    f"    Hat-trick in {ht.match.tournament.tournament_name} "
+                    f"({ht.match.team1.team_name} vs {ht.match.team2.team_name}, {ht.match.match_date}): "
+                    f"dismissed {ht.victims_display()}"
+                )
+    except Exception:
+        pass
+
+    # Ball-level career batting/bowling breakdown for this player
+    try:
+        from scoring.models import Ball as _Ball
+        career_balls = list(_Ball.objects.filter(
+            batsman=player, is_legal_ball=True,
+            over__innings__match__tournament__in=[r.tournament for r in rosters]
+        ).values_list('runs_off_bat', flat=True))
+        if career_balls:
+            total_b = len(career_balls)
+            fours_c = sum(1 for r in career_balls if r == 4)
+            sixes_c = sum(1 for r in career_balls if r >= 6)
+            ones_c  = sum(1 for r in career_balls if r == 1)
+            twos_c  = sum(1 for r in career_balls if r == 2)
+            dots_c  = sum(1 for r in career_balls if r == 0)
+            total_runs_c = sum(career_balls)
+            bdry_runs = fours_c * 4 + sixes_c * 6
+            run_runs  = total_runs_c - bdry_runs
+            bdry_pct  = round(bdry_runs / total_runs_c * 100, 1) if total_runs_c else 0
+            run_pct   = round(run_runs  / total_runs_c * 100, 1) if total_runs_c else 0
+            dot_pct   = round(dots_c / total_b * 100, 1)
+            lines.append(
+                f"BATTING BREAKDOWN (career ball-level): "
+                f"Boundary runs {bdry_pct}% ({bdry_runs}R: {fours_c}x4 {sixes_c}x6) | "
+                f"Running {run_pct}% ({run_runs}R: 1s:{ones_c} 2s:{twos_c}) | "
+                f"Dot faced {dot_pct}% ({dots_c}/{total_b} balls)"
+            )
+        bowl_balls_c = list(_Ball.objects.filter(
+            bowler=player, is_legal_ball=True,
+            over__innings__match__tournament__in=[r.tournament for r in rosters]
+        ).values_list('runs_off_bat', 'extra_runs', 'is_wicket', 'wicket_type'))
+        if bowl_balls_c:
+            tb = len(bowl_balls_c)
+            dots_b   = sum(1 for r, e, w, wt in bowl_balls_c if r == 0 and e == 0)
+            wkts_b   = sum(1 for r, e, w, wt in bowl_balls_c if w and wt not in ('RUN_OUT','NONE'))
+            dot_pct_b = round(dots_b / tb * 100, 1)
+            lines.append(
+                f"BOWLING BREAKDOWN (career ball-level): "
+                f"Dot% {dot_pct_b}% ({dots_b}/{tb} balls) | "
+                f"Wickets {wkts_b} | Wicket every {round(tb/wkts_b,1) if wkts_b else 'N/A'} balls"
+            )
+    except Exception:
+        pass
 
     # Bowlers who dismissed the player most
     if career_dismissed_by:
@@ -734,6 +1113,19 @@ def build_player_context_detailed(player):
                         f"    {bws.bowler.player_name}{me}: {bws.overs_bowled}ov "
                         f"{bws.wickets}W/{bws.runs_given}R eco:{bws.economy}"
                     )
+
+            # Hat-tricks in this match
+            try:
+                from scoring.models import HatTrick as _HT
+                for ht in _HT.objects.filter(match=m).select_related(
+                    'bowler','victim1','victim2','victim3'
+                ):
+                    me = " <ME>" if ht.bowler_id == player.id else ""
+                    lines.append(
+                        f"  HAT-TRICK{me}: {ht.bowler.player_name} dismissed {ht.victims_display()}"
+                    )
+            except Exception:
+                pass
 
             # My ball-by-ball detail
             for bs in BattingScorecard.objects.filter(
@@ -878,7 +1270,7 @@ def get_cached_context(player, context_type):
     if context_type == "detailed":
         ctx = build_player_context_detailed(player)
     elif context_type == "tournament_wide":
-        ctx = build_tournament_wide_context(player)
+        ctx = build_tournament_wide_context(player)  # query_message passed separately
     else:
         ctx = build_player_context_compact(player)
 
@@ -1052,9 +1444,12 @@ def crickbot_chat_api(request):
             intent       = classify_intent(user_message, last_user_msg=last_user_msg)
             context_type = INTENT_CONTEXT_MAP.get(intent, "compact")
 
-            # 2. Get context — social_stats always fresh (no cache), others cached
+            # 2. Get context — social_stats and tournament_wide always fresh, others cached
             if intent == "social_stats":
                 ctx = build_follower_context(player)
+            elif intent == "tournament_wide":
+                combined_q = user_message + (' ' + (last_user_msg or ''))
+                ctx = build_tournament_wide_context(player, query_message=combined_q)
             else:
                 ctx = get_cached_context(player, context_type)
 
@@ -1070,6 +1465,7 @@ def crickbot_chat_api(request):
                 "Rules:\n"
                 "- Answer ONLY from the data provided. Never invent stats.\n"
                 "- Be warm and engaging — use 🏏 ⭐ 🎯 🔥 🏆.\n"
+                "- NEVER use markdown: no **, no *, no #, no __, no backticks. Plain text only.\n"
                 "- CRITICAL: For career/match stats, always use 'Matches played' (matches the player "
                 "personally batted or bowled in). NEVER use 'team played' count for the player's matches.\n"
                 "- Batting Average = Runs / times OUT (not runs/matches). If never out, average = total runs.\n"
@@ -1088,14 +1484,13 @@ def crickbot_chat_api(request):
     except Exception as e:
         return JsonResponse({'error': f'Failed to load data: {str(e)}'}, status=500)
 
-    # Build message list — always keep last assistant reply for continuity,
-    # then up to 4 more turns before that
+    # Keep last 2 user turns + last assistant reply to stay within token limits
     last_assistant = None
     trimmed_history = []
     for h in reversed(history):
         if h.get('role') == 'assistant' and last_assistant is None:
             last_assistant = h
-        elif len(trimmed_history) < 4:
+        elif len(trimmed_history) < 2:
             trimmed_history.insert(0, h)
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -1106,15 +1501,31 @@ def crickbot_chat_api(request):
         messages.append({"role": "assistant", "content": last_assistant['content']})
     messages.append({"role": "user", "content": user_message})
 
-    try:
-        resp = groq_client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=messages,
-            max_tokens=1024,
-            temperature=0.6,
-        )
-        reply = resp.choices[0].message.content
-    except Exception as e:
-        return JsonResponse({'error': f'Groq API error: {str(e)}'}, status=500)
+    # Try primary model first, fall back through alternatives on rate limit errors
+    reply = None
+    last_error = None
+    for model_name in [GROQ_MODEL] + GROQ_FALLBACK_MODELS:
+        try:
+            resp = groq_client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                max_tokens=700,
+                temperature=0.6,
+            )
+            reply = resp.choices[0].message.content
+            break  # success
+        except Exception as e:
+            last_error = e
+            err_str = str(e)
+            # Fall back on rate limits, token limits, or decommissioned models
+            if any(x in err_str for x in ['429', '413', 'rate_limit', 'decommissioned', 'model_not_found', 'not supported']):
+                continue  # try next model
+            else:
+                return JsonResponse({'error': f'Groq API error: {err_str}'}, status=500)
+
+    if reply is None:
+        return JsonResponse({
+            'error': f'All models are currently rate-limited. Please try again in a few minutes. ({last_error})'
+        }, status=429)
 
     return JsonResponse({'reply': reply, 'intent': intent if not is_admin else 'admin'})

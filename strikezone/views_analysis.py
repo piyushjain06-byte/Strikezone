@@ -107,6 +107,22 @@ def player_analysis_api(request, player_id):
         fifties  = sum(1 for r in bat_records if 50 <= r['runs'] < 100)
         hundreds = sum(1 for r in bat_records if r['runs'] >= 100)
 
+        # Hat-tricks
+        from scoring.models import HatTrick
+        hat_tricks_qs = HatTrick.objects.filter(bowler=player).select_related(
+            'match__team1', 'match__team2', 'match__tournament',
+            'victim1', 'victim2', 'victim3',
+        ).order_by('-created_at')
+        hat_trick_list = []
+        for ht in hat_tricks_qs:
+            hat_trick_list.append({
+                'match': f"{ht.match.team1} vs {ht.match.team2}",
+                'tournament': ht.match.tournament.tournament_name,
+                'date': str(ht.match.match_date),
+                'victims': ht.victims_display(),
+            })
+        hat_trick_count = len(hat_trick_list)
+
         # Phase batting — count balls directly from Ball model per over range
         inn_ids = list(bat_qs.values_list('innings_id', flat=True))
         phase_batting = {}
@@ -203,6 +219,7 @@ def player_analysis_api(request, player_id):
 
         if fifties >= 3:   strengths.append(f'Converts starts — {fifties} fifties')
         if hundreds >= 1:  strengths.append(f'Match winner — {hundreds} century/ies')
+        if hat_trick_count >= 1: strengths.append(f'Hat-trick hero — {hat_trick_count} hat-trick{"s" if hat_trick_count > 1 else ""}')
 
         ducks = sum(1 for r in bat_records if r['runs'] == 0)
         if ducks >= 2:     weaknesses.append(f'Prone to ducks ({ducks} times)')
@@ -263,6 +280,7 @@ def player_analysis_api(request, player_id):
                 'fours': agg.get('total_fours') or 0,
                 'sixes': sixes_total,
                 'fifties': fifties, 'hundreds': hundreds,
+                'hat_tricks': hat_trick_count,
             },
             'bowling': {
                 'innings': len(bowl_records), 'wickets': total_wickets,
@@ -277,6 +295,7 @@ def player_analysis_api(request, player_id):
             'shot_zones': shot_zones,
             'phase_batting': phase_batting,
             'radar_metrics': radar_metrics,
+            'hat_tricks': hat_trick_list,
         }
 
         # ML charts
@@ -687,11 +706,13 @@ KEY KNOCKOUT ANALYSIS REQUIREMENTS:
 
     def bowling_lines(innings):
         rows = BowlingScorecard.objects.filter(innings=innings).select_related('bowler')
+        from scoring.models import HatTrick as HT
         lines = []
         for r in rows:
+            ht_flag = ' 🎩HAT-TRICK' if HT.objects.filter(innings=innings, bowler=r.bowler).exists() else ''
             lines.append(
                 f"  {r.bowler.player_name}: {r.overs_bowled}ov {r.runs_given}R "
-                f"{r.wickets}W Wd:{r.wides} Nb:{r.no_balls} Eco:{r.economy}"
+                f"{r.wickets}W Wd:{r.wides} Nb:{r.no_balls} Eco:{r.economy}{ht_flag}"
             )
         return "\n".join(lines) if lines else "  (no bowling data)"
 
@@ -786,6 +807,15 @@ OVER BY OVER:
 {over_summary(inn2)}
 """
 
+    # Collect hat-tricks for this match
+    from scoring.models import HatTrick as _PromptHT
+    _prompt_hts = _PromptHT.objects.filter(match=match).select_related('bowler','victim1','victim2','victim3')
+    hat_trick_prompt_block = ''
+    if _prompt_hts.exists():
+        ht_lines = [f"  {ht.bowler.player_name} dismissed {ht.victims_display()}" for ht in _prompt_hts]
+        hat_trick_prompt_block = '\n=== HAT-TRICKS ===\n' + '\n'.join(ht_lines) + '\n'
+
+    prompt += hat_trick_prompt_block
     prompt += f"""
 === RESULT ===
 Winner: {winner_name}
@@ -1013,6 +1043,14 @@ def match_analysis_api(request, match_id):
         team_bat1 = data['innings1']['team']   # team that batted 1st
         team_bat2 = data.get('innings2', {}).get('team', '') if inn2 else ''
 
+        # Collect hat-tricks for this match
+        from scoring.models import HatTrick as _HT
+        _ht_inn1 = _HT.objects.filter(innings__match=match).select_related('bowler','victim1','victim2','victim3')
+        hat_trick_note = ''
+        if _ht_inn1.exists():
+            ht_lines = [f"{ht.bowler.player_name} (dismissed {ht.victims_display()})" for ht in _ht_inn1]
+            hat_trick_note = '\nHat-Tricks: ' + '; '.join(ht_lines)
+
         b1  = " | ".join([f"{b['name']} {b['runs']}({b['balls']}b)" for b in data['innings1']['batting'][:6]])
         b2  = " | ".join([f"{b['name']} {b['runs']}({b['balls']}b)" for b in data.get('innings2',{}).get('batting',[])[:6]])
         # bw1 = bowlers from innings1 (team_bat2 bowled at team_bat1)
@@ -1039,7 +1077,7 @@ Bowling — {team_bat2} (bowled in inn1): {bw1}
 Bowling — {team_bat1} (bowled in inn2): {bw2}
 Dot%: {data['innings1']['dot_pct']}% (inn1) vs {data.get('innings2',{}).get('dot_pct',0)}% (inn2)
 Boundary%: {data['innings1']['boundary_pct']}% (inn1) vs {data.get('innings2',{}).get('boundary_pct',0)}% (inn2)
-MOM: {mom_name}
+MOM: {mom_name}{hat_trick_note}
 IMPORTANT: In the JSON keys below, "team1" means "{team_bat1}" (batted 1st), "team2" means "{team_bat2}" (batted 2nd).
 Reply ONLY valid JSON no markdown:
 {{"headline":"punchy headline that mentions the match stage if knockout","verdict":"2 sentence verdict reflecting knockout stakes if applicable","turning_point":"1 sentence","player_of_match_reason":"why {mom_name} won","team1_batting_insight":"batting insight for {team_bat1}","team2_batting_insight":"batting insight for {team_bat2}","team1_bowling_insight":"bowling insight for {team_bat1}","team2_bowling_insight":"bowling insight for {team_bat2}","best_spell":"name+figures","top_partnership":"1 line","winner_reason":"why won","loser_reason":"why lost","knockout_pressure_note":{"was the match affected by knockout pressure? 1-2 sentences. Empty string if league match." if is_knockout else '""'},"player_ratings":[{{"name":"","score":9.0,"role":"","note":""}}]}}"""

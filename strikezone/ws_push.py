@@ -93,6 +93,99 @@ def _commentary(ball, innings):
         return None
 
 
+NON_BOWLER_WICKETS = {"RUN_OUT", "OBSTRUCTING", "RETIRED", "RETIRED_HURT"}
+
+
+def _check_and_push_hattrick(match, innings, ball):
+    """
+    Checks whether the current ball completes a hat-trick.
+    A hat-trick = 3 consecutive bowler-credited wickets by the same bowler.
+    Balls can span overs (e.g. last 2 of one over + first of next).
+    Run-outs and obstructions are excluded.
+    """
+    try:
+        from scoring.models import Ball as BallModel, HatTrick
+
+        bowler = ball.over.bowler
+
+        # The current ball must be a bowler-credited wicket
+        if ball.wicket_type in NON_BOWLER_WICKETS or not ball.is_wicket:
+            return
+
+        # Get the last 3 bowler-credited wickets taken by this bowler in this innings
+        # ordered by over_number, ball_number
+        wicket_balls = list(
+            BallModel.objects.filter(
+                over__innings=innings,
+                over__bowler=bowler,
+                is_wicket=True,
+            ).exclude(
+                wicket_type__in=NON_BOWLER_WICKETS
+            ).order_by('over__over_number', 'ball_number')
+        )
+
+        if len(wicket_balls) < 3:
+            return
+
+        # The last 3 wicket-balls — b1, b2, b3 (b3 is the current ball)
+        b1, b2, b3 = wicket_balls[-3], wicket_balls[-2], wicket_balls[-1]
+
+        if b3.id != ball.id:
+            return  # current ball isn't the most recent one — skip
+
+        # Verify the 3 are strictly consecutive deliveries (legal + illegal)
+        # We collect ALL balls by this bowler in this innings in order
+        all_bowler_balls = list(
+            BallModel.objects.filter(
+                over__innings=innings,
+                over__bowler=bowler,
+            ).order_by('over__over_number', 'ball_number').values_list('id', flat=True)
+        )
+
+        try:
+            idx1 = all_bowler_balls.index(b1.id)
+            idx2 = all_bowler_balls.index(b2.id)
+            idx3 = all_bowler_balls.index(b3.id)
+        except ValueError:
+            return
+
+        if idx2 != idx1 + 1 or idx3 != idx2 + 1:
+            return  # not consecutive — not a hat-trick
+
+        # Check not already recorded for b3
+        if HatTrick.objects.filter(innings=innings, ball3=b3).exists():
+            return
+
+        # Save hat-trick
+        ht = HatTrick.objects.create(
+            innings=innings,
+            match=match,
+            bowler=bowler,
+            ball1=b1,
+            ball2=b2,
+            ball3=b3,
+            victim1=b1.player_dismissed,
+            victim2=b2.player_dismissed,
+            victim3=b3.player_dismissed,
+        )
+
+        victims = ht.victims_display()
+        _push(f"match_{match.id}", {'type': 'hat_trick', 'data': {
+            'bowler': bowler.player_name,
+            'victims': victims,
+            'text': f"🎩 HAT-TRICK! {bowler.player_name} takes 3 in 3! ({victims})",
+        }})
+        # Also push as milestone for broader listeners
+        _push(f"match_{match.id}", {'type': 'milestone', 'data': {
+            'type': 'hat_trick',
+            'player': bowler.player_name,
+            'value': 3,
+            'text': f"🎩 HAT-TRICK! {bowler.player_name}!",
+        }})
+    except Exception:
+        pass
+
+
 def _milestones(match, innings, ball):
     from scoring.models import BattingScorecard, BowlingScorecard
     try:
@@ -117,6 +210,8 @@ def _milestones(match, innings, ball):
                             'value': m, 'text': f"{label} {ball.over.bowler.player_name} has {m} wickets!"}})
         except Exception:
             pass
+        # ── Hat-trick detection ──
+        _check_and_push_hattrick(match, innings, ball)
 
 
 def _full_push(match):

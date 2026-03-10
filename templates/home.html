@@ -791,55 +791,135 @@
 // Replaces polling. Receives compact score pushes from server after every ball.
 
 (function() {
-  const liveCards = document.querySelectorAll('.live-match-card');
-  if (liveCards.length === 0) return;  // no live matches right now
-
-  function applyUpdate(match) {
+  // ── Score update helper ──
+  function applyScoreUpdate(match) {
     const card = document.querySelector('.live-match-card[data-match-id="' + match.match_id + '"]');
     if (!card) return;
-    if (match.inn1) {
-      const runsEl  = card.querySelector('.live-runs[data-inn="1"]');
-      const wktsEl  = card.querySelector('.live-wkts[data-inn="1"]');
-      const oversEl = card.querySelector('.live-overs[data-inn="1"]');
-      if (runsEl && wktsEl) { runsEl.childNodes[0].nodeValue = match.inn1.runs + '/'; wktsEl.textContent = match.inn1.wickets; }
-      if (oversEl) oversEl.textContent = match.inn1.overs + ' overs';
+    // normalise keys: WS sends inn1/inn2, polling API sends innings1/innings2
+    const d1 = match.inn1 || match.innings1;
+    const d2 = match.inn2 || match.innings2;
+    if (d1) {
+      const r1 = card.querySelector('.live-runs[data-inn="1"]');
+      const w1 = card.querySelector('.live-wkts[data-inn="1"]');
+      const o1 = card.querySelector('.live-overs[data-inn="1"]');
+      if (r1 && w1) { r1.childNodes[0].nodeValue = (d1.runs||d1.total_runs||0) + '/'; w1.textContent = d1.wickets||d1.total_wickets||0; }
+      if (o1) o1.textContent = (d1.overs||d1.overs_completed||0) + ' overs';
     }
-    if (match.inn2) {
-      const runsEl2  = card.querySelector('.live-runs[data-inn="2"]');
-      const wktsEl2  = card.querySelector('.live-wkts[data-inn="2"]');
-      const oversEl2 = card.querySelector('.live-overs[data-inn="2"]');
-      if (runsEl2 && wktsEl2) { runsEl2.childNodes[0].nodeValue = match.inn2.runs + '/'; wktsEl2.textContent = match.inn2.wickets; }
-      if (oversEl2) oversEl2.textContent = match.inn2.overs + ' overs';
+    if (d2) {
+      var scoresDiv = card.querySelector('.mc-scores');
+      var inn2Half  = card.querySelector('.mc-score-half:last-child');
+      // If inn2 section doesn't exist yet, build it dynamically
+      if (!inn2Half || !inn2Half.querySelector('.live-runs[data-inn="2"]')) {
+        if (scoresDiv) {
+          var newHalf = document.createElement('div');
+          newHalf.className = 'mc-score-half';
+          newHalf.innerHTML =
+            '<div class="mc-team-label">' + (match.inn2.team || '') + '</div>' +
+            '<div class="mc-score-num live-runs" data-inn="2">' + match.inn2.runs + '/<span class="mc-wkts live-wkts" data-inn="2">' + match.inn2.wickets + '</span></div>' +
+            '<div class="mc-overs live-overs" data-inn="2">' + match.inn2.overs + ' overs</div>';
+          scoresDiv.appendChild(newHalf);
+        }
+      } else {
+        var r2 = inn2Half.querySelector('.live-runs[data-inn="2"]');
+        var w2 = inn2Half.querySelector('.live-wkts[data-inn="2"]');
+        var o2 = inn2Half.querySelector('.live-overs[data-inn="2"]');
+        if (r2 && w2) { r2.childNodes[0].nodeValue = match.inn2.runs + '/'; w2.textContent = match.inn2.wickets; }
+        if (o2) o2.textContent = match.inn2.overs + ' overs';
+      }
     }
   }
 
+  // ── Polling fallback (used when WS is down OR no cards on load) ──
+  var _homePollTimer = null;
+  function startHomePoll() {
+    if (_homePollTimer) return;
+    _homePollTimer = setInterval(function() {
+      fetch('/api/live-scores/')
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          if (!data.live || !data.live.length) return;
+          data.live.forEach(function(m) {
+            applyScoreUpdate({
+              match_id: m.match_id,
+              inn1: m.innings1,
+              inn2: m.innings2,
+            });
+          });
+        })
+        .catch(function(){});
+    }, 5000);
+  }
+
+  // ── WebSocket live ticker ──
+  var _wsHomeFallback = null;
   function connect() {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(`${proto}://${location.host}/ws/live/`);
+    const ws = new WebSocket(proto + '://' + location.host + '/ws/live/');
 
-    ws.onmessage = (e) => {
+    ws.onopen = function() {
+      clearInterval(_wsHomeFallback); _wsHomeFallback = null;
+    };
+
+    ws.onmessage = function(e) {
       const msg = JSON.parse(e.data);
       if (msg.type === 'home_update') {
-        msg.matches.forEach(applyUpdate);
+        msg.matches.forEach(function(m) { applyScoreUpdate(m); });
       }
       if (msg.type === 'match_status_change') {
         const d = msg.data;
         if (d.status === 'completed') {
           const card = document.querySelector('.live-match-card[data-match-id="' + d.match_id + '"]');
           if (card) {
-            const pill = card.querySelector('.live-pill, .live-badge');
-            if (pill) { pill.textContent = 'COMPLETED'; pill.style.background = 'rgba(100,116,139,0.15)'; pill.style.color = '#64748b'; }
+            const pill = card.querySelector('.badge-live');
+            if (pill) { pill.textContent = 'COMPLETED'; pill.style.background = 'rgba(100,116,139,0.15)'; pill.style.color = '#64748b'; pill.style.borderColor = 'rgba(100,116,139,0.3)'; pill.style.animation = 'none'; }
           }
+        }
+        // A match went live — reload the section so the card appears
+        if (d.status === 'live') {
+          clearTimeout(window._homeReloadTimer);
+          window._homeReloadTimer = setTimeout(function(){ location.reload(); }, 1500);
         }
       }
     };
 
-    ws.onclose = () => setTimeout(connect, 3000);
-    ws.onerror = () => ws.close();
+    ws.onclose = function() {
+      // Polling fallback while WS is reconnecting
+      if (!_wsHomeFallback) {
+        _wsHomeFallback = setInterval(function() {
+          fetch('/api/live-scores/')
+            .then(function(r){ return r.json(); })
+            .then(function(data) {
+              if (data.live) data.live.forEach(function(m) {
+                applyScoreUpdate({ match_id: m.match_id, inn1: m.innings1, inn2: m.innings2 });
+              });
+            })
+            .catch(function(){});
+        }, 5000);
+      }
+      setTimeout(connect, 3000);
+    };
+    ws.onerror = function() { ws.close(); };
   }
 
   connect();
-  console.log('🏏 Home live ticker: WebSocket started');
+
+  // If no live cards on page load, still poll so new matches appear
+  var liveCards = document.querySelectorAll('.live-match-card');
+  if (liveCards.length === 0) {
+    // Check every 15s if a match goes live — reload if so
+    setInterval(function() {
+      fetch('/api/live-scores/')
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          if (data.live && data.live.length > 0 && document.querySelectorAll('.live-match-card').length === 0) {
+            location.reload();
+          }
+        })
+        .catch(function(){});
+    }, 15000);
+  }
+
+  console.log('Home live ticker: active (' + liveCards.length + ' live cards)');
 })();
 </script>
 

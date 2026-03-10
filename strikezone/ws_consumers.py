@@ -33,6 +33,9 @@ class MatchConsumer(AsyncWebsocketConsumer):
     async def new_over(self, event):
         await self.send(text_data=json.dumps({'type': 'new_over', 'data': event['data']}))
 
+    async def hat_trick(self, event):
+        await self.send(text_data=json.dumps({'type': 'hat_trick', 'data': event['data']}))
+
 
 class HomeLiveConsumer(AsyncWebsocketConsumer):
     GROUP = "home_live"

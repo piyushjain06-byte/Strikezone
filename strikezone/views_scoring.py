@@ -479,7 +479,7 @@ def record_ball_view(request, match_id):
     # the new batsman is confirmed.
     if needs_new_batsman:
         ws_striker_id    = request.session.get('non_striker_id')   # surviving batsman
-        ws_nonstriker_id = request.session.get('non_striker_id')   # same (only 1 active)
+        ws_nonstriker_id = None   # no second active batsman until new one is selected
     else:
         ws_striker_id    = request.session.get('striker_id')
         ws_nonstriker_id = request.session.get('non_striker_id')
@@ -497,6 +497,20 @@ def record_ball_view(request, match_id):
             push_match_complete(match, match.result.result_summary)
     except Exception:
         pass
+
+    # ── Hat-trick detection for admin scoring page ──
+    hat_trick_info = None
+    if is_wicket:
+        try:
+            from scoring.models import HatTrick
+            ht = HatTrick.objects.filter(innings=innings, ball3=ball).first()
+            if ht:
+                hat_trick_info = {
+                    'bowler': ht.bowler.player_name,
+                    'victims': ht.victims_display(),
+                }
+        except Exception:
+            pass
 
     return JsonResponse({
         'success': True,
@@ -524,6 +538,7 @@ def record_ball_view(request, match_id):
         'bowler_overs': bowler_stats['overs'],
         'bowler_runs': bowler_stats['runs'],
         'bowler_wickets': bowler_stats['wickets'],
+        'hat_trick': hat_trick_info,
     })
 
 

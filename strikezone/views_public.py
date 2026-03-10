@@ -189,11 +189,15 @@ def public_live_scorecard(request, match_id):
     batting_tt1 = TournamentTeam.objects.filter(tournament=match.tournament, team=match.team1).first() if inn1 else None
     batting_tt2 = TournamentTeam.objects.filter(tournament=match.tournament, team=match.team2).first() if inn2 else None
 
-    # Players who batted in each innings
+    # Figure out which team bats in which innings — use actual innings batting teams
+    inn1_batting_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=inn1.batting_team).first() if inn1 else None
+    inn2_batting_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=inn2.batting_team).first() if inn2 else None
+
+    # Players who batted in each innings (use IDs not names for accuracy)
     batted_ids1 = set(b.batsman_id for b in batting_sc1)
     batted_ids2 = set(b.batsman_id for b in batting_sc2)
 
-    # Yet to bat
+    # Yet to bat — filter by player ID to avoid name-collision bugs
     def get_yet_to_bat(tt, batted_ids):
         if not tt:
             return []
@@ -203,10 +207,6 @@ def public_live_scorecard(request, match_id):
             .distinct()
             .order_by('player_name')
         )
-
-    # Figure out which team bats in which innings
-    inn1_batting_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=inn1.batting_team).first() if inn1 else None
-    inn2_batting_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=inn2.batting_team).first() if inn2 else None
 
     yet_to_bat1 = get_yet_to_bat(inn1_batting_tt, batted_ids1)
     yet_to_bat2 = get_yet_to_bat(inn2_batting_tt, batted_ids2)
@@ -331,14 +331,40 @@ def live_scorecard_api(request, match_id):
                 else:
                     over_balls.append(str(ball.runs_off_bat))
 
-        # Yet to bat
+        # Yet to bat — use IDs not names for accurate comparison
         batting_tt = TournamentTeam.objects.filter(tournament=match.tournament, team=inn.batting_team).first()
-        batted_ids = set(b['name'] for b in batting)
+        batted_ids_set = set(b.batsman_id for b in BattingScorecard.objects.filter(innings=inn))
         yet_to_bat = []
         if batting_tt:
             for p in PlayerDetails.objects.filter(tournament_rosters__tournament_team=batting_tt).distinct():
-                if p.player_name not in batted_ids:
+                if p.id not in batted_ids_set:
                     yet_to_bat.append(p.player_name)
+
+        # Determine striker / non-striker for this innings
+        striker_id_api = None
+        non_striker_id_api = None
+        if inn.status == 'IN_PROGRESS':
+            from scoring.models import Ball as _Ball
+            last_ball = _Ball.objects.filter(over__innings=inn).order_by('-over__over_number', '-ball_number').first()
+            not_out_ids = list(
+                BattingScorecard.objects.filter(innings=inn, status='NOT_OUT')
+                .order_by('batting_position').values_list('batsman_id', flat=True)
+            )
+            if last_ball and not_out_ids:
+                faced_id = last_ball.batsman_id
+                rotated  = last_ball.is_legal_ball and (last_ball.runs_off_bat % 2 == 1)
+                if rotated:
+                    striker_id_api     = next((p for p in not_out_ids if p != faced_id), faced_id)
+                    non_striker_id_api = faced_id if faced_id in not_out_ids else None
+                else:
+                    striker_id_api     = faced_id if faced_id in not_out_ids else None
+                    non_striker_id_api = next((p for p in not_out_ids if p != faced_id), None)
+                    if striker_id_api is None and not_out_ids:
+                        striker_id_api     = not_out_ids[0]
+                        non_striker_id_api = not_out_ids[1] if len(not_out_ids) > 1 else None
+            elif not_out_ids:
+                striker_id_api     = not_out_ids[0]
+                non_striker_id_api = not_out_ids[1] if len(not_out_ids) > 1 else None
 
         return {
             'team': str(inn.batting_team),
@@ -348,12 +374,15 @@ def live_scorecard_api(request, match_id):
             'overs': str(inn.overs_completed),
             'extras': inn.extras,
             'status': inn.status,
+            'innings_number': inn.innings_number,
             'batting': batting,
             'bowling': bowling,
             'over_balls': over_balls,
             'current_over_num': current_over.over_number if current_over else None,
             'current_bowler': current_over.bowler.player_name if current_over else None,
             'yet_to_bat': yet_to_bat,
+            'striker_id': striker_id_api,
+            'non_striker_id': non_striker_id_api,
         }
 
     target = (inn1.total_runs + 1) if inn1 and inn2 else None
