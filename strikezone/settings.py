@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     'subscriptions',
     'employee',
     'ceo',
+    'cloudinary',
+    'cloudinary_storage',
 ]
 
 MIDDLEWARE = [
@@ -126,3 +128,14 @@ os.environ.setdefault("GROQ_API_KEY", os.environ.get('GROQ_API_KEY', 'gsk_EkNvT4
 
 RAZORPAY_KEY_ID     = os.environ.get('RAZORPAY_KEY_ID',     'rzp_test_SOEWxkocanVZ8A')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'H4yBYQasEElQyEfoSFxCs0cj')
+
+# ── Cloudinary (persistent media storage for Render) ──────────────────────────
+import cloudinary
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
+    'API_KEY':    os.environ.get('CLOUDINARY_API_KEY', ''),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
+}
+# Use Cloudinary for media files if credentials are set, else local
+if os.environ.get('CLOUDINARY_CLOUD_NAME'):
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

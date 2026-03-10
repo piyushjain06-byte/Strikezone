@@ -1,22 +1,4 @@
 {% extends "base.html" %}
-{% block extra_style %}
-<style>
-@media (max-width: 768px) {
-  .ps-hero { padding: 24px 16px; }
-  .ps-name { font-size: 20px !important; }
-  .stats-grid-3 { grid-template-columns: repeat(3, 1fr) !important; gap: 8px; }
-  .stats-grid-4 { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
-  .stat-card { padding: 12px 10px; }
-  .stat-big { font-size: 24px !important; }
-  .stat-lbl { font-size: 10px; }
-  .tab-bar { overflow-x: auto; white-space: nowrap; }
-  .tab-btn { font-size: 12px; padding: 8px 10px; flex-shrink: 0; }
-  .match-hist-row { padding: 10px 12px; font-size: 12px; }
-  .qr-wrap { padding: 20px 16px; }
-}
-</style>
-{% endblock %}
-
 {% block content %}
 
 <style>
@@ -794,14 +776,29 @@ const profileUrl = window.location.protocol + '//' + window.location.host + '/pl
 function openQRModal() {
   document.getElementById('qr-modal').classList.add('open');
   if (!qrGenerated) {
-    new QRCode(document.getElementById('qr-render-target'), {
-      text: profileUrl,
-      width: 200, height: 200,
-      colorDark: '#000000', colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.H
-    });
-    qrGenerated = true;
+    generateQRWithRetry(0);
   }
+}
+
+function generateQRWithRetry(attempt) {
+  var target = document.getElementById('qr-render-target');
+  if (typeof QRCode === 'undefined') {
+    if (attempt < 20) {
+      // QRCode.js not loaded yet — wait 300ms and retry
+      setTimeout(function() { generateQRWithRetry(attempt + 1); }, 300);
+    } else {
+      target.innerHTML = '<p style="color:#f87171;font-size:12px;margin-top:8px;">QR library failed to load.<br>Please refresh the page.</p>';
+    }
+    return;
+  }
+  target.innerHTML = '';
+  new QRCode(target, {
+    text: profileUrl,
+    width: 200, height: 200,
+    colorDark: '#000000', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+  qrGenerated = true;
 }
 
 function closeQRModal() {
@@ -837,6 +834,19 @@ let scanInterval = null;
 function openScanner() {
   document.getElementById('scanner-modal').classList.add('open');
   const status = document.getElementById('scanner-status');
+
+  // Camera only works on HTTPS or localhost
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    status.textContent = '❌ Camera requires HTTPS. Please open the site using https://';
+    status.className = 'scanner-status error';
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    status.textContent = '❌ Camera not supported in this browser.';
+    status.className = 'scanner-status error';
+    return;
+  }
+
   status.textContent = 'Requesting camera access…';
   status.className = 'scanner-status';
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
@@ -850,8 +860,20 @@ function openScanner() {
         startScanLoop();
       };
     })
-    .catch(() => {
-      status.textContent = '❌ Camera access denied.';
+    .catch(function(err) {
+      var msg = '❌ Camera access denied.';
+      if (err.name === 'NotAllowedError') {
+        msg = '❌ Camera permission denied. Please allow camera access in your browser settings.';
+      } else if (err.name === 'NotFoundError') {
+        msg = '❌ No camera found on this device.';
+      } else if (err.name === 'NotSupportedError' || location.protocol !== 'https:') {
+        msg = '❌ Camera requires HTTPS. Try opening: ' + location.href.replace('http://', 'https://');
+      } else if (err.name === 'NotReadableError') {
+        msg = '❌ Camera is in use by another app. Close it and try again.';
+      } else {
+        msg = '❌ Camera error: ' + err.message;
+      }
+      status.textContent = msg;
       status.className = 'scanner-status error';
     });
 }

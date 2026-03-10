@@ -12,3 +12,5 @@ channels==4.2.0
 groq==0.23.1
 razorpay==1.4.2
 twilio==9.6.3
+cloudinary==1.41.0
+django-cloudinary-storage==0.3.0
