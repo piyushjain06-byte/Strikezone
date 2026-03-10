@@ -1,8 +1,5 @@
 from django.db import models
 
-# Create your models here.
-from django.db import models
-
 
 # ---------------------------------
 # Upper Category Model
@@ -45,6 +42,24 @@ class TournamentDetails(models.Model):
         default=2,
         help_text="How many teams will participate in this tournament"
     )
+
+    # ── Venue / Location ──────────────────────────────────────────────
+    venue = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Full address of the venue (e.g. Wankhede Stadium, Mumbai)"
+    )
+    venue_lat = models.DecimalField(
+        max_digits=10, decimal_places=7,
+        null=True, blank=True,
+        help_text="Latitude (auto-filled by Google Maps)"
+    )
+    venue_lng = models.DecimalField(
+        max_digits=10, decimal_places=7,
+        null=True, blank=True,
+        help_text="Longitude (auto-filled by Google Maps)"
+    )
+    # ──────────────────────────────────────────────────────────────────
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

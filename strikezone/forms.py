@@ -5,6 +5,26 @@ from matches.models import CreateMatch
 
 
 class TournamentForm(forms.ModelForm):
+    # Venue fields — venue_lat and venue_lng are hidden, filled by Google Maps JS
+    venue = forms.CharField(
+        max_length=300,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'id': 'venue-autocomplete',
+            'placeholder': 'Search for a ground or address…',
+            'autocomplete': 'off',
+        }),
+        label='Venue / Ground Address',
+    )
+    venue_lat = forms.DecimalField(
+        max_digits=10, decimal_places=7, required=False,
+        widget=forms.HiddenInput(attrs={'id': 'venue-lat'}),
+    )
+    venue_lng = forms.DecimalField(
+        max_digits=10, decimal_places=7, required=False,
+        widget=forms.HiddenInput(attrs={'id': 'venue-lng'}),
+    )
+
     class Meta:
         model = TournamentDetails
         fields = [
@@ -14,6 +34,9 @@ class TournamentForm(forms.ModelForm):
             'number_of_teams',
             'start_date',
             'end_date',
+            'venue',
+            'venue_lat',
+            'venue_lng',
         ]
 
 

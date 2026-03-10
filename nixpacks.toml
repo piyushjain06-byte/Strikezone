@@ -1,0 +1,13 @@
+[phases.build]
+cmds = [
+  "pip install -r requirements.txt",
+  "python manage.py collectstatic --noinput"
+]
+
+[phases.deploy]
+cmds = [
+  "python manage.py migrate --noinput"
+]
+
+[start]
+cmd = "daphne -b 0.0.0.0 -p $PORT strikezone.asgi:application"

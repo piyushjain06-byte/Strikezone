@@ -337,7 +337,7 @@
   <div class="tab-panel {% if active_tab == 'tournament' %}active{% endif %}" id="tab-tournament">
     <div class="form-card">
       <h3>🏆 Create Tournament</h3>
-      <form method="POST">
+      <form method="POST" id="tournament-form">
         {% csrf_token %}
         {% for field in tournament_form %}
           {% if field.name == 'number_of_teams' %}
@@ -353,6 +353,53 @@
               </div>
               <p class="hint-text">How many teams will participate</p>
             </div>
+
+          {% elif field.name == 'venue' %}
+            {# ── VENUE with Google Maps Places Autocomplete ── #}
+            <div style="margin-bottom:14px;">
+              <label style="display:flex;align-items:center;gap:6px;">
+                📍 Venue / Ground Address
+                <span style="font-size:10px;color:#64748b;font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span>
+              </label>
+              <div style="position:relative;">
+                <input
+                  type="text"
+                  id="venue-autocomplete"
+                  name="venue"
+                  value="{{ field.value|default:'' }}"
+                  placeholder="Search stadium, ground or address…"
+                  autocomplete="off"
+                  style="width:100%;background:#161b26;border:1.5px solid #1e2a3a;border-radius:10px;
+                         color:#e2e8f0;font-size:14px;padding:12px 40px 12px 14px;
+                         transition:border-color .2s;outline:none;font-family:inherit;"
+                  onfocus="this.style.borderColor='#22c55e'"
+                  onblur="this.style.borderColor='#1e2a3a'"
+                >
+                <span id="venue-clear-btn"
+                  style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);
+                         cursor:pointer;color:#64748b;font-size:16px;line-height:1;"
+                  onclick="clearVenue()">✕</span>
+              </div>
+              {% if field.errors %}<p style="color:#f87171;font-size:12px;margin-top:4px;">{{ field.errors.0 }}</p>{% endif %}
+
+              {# Hidden lat/lng inputs — filled by Maps JS #}
+              <input type="hidden" id="venue-lat" name="venue_lat" value="{{ tournament_form.venue_lat.value|default:'' }}">
+              <input type="hidden" id="venue-lng" name="venue_lng" value="{{ tournament_form.venue_lng.value|default:'' }}">
+
+              {# Map preview — shown once a location is picked #}
+              <div id="venue-map-wrap" style="display:none;margin-top:10px;border-radius:10px;overflow:hidden;border:1px solid #1e2a3a;">
+                <div id="venue-map" style="height:200px;width:100%;"></div>
+                <div id="venue-map-label"
+                  style="background:#0e1117;padding:8px 12px;font-size:12px;color:#94a3b8;
+                         border-top:1px solid #1e2a3a;display:flex;align-items:center;gap:6px;">
+                  <span>📍</span><span id="venue-map-text"></span>
+                </div>
+              </div>
+            </div>
+
+          {% elif field.name == 'venue_lat' or field.name == 'venue_lng' %}
+            {# Skip — rendered manually above #}
+
           {% else %}
             <div style="margin-bottom:14px;">
               <label>{{ field.label }}</label>
@@ -365,6 +412,115 @@
       </form>
     </div>
   </div>
+
+  {# ── Google Maps Places Autocomplete Script ── #}
+  <script>
+  (function() {
+    // Wait for Google Maps API to load
+    function initVenueAutocomplete() {
+      const input   = document.getElementById('venue-autocomplete');
+      const latIn   = document.getElementById('venue-lat');
+      const lngIn   = document.getElementById('venue-lng');
+      const mapWrap = document.getElementById('venue-map-wrap');
+      const mapDiv  = document.getElementById('venue-map');
+      const mapText = document.getElementById('venue-map-text');
+      const clearBtn= document.getElementById('venue-clear-btn');
+      if (!input || !window.google) return;
+
+      // Show clear button when input has text
+      input.addEventListener('input', () => {
+        clearBtn.style.display = input.value ? 'block' : 'none';
+        if (!input.value) { latIn.value = ''; lngIn.value = ''; mapWrap.style.display = 'none'; }
+      });
+
+      // Bias results towards cricket-playing countries
+      const options = {
+        types: ['establishment', 'geocode'],
+        fields: ['formatted_address', 'geometry', 'name'],
+      };
+      const autocomplete = new google.maps.places.Autocomplete(input, options);
+
+      let map = null;
+      let marker = null;
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry || !place.geometry.location) return;
+
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+
+        latIn.value = lat;
+        lngIn.value = lng;
+
+        // Use full formatted address in the input field
+        input.value = place.formatted_address || place.name || input.value;
+        clearBtn.style.display = 'block';
+
+        // Show map preview
+        mapWrap.style.display = 'block';
+        mapText.textContent   = input.value;
+
+        const pos = { lat, lng };
+
+        if (!map) {
+          map = new google.maps.Map(mapDiv, {
+            center: pos, zoom: 15,
+            mapTypeId: 'hybrid',
+            disableDefaultUI: true,
+            zoomControl: true,
+            styles: [
+              { elementType: 'geometry', stylers: [{ color: '#0e1117' }] },
+              { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+              { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#1e2a3a' }] },
+              { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0a0f1e' }] },
+            ],
+          });
+          marker = new google.maps.Marker({
+            position: pos, map,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#22c55e', fillOpacity: 1,
+              strokeColor: '#fff', strokeWeight: 2,
+            },
+            animation: google.maps.Animation.DROP,
+          });
+        } else {
+          map.setCenter(pos);
+          marker.setPosition(pos);
+          marker.setAnimation(google.maps.Animation.DROP);
+        }
+      });
+    }
+
+    window.clearVenue = function() {
+      const input   = document.getElementById('venue-autocomplete');
+      const latIn   = document.getElementById('venue-lat');
+      const lngIn   = document.getElementById('venue-lng');
+      const mapWrap = document.getElementById('venue-map-wrap');
+      const clearBtn= document.getElementById('venue-clear-btn');
+      input.value = ''; latIn.value = ''; lngIn.value = '';
+      mapWrap.style.display = 'none';
+      clearBtn.style.display = 'none';
+      input.focus();
+    };
+
+    // Expose init function for Google Maps callback
+    window._initVenueAutocomplete = initVenueAutocomplete;
+
+    // If Maps already loaded (e.g. on back navigation), init immediately
+    if (window.google && window.google.maps && window.google.maps.places) {
+      initVenueAutocomplete();
+    }
+  })();
+  </script>
+
+  {# Load Google Maps JS API — replace YOUR_API_KEY with your actual key in settings or .env #}
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY|default:'YOUR_GOOGLE_MAPS_API_KEY' }}&libraries=places&callback=_initVenueAutocomplete"
+    async defer>
+  </script>
 
   <div class="tab-panel {% if active_tab == 'team' %}active{% endif %}" id="tab-team">
     <div class="form-card">
