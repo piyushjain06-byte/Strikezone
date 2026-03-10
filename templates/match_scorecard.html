@@ -1,4 +1,23 @@
 {% extends "base.html" %}
+{% block extra_style %}
+<style>
+@media (max-width: 768px) {
+  .scorecard-wrap { padding: 12px 10px; }
+  .innings-header { padding: 14px 12px; }
+  .innings-title { font-size: 16px; }
+  .score-big { font-size: 28px !important; }
+  .batting-table th, .batting-table td { font-size: 11px !important; padding: 7px 6px !important; }
+  .bowling-table th, .bowling-table td { font-size: 11px !important; padding: 7px 6px !important; }
+  .result-banner { padding: 16px 12px; font-size: 15px; }
+  .match-info-row { flex-wrap: wrap; gap: 8px; font-size: 12px; }
+  .scorecard-nav { overflow-x: auto; white-space: nowrap; }
+  .sc-nav-btn { font-size: 12px; padding: 7px 12px; flex-shrink: 0; }
+  .extras-row { font-size: 12px; padding: 8px 10px; }
+  .fow-section { font-size: 11px; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 
 <style>

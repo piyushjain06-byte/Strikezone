@@ -1,4 +1,21 @@
 {% extends "base.html" %}
+{% block extra_style %}
+<style>
+@media (max-width: 768px) {
+  .t-grid { grid-template-columns: 1fr !important; gap: 10px; }
+  .t-card { padding: 14px 12px; }
+  .t-name { font-size: 16px; }
+  .t-meta { font-size: 12px; flex-wrap: wrap; gap: 6px; }
+  .t-badge { font-size: 10px; padding: 2px 8px; }
+  .t-stats { gap: 8px; padding: 10px 12px; }
+  .t-stat-v { font-size: 18px; }
+  .t-stat-l { font-size: 10px; }
+  .page-hero { padding: 24px 16px; }
+  .page-hero h1 { font-size: 22px; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 
 <style>

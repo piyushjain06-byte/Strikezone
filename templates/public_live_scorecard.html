@@ -1,4 +1,31 @@
 {% extends 'base.html' %}
+{% block extra_style %}
+<style>
+@media (max-width: 768px) {
+  .live-wrap { padding: 10px; }
+  .inn-big-score { font-size: 32px !important; }
+  .inn-overs { font-size: 13px; }
+  .inn-tab { font-size: 12px; padding: 9px 6px; }
+  .batsmen-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .batsman-card { padding: 10px 10px; }
+  .batsman-name { font-size: 13px; }
+  .batsman-runs { font-size: 22px !important; }
+  .ball-badge { width: 30px; height: 30px; font-size: 11px; }
+  .over-balls { gap: 5px; flex-wrap: wrap; }
+  .bowler-row { font-size: 12px; padding: 8px 10px; }
+  .ytb-section { padding: 8px 10px 12px; }
+  .ytb-player { font-size: 12px; padding: 6px 10px; }
+  .live-header { padding: 10px 12px; }
+  .live-match-title { font-size: 14px; }
+  .crr-box { padding: 8px 12px; font-size: 12px; }
+}
+@media (max-width: 480px) {
+  .batsmen-row { grid-template-columns: 1fr; }
+  .inn-big-score { font-size: 28px !important; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -139,10 +166,10 @@
 
 <div class="ls-wrap" data-match-id="{{ match.id }}" data-live="{{ current_innings|yesno:'true,false' }}">
 
-{% if current_innings or inn1 %}
-<div class="refresh-bar" id="refresh-bar" {% if not current_innings %}style="display:none"{% endif %}>
+{% if current_innings %}
+<div class="refresh-bar">
   <div class="refresh-dot"></div>
-  <span id="refresh-lbl">{% if current_innings %}Live &middot; Connecting...{% else %}Innings Break &middot; Waiting for 2nd innings...{% endif %}</span>
+  <span>Live &middot; Connecting...</span>
   <span class="last-updated" id="last-updated">&mdash;</span>
 </div>
 {% endif %}
@@ -236,8 +263,43 @@
 </div>
 {% endif %}
 
-<!-- live batsmen cards removed -->
-
+<!-- LIVE BATSMEN CARDS (only shown during live innings) -->
+{% if current_innings %}
+<div class="batsmen-row" id="batsmen-row">
+  {% for b in batting_sc1 %}{% if b.status == 'NOT_OUT' %}
+  <div class="batsman-card {% if b.batsman.id == striker_id %}on-strike{% endif %}" data-player-id="{{ b.batsman.id }}">
+    <div class="bat-header">
+      {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="bat-avatar">
+      {% else %}<div class="bat-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+      <div><div class="bat-name"><a href="/player/{{ b.batsman.id }}/profile/" class="name-link">{{ b.batsman.player_name }}</a></div><div class="strike-tag">{% if b.batsman.id == striker_id %}⚡ On Strike{% else %}🏏 Batting{% endif %}</div></div>
+    </div>
+    <div class="bat-stats">
+      <div class="bat-stat"><div class="bat-stat-val">{{ b.runs }}</div><div class="bat-stat-lbl">Runs</div></div>
+      <div class="bat-stat"><div class="bat-stat-val">{{ b.balls_faced }}</div><div class="bat-stat-lbl">Balls</div></div>
+      <div class="bat-stat"><div class="bat-stat-val" style="color:#60a5fa;">{{ b.fours }}</div><div class="bat-stat-lbl">4s</div></div>
+      <div class="bat-stat"><div class="bat-stat-val" style="color:#c084fc;">{{ b.sixes }}</div><div class="bat-stat-lbl">6s</div></div>
+    </div>
+    <div class="bat-sr-line">SR: <b>{{ b.strike_rate }}</b></div>
+  </div>
+  {% endif %}{% endfor %}
+  {% for b in batting_sc2 %}{% if b.status == 'NOT_OUT' %}
+  <div class="batsman-card {% if b.batsman.id == striker_id %}on-strike{% endif %}" data-player-id="{{ b.batsman.id }}">
+    <div class="bat-header">
+      {% if b.batsman.photo %}<img src="{{ b.batsman.photo.url }}" class="bat-avatar">
+      {% else %}<div class="bat-avatar-init">{{ b.batsman.player_name|first|upper }}</div>{% endif %}
+      <div><div class="bat-name"><a href="/player/{{ b.batsman.id }}/profile/" class="name-link">{{ b.batsman.player_name }}</a></div><div class="strike-tag">{% if b.batsman.id == striker_id %}⚡ On Strike{% else %}🏏 Batting{% endif %}</div></div>
+    </div>
+    <div class="bat-stats">
+      <div class="bat-stat"><div class="bat-stat-val">{{ b.runs }}</div><div class="bat-stat-lbl">Runs</div></div>
+      <div class="bat-stat"><div class="bat-stat-val">{{ b.balls_faced }}</div><div class="bat-stat-lbl">Balls</div></div>
+      <div class="bat-stat"><div class="bat-stat-val" style="color:#60a5fa;">{{ b.fours }}</div><div class="bat-stat-lbl">4s</div></div>
+      <div class="bat-stat"><div class="bat-stat-val" style="color:#c084fc;">{{ b.sixes }}</div><div class="bat-stat-lbl">6s</div></div>
+    </div>
+    <div class="bat-sr-line">SR: <b>{{ b.strike_rate }}</b></div>
+  </div>
+  {% endif %}{% endfor %}
+</div>
+{% endif %}
 
 <!-- CRICBUZZ-STYLE INNINGS TABS -->
 <div class="inn-tabs-wrap">
@@ -454,10 +516,6 @@
 <script>
 const MATCH_ID  = {{ match.id }};
 const IS_LIVE   = {{ current_innings|yesno:"true,false" }};
-const INN1_COMPLETE = {{ inn1|yesno:"true,false" }};
-const HAS_INN2  = {{ inn2|yesno:"true,false" }};
-let _inningsBreak = INN1_COMPLETE && !HAS_INN2 && !IS_LIVE;
-let _wsActive = false;
 const MAX_OVERS = {{ match.tournament.number_of_overs }};
 let STRIKER_ID     = {{ striker_id|default:"null" }};
 let NON_STRIKER_ID = {{ non_striker_id|default:"null" }};
@@ -814,59 +872,21 @@ function updateTarget(data) {
   const rre = document.getElementById('req-rr');     if (rre) rre.textContent = rr;
 }
 
-// ── innings-break polling: waits for 2nd innings to start ──
-let _breakPollTimer = null;
-function startInningsBreakPoll() {
-  if (_breakPollTimer) return;
-  const bar = document.getElementById('refresh-bar');
-  const dot = document.querySelector('.refresh-dot');
-  const lbl = document.getElementById('refresh-lbl');
-  if (bar) bar.style.display = 'flex';
-  if (dot) dot.style.background = '#f59e0b';
-  if (lbl) lbl.textContent = 'Innings Break · Waiting for 2nd innings...';
-
-  _breakPollTimer = setInterval(function() {
-    fetch('/api/match/' + MATCH_ID + '/live/')
-      .then(function(r){ return r.json(); })
-      .then(function(data) {
-        if (data.inn1) updateInn('inn1', data.inn1);
-        // 2nd innings started
-        if (data.inn2 && data.inn2.status === 'IN_PROGRESS') {
-          clearInterval(_breakPollTimer);
-          _breakPollTimer = null;
-          _inningsBreak = false;
-          if (dot) dot.style.background = '#10b981';
-          if (lbl) lbl.textContent = 'Live · Connecting...';
-          // Update LIVE pill
-          var pill = document.querySelector('.completed-pill');
-          if (pill) { pill.className = 'live-pill'; pill.innerHTML = '&#9679; LIVE'; }
-          // Build inn2 DOM
-          createInn2DOM(data.inn2);
-          if (data.inn2.striker_id) updateStrike(data.inn2.striker_id, data.inn2.non_striker_id);
-          // Start WebSocket
-          if (!_wsActive) { _wsActive = true; startWebSocket(); }
-        } else if (data.result) {
-          clearInterval(_breakPollTimer); _breakPollTimer = null;
-          showResultBanner(data.result);
-        }
-      })
-      .catch(function(){});
-  }, 4000);
-}
-
 if (IS_LIVE) {
-  fetchLive();
-  _wsActive = true;
+  fetchLive();   // initial load from HTTP (page may have just loaded)
   startWebSocket();
-} else if (_inningsBreak) {
-  startInningsBreakPoll();
 }
 
 function startWebSocket() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(`${proto}://${location.host}/ws/match/${MATCH_ID}/live/`);
 
-
+  ws.onopen = () => {
+    const dot = document.querySelector('.refresh-dot');
+    const lbl = document.querySelector('.refresh-bar span:nth-child(2)');
+    if (dot) dot.style.background = '#10b981';
+    if (lbl) lbl.textContent = 'Live · WebSocket connected';
+  };
 
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
@@ -895,12 +915,7 @@ function startWebSocket() {
 
     if (msg.type === 'innings_complete') {
       const d = msg.data;
-      showCommentaryToast('Innings over! ' + (d.team||'') + ': ' + (d.runs||0) + '/' + (d.wickets||0) + ' (' + (d.overs||0) + ' ov)');
-      // When 1st innings ends, start polling for 2nd innings
-      if (!HAS_INN2) {
-        _inningsBreak = true;
-        setTimeout(function(){ if (!_breakPollTimer) startInningsBreakPoll(); }, 2500);
-      }
+      showCommentaryToast(`🏏 Innings over! ${d.team}: ${d.runs}/${d.wickets} (${d.overs} ov)`);
     }
 
     if (msg.type === 'match_complete') {
@@ -939,45 +954,13 @@ function startWebSocket() {
     }
   };
 
-  let _pollFallback = null;
-
-  ws.onopen = function() {
-    _wsActive = true;
-    const dot = document.querySelector('.refresh-dot');
-    const lbl = document.getElementById('refresh-lbl');
-    if (dot) dot.style.background = '#10b981';
-    if (lbl) lbl.textContent = 'Live · Connected';
-  };
-
-  ws.onclose = function() {
-    _wsActive = false;
-    const dot = document.querySelector('.refresh-dot');
-    const lbl = document.getElementById('refresh-lbl');
-    if (dot) dot.style.background = '#f59e0b';
+  ws.onclose = () => {
+    const lbl = document.querySelector('.refresh-bar span:nth-child(2)');
     if (lbl) lbl.textContent = 'Reconnecting...';
-    // Polling fallback while WS is reconnecting
-    if (!_pollFallback) {
-      _pollFallback = setInterval(function() {
-        fetch('/api/match/' + MATCH_ID + '/live/')
-          .then(function(r){ return r.json(); })
-          .then(function(data) {
-            if (data.inn1) updateInn('inn1', data.inn1);
-            if (data.inn2) updateInn('inn2', data.inn2);
-            if (data.inn1 && data.inn2 && data.target) updateTarget(data);
-            const u = document.getElementById('last-updated');
-            if (u) u.textContent = 'Updated ' + new Date().toLocaleTimeString();
-            if (lbl) lbl.textContent = 'Live · Polling (5s)';
-          })
-          .catch(function(){});
-      }, 5000);
-    }
-    setTimeout(function() {
-      clearInterval(_pollFallback); _pollFallback = null;
-      startWebSocket();
-    }, 3000);
+    setTimeout(startWebSocket, 3000);   // auto-reconnect
   };
 
-  ws.onerror = function() { ws.close(); };
+  ws.onerror = () => ws.close();
 }
 
 // ── toast helpers ──

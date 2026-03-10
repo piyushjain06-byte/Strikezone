@@ -1,4 +1,22 @@
 {% extends "base.html" %}
+{% block extra_style %}
+<style>
+@media (max-width: 768px) {
+  .ps-hero { padding: 24px 16px; }
+  .ps-name { font-size: 20px !important; }
+  .stats-grid-3 { grid-template-columns: repeat(3, 1fr) !important; gap: 8px; }
+  .stats-grid-4 { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+  .stat-card { padding: 12px 10px; }
+  .stat-big { font-size: 24px !important; }
+  .stat-lbl { font-size: 10px; }
+  .tab-bar { overflow-x: auto; white-space: nowrap; }
+  .tab-btn { font-size: 12px; padding: 8px 10px; flex-shrink: 0; }
+  .match-hist-row { padding: 10px 12px; font-size: 12px; }
+  .qr-wrap { padding: 20px 16px; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 
 <style>

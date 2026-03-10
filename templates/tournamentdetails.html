@@ -1,4 +1,22 @@
 {% extends 'base.html' %}
+{% block extra_style %}
+<style>
+@media (max-width: 768px) {
+  .info-grid { grid-template-columns: 1fr 1fr !important; }
+  .hero-title { font-size: 22px !important; }
+  .tab-bar { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  .tab-btn { font-size: 12px; padding: 8px 12px; flex-shrink: 0; }
+  .match-row { flex-direction: column; gap: 8px; padding: 12px; }
+  .match-teams { width: 100%; }
+  .match-meta { font-size: 11px; flex-wrap: wrap; }
+  .standings-table th, .standings-table td { font-size: 11px; padding: 7px 8px; }
+  .points-table { overflow-x: auto; display: block; }
+  .t-progress-card { padding: 12px; }
+  .ep-grid { grid-template-columns: 1fr 1fr !important; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 
 <style>

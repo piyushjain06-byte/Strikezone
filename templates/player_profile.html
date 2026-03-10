@@ -1,4 +1,25 @@
 {% extends 'base.html' %}
+{% block extra_style %}
+<style>
+@media (max-width: 768px) {
+  .pp-hero { padding: 32px 16px 28px; }
+  .pp-name { font-size: 22px !important; }
+  .pp-role-badge { font-size: 11px; }
+  .pp-body { grid-template-columns: 1fr !important; }
+  .stat-num { font-size: 26px !important; }
+  .stat-label { font-size: 10px; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px; }
+  .mr-row { padding: 10px 12px; }
+  .mr-teams { font-size: 13px; }
+  .mr-stats { padding: 8px 12px; gap: 10px; }
+  .tab-bar { overflow-x: auto; white-space: nowrap; }
+  .tab-btn { font-size: 12px; padding: 8px 10px; flex-shrink: 0; }
+  .hat-trick-card { padding: 12px; }
+  .pp-avatar-wrap { width: 72px; height: 72px; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 
 <style>
@@ -166,7 +187,6 @@
           <span class="pp-chip">No team assigned</span>
         {% endfor %}
         {% if mom_awards %}<span class="pp-chip">🏆 <strong>{{ mom_awards|length }}</strong> MOM Awards</span>{% endif %}
-        {% if hat_tricks %}<span class="pp-chip">🎩 <strong>{{ hat_tricks|length }}</strong> Hat-Trick{{ hat_tricks|length|pluralize }}</span>{% endif %}
       </div>
 
       <div class="hero-actions">
@@ -231,16 +251,6 @@
     <div class="stat-num" data-stat="mom_count">{{ mom_awards|length }}</div>
     <div class="stat-label">MOM Awards</div>
   </div>
-  {% if hat_tricks %}
-  <div class="stat-card" style="background:linear-gradient(135deg,#1a0a00,#2d1200);border:1px solid rgba(251,146,60,.35);">
-    <div class="stat-card" style="background:transparent;border:none;padding:0;">
-      <div style="position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,#92400e,#fb923c);"></div>
-    </div>
-    <div class="stat-num" style="color:#fb923c;" data-stat="hat_trick_count">{{ hat_tricks|length }}</div>
-    <div class="stat-label">Hat-Trick{{ hat_tricks|length|pluralize }}</div>
-    <div class="stat-sub">🎩 consecutive wickets</div>
-  </div>
-  {% endif %}
 </div>
 
 <!-- BODY -->
@@ -298,7 +308,6 @@
     <button class="tab-btn active" onclick="switchTab('bat',event)">🏏 Batting</button>
     <button class="tab-btn" onclick="switchTab('bowl',event)">⚾ Bowling</button>
     {% if mom_awards %}<button class="tab-btn" onclick="switchTab('mom',event)">🌟 MOM Awards</button>{% endif %}
-    {% if hat_tricks %}<button class="tab-btn" onclick="switchTab('hatrick',event)">🎩 Hat-Tricks</button>{% endif %}
   </div>
 
   <div id="tab-bat" class="tab-pane active">
@@ -352,30 +361,6 @@
     {% else %}<div class="empty">No bowling records found.</div>{% endif %}
   </div>
 
-  {% if hat_tricks %}
-  <div id="tab-hatrick" class="tab-pane">
-    <div class="sec-hdr"><span class="sec-title">🎩 Hat-Tricks</span><span class="sec-count">{{ hat_tricks|length }}</span></div>
-    {% for ht in hat_tricks %}
-    <div class="mr" style="border-color:rgba(251,146,60,.25);">
-      <div class="mr-head" style="background:linear-gradient(135deg,rgba(251,146,60,.06),transparent);">
-        <div>
-          <div class="mr-vs">{{ ht.match.team1 }} vs {{ ht.match.team2 }}</div>
-          <div class="mr-sub">{{ ht.match.tournament.tournament_name }} · {{ ht.match.match_date }}</div>
-        </div>
-        <span class="badge" style="color:#fb923c;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.3);">🎩 Hat-Trick</span>
-      </div>
-      <div class="mr-stats">
-        <div class="mr-stat">
-          <div class="mr-stat-v" style="font-size:14px;color:#fb923c;">{{ ht.victims_display }}</div>
-          <div class="mr-stat-l">Dismissed</div>
-        </div>
-      </div>
-      <div class="mr-dismissal" style="color:rgba(251,146,60,.6);">3 wickets in 3 consecutive legal deliveries</div>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
   {% if mom_awards %}
   <div id="tab-mom" class="tab-pane">
     <div class="sec-hdr"><span class="sec-title">🏆 Man of the Match Awards</span><span class="sec-count">{{ mom_awards|length }}</span></div>
@@ -418,7 +403,6 @@
     <div class="info-row"><span class="info-label">Bowling Spells</span><span class="info-val">{{ bowl_total.innings_count|default:0 }}</span></div>
     <div class="info-row"><span class="info-label">Bowling Avg</span><span class="info-val">{{ bowl_avg|default:"–" }}</span></div>
     <div class="info-row"><span class="info-label">MOM Awards</span><span class="info-val" style="color:#facc15;">{{ mom_awards|length }}</span></div>
-    {% if hat_tricks %}<div class="info-row"><span class="info-label">Hat-Tricks</span><span class="info-val" style="color:#fb923c;">🎩 {{ hat_tricks|length }}</span></div>{% endif %}
     <div class="info-row"><span class="info-label">Tournament Honours</span><span class="info-val" style="color:#facc15;">{{ tournament_awards|length }}</span></div>
   </div>
 </aside>
@@ -432,7 +416,7 @@
     <div id="qr-container"><div id="qr-msg">Generating QR…</div></div>
     <div class="qr-name">{{ player.player_name }}</div>
     <div class="qr-team">{% for r in rosters|slice:":1" %}{{ r.tournament_team.team.team_name }} · {{ r.get_role_display }}{% endfor %}</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;">{{ bat_total.total_runs|default:0 }} runs · {{ bowl_total.total_wickets|default:0 }} wickets · {{ mom_awards|length }} MOM{% if hat_tricks %} · 🎩{{ hat_tricks|length }}{% endif %}</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">{{ bat_total.total_runs|default:0 }} runs · {{ bowl_total.total_wickets|default:0 }} wickets · {{ mom_awards|length }} MOM</div>
     <button class="qr-dl-btn" onclick="downloadQR()">⬇ Download Card</button>
   </div>
 </div>

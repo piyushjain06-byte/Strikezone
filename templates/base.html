@@ -412,6 +412,105 @@
       .hamburger { display: flex; }
       .search-wrap { display: none; }
     }
+
+    /* ═══════════════════════════════════════════════════
+       GLOBAL MOBILE RESPONSIVE — applies to ALL pages
+       ═══════════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      /* Base layout */
+      body { font-size: 14px; }
+
+      /* Header tighter on mobile */
+      .main-header { padding: 0 14px; }
+      .logo { font-size: 20px !important; letter-spacing: 1px !important; }
+      .tagline { font-size: 8px !important; }
+
+      /* Common page wrapper — reduce side padding */
+      .wrap, .container, .page-wrap, .content-wrap {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+      }
+
+      /* Cards — reduce padding on mobile */
+      .card, .form-card, .match-card, .t-card,
+      [class*="-card"], [class*="card-"] {
+        padding: 14px 12px !important;
+        border-radius: 12px !important;
+      }
+
+      /* Tables — make scrollable horizontally */
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        font-size: 12px !important;
+      }
+      table th, table td {
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+      }
+
+      /* Headings scale down */
+      h1 { font-size: 22px !important; }
+      h2 { font-size: 18px !important; }
+      h3 { font-size: 16px !important; }
+
+      /* Buttons — full width on mobile */
+      .btn-submit, .btn-primary {
+        width: 100% !important;
+        padding: 12px !important;
+        font-size: 14px !important;
+      }
+
+      /* Two-column grids → single column */
+      .grid-2, .two-col, .stats-grid,
+      [style*="grid-template-columns: 1fr 1fr"],
+      [style*="grid-template-columns:1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* Stat numbers — smaller on mobile */
+      .stat-num, .big-num, .score-big {
+        font-size: 26px !important;
+      }
+
+      /* Hide decorative elements on mobile */
+      .stadium-lights { display: none; }
+
+      /* Tabs — scrollable horizontal */
+      .tabs, .tab-list, .nav-tabs-page {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+      }
+
+      /* Forms */
+      .form-group { margin-bottom: 14px !important; }
+      input, select, textarea {
+        font-size: 16px !important; /* prevents iOS zoom */
+        padding: 12px !important;
+      }
+
+      /* Flex rows that should stack on mobile */
+      .flex-row-mobile-stack {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+
+      /* Section padding */
+      section, .section {
+        padding: 16px 0 !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      /* Extra small phones */
+      h1 { font-size: 19px !important; }
+      .logo { font-size: 18px !important; }
+      table th, table td { font-size: 11px !important; padding: 6px 8px !important; }
+    }
   </style>
 </head>
 

@@ -1,4 +1,18 @@
 {% extends 'base.html' %}
+{% block extra_style %}
+<style>
+@media (max-width: 768px) {
+  .awards-grid { grid-template-columns: 1fr !important; gap: 12px; }
+  .award-card { padding: 20px 16px; }
+  .award-trophy { font-size: 40px; }
+  .award-title { font-size: 12px; }
+  .award-player { font-size: 18px; }
+  .award-stats { grid-template-columns: repeat(3,1fr) !important; gap: 8px; }
+  .aw-stat-v { font-size: 18px; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');

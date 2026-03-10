@@ -1,4 +1,21 @@
 {% extends "base.html" %}
+{% block extra_style %}
+<style>
+@media (max-width: 768px) {
+  .bot-wrap { padding: 10px; height: calc(100vh - 140px); }
+  .bot-messages { padding: 10px; }
+  .bot-msg { font-size: 13px; padding: 10px 12px; max-width: 90%; }
+  .bot-input-row { padding: 10px; gap: 8px; }
+  .bot-input { font-size: 14px; padding: 10px 14px; }
+  .bot-send { padding: 10px 14px; font-size: 13px; }
+  .bot-header { padding: 12px 14px; }
+  .bot-title { font-size: 15px; }
+  .bot-suggestion { font-size: 12px; padding: 6px 10px; }
+  .suggestions-row { gap: 6px; flex-wrap: wrap; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 
 <style>
