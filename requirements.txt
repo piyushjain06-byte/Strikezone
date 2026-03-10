@@ -4,25 +4,11 @@ pillow==12.1.1
 sqlparse==0.5.5
 tzdata==2025.3
 requests==2.32.3
-
-# ASGI server — required for WebSockets (live scoring)
 daphne==4.1.2
-
-# Static files serving on Railway
 whitenoise==6.9.0
-
-# PostgreSQL on Railway
 psycopg2-binary==2.9.10
 dj-database-url==2.3.0
-
-# Django Channels (WebSockets)
 channels==4.2.0
-
-# CrickBot AI
 groq==0.23.1
-
-# Payments
 razorpay==1.4.2
-
-# SMS / OTP
 twilio==9.6.3
