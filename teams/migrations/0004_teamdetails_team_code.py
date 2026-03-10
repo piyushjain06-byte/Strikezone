@@ -21,14 +21,14 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='teamdetails',
             name='team_code',
-            # Step 1: add nullable + NOT unique to avoid SQLite constraint issues
-            field=models.CharField(blank=True, null=True, db_index=True, help_text='Unique team ID (auto-generated). Use this to register team in new tournaments.', max_length=12),
+            # Step 1: add nullable, no index yet to avoid PostgreSQL conflicts
+            field=models.CharField(blank=True, null=True, help_text='Unique team ID (auto-generated). Use this to register team in new tournaments.', max_length=12),
         ),
         migrations.RunPython(backfill_team_codes, migrations.RunPython.noop),
-        # Step 2: enforce uniqueness after backfill
+        # Step 2: enforce uniqueness after backfill (unique=True creates the index automatically)
         migrations.AlterField(
             model_name='teamdetails',
             name='team_code',
-            field=models.CharField(blank=True, null=True, db_index=True, help_text='Unique team ID (auto-generated). Use this to register team in new tournaments.', max_length=12, unique=True),
+            field=models.CharField(blank=True, null=True, help_text='Unique team ID (auto-generated). Use this to register team in new tournaments.', max_length=12, unique=True),
         ),
     ]
