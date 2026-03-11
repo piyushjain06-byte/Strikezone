@@ -245,7 +245,7 @@
 <div class="over-card">
   <div class="over-card-title">Current Over</div>
   <div class="over-info-row">
-    <div class="over-num" id="over-num">Over {{ current_over.over_number }} of {{ match.tournament.number_of_overs }}</div>
+    <div class="over-num" id="over-num">Over {{ current_over.over_number }} of {{ max_overs }}</div>
     <div class="bowler-tag">&#127955; <b id="bowler-name">{{ current_over.bowler }}</b></div>
   </div>
   <div class="balls-row" id="balls-row">
@@ -516,7 +516,7 @@
 <script>
 const MATCH_ID  = {{ match.id }};
 const IS_LIVE   = {{ current_innings|yesno:"true,false" }};
-const MAX_OVERS = {{ match.tournament.number_of_overs }};
+const MAX_OVERS = {{ max_overs }};
 let STRIKER_ID     = {{ striker_id|default:"null" }};
 let NON_STRIKER_ID = {{ non_striker_id|default:"null" }};
 

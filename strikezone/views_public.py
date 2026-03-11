@@ -157,6 +157,17 @@ def flutter_live_matches_api(request):
 
 # ── PUBLIC LIVE SCORECARD PAGE ──
 
+
+def _get_match_max_overs(match):
+    """Returns custom_overs if set on this match, else tournament default."""
+    try:
+        custom = match.match_start.custom_overs
+        if custom:
+            return custom
+    except Exception:
+        pass
+    return match.tournament.number_of_overs
+
 def public_live_scorecard(request, match_id):
     """Public page anyone can view - shows live scoring with full data."""
     match = get_object_or_404(CreateMatch, id=match_id)
@@ -278,6 +289,7 @@ def public_live_scorecard(request, match_id):
         'result': result,
         'striker_id': striker_id,
         'non_striker_id': non_striker_id,
+        'max_overs': _get_match_max_overs(match),
     })
 
 

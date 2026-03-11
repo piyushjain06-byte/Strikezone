@@ -234,7 +234,7 @@ def scoring_view(request, match_id):
         'bowling_scorecard': bowling_scorecard,
         'bowling_team_players': bowling_team_players,
         'available_batsmen': available_batsmen,
-        'max_overs': match.tournament.number_of_overs,
+        'max_overs': innings.max_overs,  # uses custom_overs if set, else tournament default
         'target': target,
     })
 

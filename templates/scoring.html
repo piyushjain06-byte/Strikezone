@@ -448,7 +448,7 @@
 
   <!-- TARGET BANNER (innings 2 only) -->
   {% if target %}
-  {% with balls_bowled=innings.total_balls max_balls=match.tournament.number_of_overs|add:0 %}
+  {% with balls_bowled=innings.total_balls max_balls=max_overs|add:0 %}
   {% with balls_remaining=max_overs|add:0 %}
   <div class="target-banner">
     <div style="flex:1;">
@@ -854,7 +854,7 @@
         Number of Overs
       </div>
       <div style="font-size:12px;color:#94a3b8;margin-bottom:12px;">
-        Tournament default: <strong style="color:#fff;">{{ match.tournament.number_of_overs }}</strong> overs.
+        Tournament default: <strong style="color:#fff;">{{ match.tournament.number_of_overs }}</strong> overs. Current: <strong style="color:#f59e0b;">{{ max_overs }}</strong> overs.
         Change below to override for this match only.
       </div>
 
@@ -1563,6 +1563,7 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
   }
 
+
   // ── Match Settings ─────────────────────────────────────────────────────────
   const ANY_BALL_BOWLED = {{ innings.total_balls }} > 0;
 
@@ -1604,17 +1605,17 @@
       msgEl.style.display = 'block';
       if (data.success) {
         msgEl.style.color = '#4ade80';
-        msgEl.textContent = '✅ ' + data.message;
+        msgEl.textContent = '\u2705 ' + data.message;
         document.querySelectorAll('.max-overs-display').forEach(el => el.textContent = overs);
         setTimeout(() => hideModal('matchSettingsModal'), 1200);
       } else {
         msgEl.style.color = '#f87171';
-        msgEl.textContent = '❌ ' + data.error;
+        msgEl.textContent = '\u274c ' + data.error;
       }
     } catch (e) {
       msgEl.style.display = 'block';
       msgEl.style.color = '#f87171';
-      msgEl.textContent = '❌ Network error. Try again.';
+      msgEl.textContent = '\u274c Network error. Try again.';
     }
   }
 
