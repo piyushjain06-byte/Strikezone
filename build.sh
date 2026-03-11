@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 set -o errexit
-pip install -r requirements.txt
+
+# Install ML libs first separately (heavy — pin to avoid re-resolving)
+pip install --no-cache-dir numpy==1.26.4 pandas==2.2.3 matplotlib==3.8.4 scikit-learn==1.4.2
+
+# Install rest of dependencies
+pip install --no-cache-dir -r requirements.txt
+
 python manage.py collectstatic --noinput
 python manage.py migrate
+mkdir -p media/guest_photos media/player_photos media/team_logos
 
-# Seed UpperCategory nav items if they don't exist
+# Seed nav items and superuser
 python manage.py shell << 'PYEOF'
 from tournaments.models import UpperCategory
 from django.contrib.auth import get_user_model
@@ -17,7 +24,6 @@ for name in nav_items:
     else:
         print(f"Already exists: {name}")
 
-# Create superuser if not exists
 User = get_user_model()
 if not User.objects.filter(username='ceo').exists():
     User.objects.create_superuser('ceo', 'ceo@strikezone.com', 'Strikezone@123')

@@ -14,3 +14,8 @@ razorpay==1.4.2
 twilio==9.6.3
 cloudinary==1.41.0
 django-cloudinary-storage==0.3.0
+# ML / chart libs
+numpy==1.26.4
+pandas==2.2.3
+matplotlib==3.8.4
+scikit-learn==1.4.2
