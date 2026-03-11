@@ -90,8 +90,27 @@ def player_analysis_api(request, player_id):
                 'dismissal': r.dismissal_info or '',
                 'match_label': f"vs {opp_name}",
             })
-            if r.status not in ('NOT_OUT', 'DNB', None, ''):
-                key = r.status.replace('_', ' ').title()
+            if r.status == 'OUT':
+                # Parse dismissal_info e.g. "b Rohit", "c Kohli b Rohit", "lbw b Rohit", "run out"
+                info = (r.dismissal_info or '').strip().lower()
+                if info.startswith('c & b') or info.startswith('c&b'):
+                    key = 'Caught & Bowled'
+                elif info.startswith('c '):
+                    key = 'Caught'
+                elif info.startswith('b '):
+                    key = 'Bowled'
+                elif info.startswith('lbw'):
+                    key = 'LBW'
+                elif info.startswith('st ') or info.startswith('st †'):
+                    key = 'Stumped'
+                elif info.startswith('run out'):
+                    key = 'Run Out'
+                elif info.startswith('hit wicket'):
+                    key = 'Hit Wicket'
+                elif info.startswith('retired'):
+                    key = 'Retired'
+                else:
+                    key = 'Out'
                 dismissals[key] = dismissals.get(key, 0) + 1
 
         agg = bat_qs.aggregate(
@@ -102,26 +121,40 @@ def player_analysis_api(request, player_id):
         total_runs    = agg['total_runs'] or 0
         total_balls   = agg['total_balls'] or 0
         total_innings = agg['innings'] or 0
-        bat_avg = round(total_runs / total_innings, 1) if total_innings else 0
+        # Cricket average = runs / dismissals (not-out innings excluded from denominator)
+        dismissal_count = bat_qs.filter(status='OUT').count()
+        bat_avg = round(total_runs / dismissal_count, 1) if dismissal_count else total_runs
         bat_sr  = round(total_runs / total_balls * 100, 1) if total_balls else 0
         fifties  = sum(1 for r in bat_records if 50 <= r['runs'] < 100)
         hundreds = sum(1 for r in bat_records if r['runs'] >= 100)
 
-        # Hat-tricks
-        from scoring.models import HatTrick
-        hat_tricks_qs = HatTrick.objects.filter(bowler=player).select_related(
-            'match__team1', 'match__team2', 'match__tournament',
-            'victim1', 'victim2', 'victim3',
-        ).order_by('-created_at')
+        # Hat-tricks — safely import (model may not be registered in scoring/models.py yet)
         hat_trick_list = []
-        for ht in hat_tricks_qs:
-            hat_trick_list.append({
-                'match': f"{ht.match.team1} vs {ht.match.team2}",
-                'tournament': ht.match.tournament.tournament_name,
-                'date': str(ht.match.match_date),
-                'victims': ht.victims_display(),
-            })
-        hat_trick_count = len(hat_trick_list)
+        hat_trick_count = 0
+        try:
+            from scoring.models import HatTrick
+            hat_tricks_qs = HatTrick.objects.filter(bowler=player).select_related(
+                'match__team1', 'match__team2', 'match__tournament',
+                'victim1', 'victim2', 'victim3',
+            ).order_by('-created_at')
+            for ht in hat_tricks_qs:
+                victims = ''
+                try:
+                    victims = ht.victims_display()
+                except Exception:
+                    parts = []
+                    for v in [ht.victim1, ht.victim2, ht.victim3]:
+                        if v: parts.append(v.player_name)
+                    victims = ', '.join(parts)
+                hat_trick_list.append({
+                    'match': f"{ht.match.team1} vs {ht.match.team2}",
+                    'tournament': ht.match.tournament.tournament_name,
+                    'date': str(ht.match.match_date),
+                    'victims': victims,
+                })
+            hat_trick_count = len(hat_trick_list)
+        except Exception:
+            pass
 
         # Phase batting — count balls directly from Ball model per over range
         inn_ids = list(bat_qs.values_list('innings_id', flat=True))
@@ -129,6 +162,7 @@ def player_analysis_api(request, player_id):
         for phase, ov_start, ov_end in [('powerplay',1,6),('middle',7,15),('death',16,99)]:
             phase_balls = Ball.objects.filter(
                 over__innings_id__in=inn_ids,
+                batsman=player,                       # ← only THIS player's balls
                 over__over_number__gte=ov_start,
                 over__over_number__lte=ov_end,
                 is_legal_ball=True,
@@ -209,13 +243,14 @@ def player_analysis_api(request, player_id):
         # ── STRENGTHS & WEAKNESSES ────────────────────────────
         strengths, weaknesses = [], []
 
-        if bat_sr >= 150:  strengths.append('Explosive striker — SR above 150')
-        elif bat_sr >= 120: strengths.append('Good striker of the ball')
-        elif bat_sr < 100 and total_innings > 3: weaknesses.append(f'Strike rate below 100 ({bat_sr}) — needs to accelerate')
+        if total_innings >= 1:
+            if bat_sr >= 150:  strengths.append('Explosive striker — SR above 150')
+            elif bat_sr >= 120: strengths.append('Good striker of the ball')
+            elif bat_sr < 100 and total_innings > 3: weaknesses.append(f'Strike rate below 100 ({bat_sr}) — needs to accelerate')
 
-        if bat_avg >= 35:  strengths.append('Reliable batsman — high average')
-        elif bat_avg >= 20: strengths.append('Decent batting average')
-        elif bat_avg < 15 and total_innings > 3: weaknesses.append(f'Low batting average ({bat_avg})')
+            if bat_avg >= 35:  strengths.append('Reliable batsman — high average')
+            elif bat_avg >= 20: strengths.append('Decent batting average')
+            elif bat_avg < 15 and total_innings > 3: weaknesses.append(f'Low batting average ({bat_avg})')
 
         if fifties >= 3:   strengths.append(f'Converts starts — {fifties} fifties')
         if hundreds >= 1:  strengths.append(f'Match winner — {hundreds} century/ies')
@@ -239,22 +274,13 @@ def player_analysis_api(request, player_id):
             if dismissals[top_d] >= 3:
                 weaknesses.append(f'Often dismissed {top_d} ({dismissals[top_d]} times)')
 
-        # ── BOWLER DISMISSAL ALERT ──
+        # ── BOWLER DISMISSAL ALERT — which bowlers dismiss this player most ──
         bowler_dismissal_alerts = []
-        from scoring.models import Ball as ScoringBall
-        bowler_dismissals = (
-            ScoringBall.objects
-            .filter(player_dismissed=player, is_wicket=True)
-            .exclude(over__bowler=player)  # exclude self
-            .values('over__innings__bowling_team__team_name')
-            .annotate(cnt=django_models.Count('id'))
-            .order_by('-cnt')
-        )
-        # Per-bowler dismissal count
+        # Per-bowler dismissal count (exclude run-outs where bowler isn't credited)
         bowler_dismiss_counts = {}
-        for ball in ScoringBall.objects.filter(
+        for ball in Ball.objects.filter(
             player_dismissed=player, is_wicket=True
-        ).select_related('bowler'):
+        ).exclude(wicket_type='RUN_OUT').select_related('bowler'):
             if ball.bowler:
                 bname = ball.bowler.player_name
                 bowler_dismiss_counts[bname] = bowler_dismiss_counts.get(bname, 0) + 1

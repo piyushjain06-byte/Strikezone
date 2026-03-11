@@ -364,3 +364,44 @@ class BowlingScorecard(models.Model):
 
     def __str__(self):
         return f"{self.bowler.player_name} - {self.wickets}W/{self.runs_given}R"
+
+
+# ---------------------------------
+# Hat-Trick Model
+# (table created by migration 0003_hattrick)
+# ---------------------------------
+class HatTrick(models.Model):
+    innings  = models.ForeignKey(
+        Innings, on_delete=models.CASCADE, related_name='hat_tricks'
+    )
+    match    = models.ForeignKey(
+        'matches.CreateMatch', on_delete=models.CASCADE, related_name='hat_tricks'
+    )
+    bowler   = models.ForeignKey(
+        'teams.PlayerDetails', on_delete=models.CASCADE, related_name='hat_tricks'
+    )
+    ball1    = models.ForeignKey(Ball, on_delete=models.CASCADE, related_name='hat_trick_ball1')
+    ball2    = models.ForeignKey(Ball, on_delete=models.CASCADE, related_name='hat_trick_ball2')
+    ball3    = models.ForeignKey(Ball, on_delete=models.CASCADE, related_name='hat_trick_ball3')
+    victim1  = models.ForeignKey(
+        'teams.PlayerDetails', on_delete=models.SET_NULL, null=True, blank=True, related_name='hat_trick_victim1'
+    )
+    victim2  = models.ForeignKey(
+        'teams.PlayerDetails', on_delete=models.SET_NULL, null=True, blank=True, related_name='hat_trick_victim2'
+    )
+    victim3  = models.ForeignKey(
+        'teams.PlayerDetails', on_delete=models.SET_NULL, null=True, blank=True, related_name='hat_trick_victim3'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (('innings', 'ball3'),)
+        verbose_name = 'Hat-Trick'
+        verbose_name_plural = 'Hat-Tricks'
+
+    def victims_display(self):
+        names = [v.player_name for v in [self.victim1, self.victim2, self.victim3] if v]
+        return ', '.join(names) if names else '—'
+
+    def __str__(self):
+        return f"Hat-Trick by {self.bowler.player_name} in {self.innings}"
