@@ -100,6 +100,10 @@ class MatchStart(models.Model):
 
     is_match_started = models.BooleanField(default=False)
     started_at = models.DateTimeField(auto_now_add=True)
+    custom_overs = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text='Override tournament overs for this match only. Set before 1st ball.'
+    )
 
     class Meta:
         verbose_name_plural = "Match Start"

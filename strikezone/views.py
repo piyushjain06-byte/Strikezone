@@ -19,7 +19,8 @@ ACTUAL CODE LIVES IN:
 from .views_core      import admin_required, home, tournaments, tournamentdetails, teamdetails
 from .views_admin     import manage_cricket, create_match, load_teams, start_tournament
 from .views_scoring   import (match_start, start_innings_view, scoring_view, record_ball_view,
-                               select_new_batsman, undo_ball_view, next_over_view, start_second_innings)
+                               select_new_batsman, undo_ball_view, next_over_view, start_second_innings,
+                               update_match_overs)
 from .views_match     import match_result, restart_match, tournament_awards, tournament_history, match_scorecard
 from .views_auth      import (admin_login, admin_logout, player_login, send_otp_sms,
                                player_request_otp, player_verify_otp, player_register, player_logout)

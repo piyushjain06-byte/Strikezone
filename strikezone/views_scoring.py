@@ -239,6 +239,50 @@ def scoring_view(request, match_id):
     })
 
 
+
+# ── Match Settings: Update Overs ──────────────────────────────────────────────
+@admin_required
+@require_plan('pro_plus')
+@require_POST
+def update_match_overs(request, match_id):
+    """Change the overs for this match — only allowed before the 1st ball is bowled."""
+    match = get_object_or_404(CreateMatch, id=match_id)
+    try:
+        match_start = match.match_start
+    except MatchStart.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Match not started yet.'}, status=400)
+
+    # Block if any ball has been bowled in any innings
+    any_ball = Ball.objects.filter(over__innings__match=match).exists()
+    if any_ball:
+        return JsonResponse({
+            'success': False,
+            'error': 'Cannot change overs after the first ball has been bowled.'
+        }, status=400)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        data = request.POST
+
+    try:
+        new_overs = int(data.get('overs', 0))
+    except (TypeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Invalid overs value.'}, status=400)
+
+    if new_overs < 1 or new_overs > 50:
+        return JsonResponse({'success': False, 'error': 'Overs must be between 1 and 50.'}, status=400)
+
+    match_start.custom_overs = new_overs
+    match_start.save(update_fields=['custom_overs'])
+
+    return JsonResponse({
+        'success': True,
+        'overs': new_overs,
+        'message': f'Match overs updated to {new_overs}.'
+    })
+
+
 # ── STEP 3: AJAX - Record Ball ──
 
 @admin_required
@@ -479,7 +523,7 @@ def record_ball_view(request, match_id):
     # the new batsman is confirmed.
     if needs_new_batsman:
         ws_striker_id    = request.session.get('non_striker_id')   # surviving batsman
-        ws_nonstriker_id = None   # no second active batsman until new one is selected
+        ws_nonstriker_id = request.session.get('non_striker_id')   # same (only 1 active)
     else:
         ws_striker_id    = request.session.get('striker_id')
         ws_nonstriker_id = request.session.get('non_striker_id')
@@ -497,20 +541,6 @@ def record_ball_view(request, match_id):
             push_match_complete(match, match.result.result_summary)
     except Exception:
         pass
-
-    # ── Hat-trick detection for admin scoring page ──
-    hat_trick_info = None
-    if is_wicket:
-        try:
-            from scoring.models import HatTrick
-            ht = HatTrick.objects.filter(innings=innings, ball3=ball).first()
-            if ht:
-                hat_trick_info = {
-                    'bowler': ht.bowler.player_name,
-                    'victims': ht.victims_display(),
-                }
-        except Exception:
-            pass
 
     return JsonResponse({
         'success': True,
@@ -538,7 +568,6 @@ def record_ball_view(request, match_id):
         'bowler_overs': bowler_stats['overs'],
         'bowler_runs': bowler_stats['runs'],
         'bowler_wickets': bowler_stats['wickets'],
-        'hat_trick': hat_trick_info,
     })
 
 

@@ -96,6 +96,31 @@
   }
   .btn-restart-match:hover { background: rgba(239,68,68,0.1); border-color: #ef4444; }
 
+  /* ── MATCH SETTINGS BUTTON ── */
+  .btn-match-settings {
+    margin-top: 6px;
+    background: transparent; border: 1px solid rgba(99,102,241,0.35);
+    border-radius: 20px; color: #a5b4fc; font-size: 11px; font-weight: 600;
+    padding: 3px 10px; cursor: pointer; transition: all .15s; display: inline-block;
+    margin-left: 6px;
+  }
+  .btn-match-settings:hover { background: rgba(99,102,241,0.15); border-color: #6366f1; }
+  .overs-input-row { display: flex; align-items: center; gap: 12px; margin: 16px 0 8px; }
+  .overs-num-input {
+    width: 80px; background: #0d1525; border: 1px solid #1e3a5f;
+    border-radius: 8px; color: #fff; font-size: 24px; font-weight: 700;
+    text-align: center; padding: 8px 4px; font-family: 'Rajdhani', sans-serif;
+  }
+  .overs-stepper { display: flex; flex-direction: column; gap: 4px; }
+  .overs-stepper button {
+    background: #1a2a4a; border: 1px solid #1e3a5f; color: #94a3b8;
+    border-radius: 6px; width: 28px; height: 26px; font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .overs-stepper button:hover { background: #263a5a; color: #fff; }
+  .settings-locked { color: #f87171; font-size: 12px; background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 10px 12px; margin: 12px 0 0; }
+
   /* ── TARGET BANNER ── */
   .target-banner {
     background: linear-gradient(90deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05));
@@ -407,7 +432,7 @@
         <div class="match-teams">{{ match.team1 }} vs {{ match.team2 }}</div>
         <div class="over-info" id="over-info">
           {% if over %}
-            Over {{ over.over_number }} of {{ max_overs }} &nbsp;·&nbsp; 🎳 {{ over.bowler }}
+            Over {{ over.over_number }} of <span class="max-overs-display">{{ max_overs }}</span> &nbsp;·&nbsp; 🎳 {{ over.bowler }}
           {% else %}
             Innings Complete
           {% endif %}
@@ -415,6 +440,7 @@
         {% if innings.status != "COMPLETED" %}
         <button class="btn-change-bowler" onclick="openChangeBowler()" id="change-bowler-btn" {% if legal_ball_count > 0 %}style="display:none"{% endif %}>⟳ Change Bowler</button>
         {% endif %}
+        <button class="btn-match-settings" onclick="openMatchSettings()">⚙️ Match Settings</button>
         <button class="btn-restart-match" onclick="showModal('restartModal')">↺ Restart Match</button>
       </div>
     </div>
@@ -809,6 +835,48 @@
     </div>
     <div class="modal-box-footer">
       <button class="btn-confirm" onclick="confirmNewBatsman()">Send In →</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─── MATCH SETTINGS MODAL ─── -->
+<div class="modal-overlay" id="matchSettingsModal">
+  <div class="modal-box">
+    <div class="modal-box-header">
+      <span class="modal-box-title">⚙️ Match Settings</span>
+      <button class="modal-close-btn" onclick="hideModal('matchSettingsModal')">×</button>
+    </div>
+
+    <!-- Overs setting -->
+    <div style="margin-bottom:6px;">
+      <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">
+        Number of Overs
+      </div>
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:12px;">
+        Tournament default: <strong style="color:#fff;">{{ match.tournament.number_of_overs }}</strong> overs.
+        Change below to override for this match only.
+      </div>
+
+      <div id="settings-unlocked">
+        <div class="overs-input-row">
+          <div class="overs-stepper">
+            <button onclick="stepOvers(1)">▲</button>
+            <button onclick="stepOvers(-1)">▼</button>
+          </div>
+          <input class="overs-num-input" type="number" id="overs-setting-input"
+                 min="1" max="50" value="{{ max_overs }}">
+          <div style="font-size:13px;color:#64748b;">overs</div>
+        </div>
+        <button class="modal-confirm-btn" onclick="saveMatchOvers()" style="width:100%;margin-top:4px;">
+          ✅ Save
+        </button>
+        <div id="overs-save-msg" style="font-size:12px;margin-top:8px;display:none;"></div>
+      </div>
+
+      <div id="settings-locked" class="settings-locked" style="display:none;">
+        🔒 Overs cannot be changed after the first ball is bowled.
+      </div>
     </div>
   </div>
 </div>
@@ -1494,4 +1562,65 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
   }
+
+// ── Match Settings ────────────────────────────────────────────────────────────
+const MATCH_ID = {{ match.id }};
+const ANY_BALL_BOWLED = {{ innings.total_balls }} > 0;
+
+function openMatchSettings() {
+  // Show locked state if balls already bowled
+  if (ANY_BALL_BOWLED) {
+    document.getElementById('settings-unlocked').style.display = 'none';
+    document.getElementById('settings-locked').style.display = 'block';
+  } else {
+    document.getElementById('settings-unlocked').style.display = 'block';
+    document.getElementById('settings-locked').style.display = 'none';
+  }
+  document.getElementById('matchSettingsModal').classList.add('show');
+}
+
+function stepOvers(delta) {
+  const inp = document.getElementById('overs-setting-input');
+  let val = parseInt(inp.value) + delta;
+  if (val < 1) val = 1;
+  if (val > 50) val = 50;
+  inp.value = val;
+}
+
+async function saveMatchOvers() {
+  const overs = parseInt(document.getElementById('overs-setting-input').value);
+  const msg = document.getElementById('overs-save-msg');
+  if (!overs || overs < 1 || overs > 50) {
+    msg.style.display = 'block';
+    msg.style.color = '#f87171';
+    msg.textContent = 'Please enter a valid number between 1 and 50.';
+    return;
+  }
+  try {
+    const res = await fetch(`/match/${MATCH_ID}/update-overs/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ overs })
+    });
+    const data = await res.json();
+    msg.style.display = 'block';
+    if (data.success) {
+      msg.style.color = '#4ade80';
+      msg.textContent = '✅ ' + data.message;
+      // Update the displayed max overs on the scoreboard
+      document.querySelectorAll('.max-overs-display').forEach(el => el.textContent = overs);
+      // Update the JS MAX_OVERS constant used by scoring logic
+      if (typeof MAX_OVERS !== 'undefined') { window.MAX_OVERS = overs; }
+      setTimeout(() => hideModal('matchSettingsModal'), 1200);
+    } else {
+      msg.style.color = '#f87171';
+      msg.textContent = '❌ ' + data.error;
+    }
+  } catch (e) {
+    msg.style.display = 'block';
+    msg.style.color = '#f87171';
+    msg.textContent = '❌ Network error. Try again.';
+  }
+}
+
 </script>
