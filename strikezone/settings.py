@@ -36,8 +36,6 @@ INSTALLED_APPS = [
     'subscriptions',
     'employee',
     'ceo',
-    'cloudinary',
-    'cloudinary_storage',
 ]
 
 MIDDLEWARE = [
@@ -118,6 +116,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Tell WhiteNoise to NOT intercept /media/ requests — let Django handle them via urls.py
+WHITENOISE_AUTOREFRESH = True
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 TWILIO_ACCOUNT_SID  = os.environ.get('TWILIO_ACCOUNT_SID',  'AC2ec47c0a8089ac515cc92d7cd0a85177')
@@ -128,14 +129,3 @@ os.environ.setdefault("GROQ_API_KEY", os.environ.get('GROQ_API_KEY', 'gsk_EkNvT4
 
 RAZORPAY_KEY_ID     = os.environ.get('RAZORPAY_KEY_ID',     'rzp_test_SOEWxkocanVZ8A')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'H4yBYQasEElQyEfoSFxCs0cj')
-
-# ── Cloudinary (persistent media storage for Render) ──────────────────────────
-import cloudinary
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
-    'API_KEY':    os.environ.get('CLOUDINARY_API_KEY', ''),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
-}
-# Use Cloudinary for media files if credentials are set, else local
-if os.environ.get('CLOUDINARY_CLOUD_NAME'):
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
