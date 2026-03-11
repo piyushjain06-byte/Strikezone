@@ -1563,64 +1563,60 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
   }
 
-// ── Match Settings ────────────────────────────────────────────────────────────
-const MATCH_ID = {{ match.id }};
-const ANY_BALL_BOWLED = {{ innings.total_balls }} > 0;
+  // ── Match Settings ─────────────────────────────────────────────────────────
+  const ANY_BALL_BOWLED = {{ innings.total_balls }} > 0;
 
-function openMatchSettings() {
-  // Show locked state if balls already bowled
-  if (ANY_BALL_BOWLED) {
-    document.getElementById('settings-unlocked').style.display = 'none';
-    document.getElementById('settings-locked').style.display = 'block';
-  } else {
-    document.getElementById('settings-unlocked').style.display = 'block';
-    document.getElementById('settings-locked').style.display = 'none';
-  }
-  document.getElementById('matchSettingsModal').classList.add('show');
-}
-
-function stepOvers(delta) {
-  const inp = document.getElementById('overs-setting-input');
-  let val = parseInt(inp.value) + delta;
-  if (val < 1) val = 1;
-  if (val > 50) val = 50;
-  inp.value = val;
-}
-
-async function saveMatchOvers() {
-  const overs = parseInt(document.getElementById('overs-setting-input').value);
-  const msg = document.getElementById('overs-save-msg');
-  if (!overs || overs < 1 || overs > 50) {
-    msg.style.display = 'block';
-    msg.style.color = '#f87171';
-    msg.textContent = 'Please enter a valid number between 1 and 50.';
-    return;
-  }
-  try {
-    const res = await fetch(`/match/${MATCH_ID}/update-overs/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-      body: JSON.stringify({ overs })
-    });
-    const data = await res.json();
-    msg.style.display = 'block';
-    if (data.success) {
-      msg.style.color = '#4ade80';
-      msg.textContent = '✅ ' + data.message;
-      // Update the displayed max overs on the scoreboard
-      document.querySelectorAll('.max-overs-display').forEach(el => el.textContent = overs);
-      // Update the JS MAX_OVERS constant used by scoring logic
-      if (typeof MAX_OVERS !== 'undefined') { window.MAX_OVERS = overs; }
-      setTimeout(() => hideModal('matchSettingsModal'), 1200);
+  function openMatchSettings() {
+    if (ANY_BALL_BOWLED) {
+      document.getElementById('settings-unlocked').style.display = 'none';
+      document.getElementById('settings-locked').style.display = 'block';
     } else {
-      msg.style.color = '#f87171';
-      msg.textContent = '❌ ' + data.error;
+      document.getElementById('settings-unlocked').style.display = 'block';
+      document.getElementById('settings-locked').style.display = 'none';
     }
-  } catch (e) {
-    msg.style.display = 'block';
-    msg.style.color = '#f87171';
-    msg.textContent = '❌ Network error. Try again.';
+    showModal('matchSettingsModal');
   }
-}
+
+  function stepOvers(delta) {
+    const inp = document.getElementById('overs-setting-input');
+    let val = parseInt(inp.value) + delta;
+    if (val < 1) val = 1;
+    if (val > 50) val = 50;
+    inp.value = val;
+  }
+
+  async function saveMatchOvers() {
+    const overs = parseInt(document.getElementById('overs-setting-input').value);
+    const msgEl = document.getElementById('overs-save-msg');
+    if (!overs || overs < 1 || overs > 50) {
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#f87171';
+      msgEl.textContent = 'Please enter a number between 1 and 50.';
+      return;
+    }
+    try {
+      const res = await fetch(`/match/${MATCH_ID}/update-overs/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ overs })
+      });
+      const data = await res.json();
+      msgEl.style.display = 'block';
+      if (data.success) {
+        msgEl.style.color = '#4ade80';
+        msgEl.textContent = '✅ ' + data.message;
+        document.querySelectorAll('.max-overs-display').forEach(el => el.textContent = overs);
+        setTimeout(() => hideModal('matchSettingsModal'), 1200);
+      } else {
+        msgEl.style.color = '#f87171';
+        msgEl.textContent = '❌ ' + data.error;
+      }
+    } catch (e) {
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#f87171';
+      msgEl.textContent = '❌ Network error. Try again.';
+    }
+  }
+
 
 </script>
