@@ -134,3 +134,16 @@ urlpatterns = [
      path('ceo/',          include('ceo.urls')),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Serve media files in all environments (including Render production)
+from django.urls import re_path
+from django.views.static import serve as _static_serve
+import os
+
+def serve_media(request, path):
+    """Serve media files regardless of DEBUG setting."""
+    return _static_serve(request, path, document_root=settings.MEDIA_ROOT)
+
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve_media),
+]

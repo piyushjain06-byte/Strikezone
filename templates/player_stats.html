@@ -301,9 +301,9 @@
   </div>
 
   <!-- Photo upload form -->
-  <form method="POST" enctype="multipart/form-data">
+  <form id="photo-form" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
-    <input type="file" id="photo-upload" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="this.form.submit()">
+    <input type="file" id="photo-upload" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewAndSubmitPhoto(this)">
   </form>
 
   <!-- Edit profile card -->
@@ -385,9 +385,10 @@
       </div>
     </div>
   </div>
-  <form method="POST" enctype="multipart/form-data">
+  <!-- Photo upload form -->
+  <form id="photo-form" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
-    <input type="file" id="photo-upload" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="this.form.submit()">
+    <input type="file" id="photo-upload" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewAndSubmitPhoto(this)">
   </form>
 
   <!-- ── FOLLOWERS STRIP ── -->
@@ -762,47 +763,77 @@
 
 </div>
 
-<!-- QR Code generation library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- jsQR for scanning -->
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<!-- jsQR for QR scanning -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"
+  onerror="this.onerror=null;this.src='https://unpkg.com/jsqr@1.4.0/dist/jsQR.js'"></script>
 
 <script>
-// ── Generate QR (lazy — only when modal opens) ──
+// ── Generate QR using Google Charts API (no library needed) ──
 let qrGenerated = false;
-const playerId = {{ player.id }};
-const profileUrl = window.location.protocol + '//' + window.location.host + '/player/' + playerId + '/profile/';
+const playerId = {% if player and player.id %}{{ player.id }}{% else %}0{% endif %};
+const profileUrl = playerId
+  ? (window.location.protocol + '//' + window.location.host + '/player/' + playerId + '/profile/')
+  : window.location.href;
 
 function openQRModal() {
   document.getElementById('qr-modal').classList.add('open');
   if (!qrGenerated) {
-    generateQRWithRetry(0);
+    const target = document.getElementById('qr-render-target');
+    target.innerHTML = '<div style="color:#64748b;font-size:12px;padding:20px;">Generating…</div>';
+    // Google Charts QR API — no library needed, works on all browsers
+    const url = encodeURIComponent(profileUrl);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      target.innerHTML = '';
+      target.appendChild(img);
+      qrGenerated = true;
+    };
+    img.onerror = function() {
+      // Fallback: QR.io API
+      const img2 = new Image();
+      img2.crossOrigin = 'anonymous';
+      img2.onload = function() {
+        target.innerHTML = '';
+        target.appendChild(img2);
+        qrGenerated = true;
+      };
+      img2.onerror = function() {
+        target.innerHTML = '<p style="color:#f87171;font-size:12px;text-align:center;">Could not generate QR.<br>Check your internet connection.</p>';
+      };
+      img2.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + url;
+      img2.style.cssText = 'width:200px;height:200px;border-radius:4px;';
+    };
+    img.src = 'https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=' + url + '&choe=UTF-8';
+    img.style.cssText = 'width:200px;height:200px;border-radius:4px;';
   }
-}
-
-function generateQRWithRetry(attempt) {
-  var target = document.getElementById('qr-render-target');
-  if (typeof QRCode === 'undefined') {
-    if (attempt < 20) {
-      // QRCode.js not loaded yet — wait 300ms and retry
-      setTimeout(function() { generateQRWithRetry(attempt + 1); }, 300);
-    } else {
-      target.innerHTML = '<p style="color:#f87171;font-size:12px;margin-top:8px;">QR library failed to load.<br>Please refresh the page.</p>';
-    }
-    return;
-  }
-  target.innerHTML = '';
-  new QRCode(target, {
-    text: profileUrl,
-    width: 200, height: 200,
-    colorDark: '#000000', colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.H
-  });
-  qrGenerated = true;
 }
 
 function closeQRModal() {
   document.getElementById('qr-modal').classList.remove('open');
+}
+
+// ── Photo Upload — preview then submit directly to Django ────────────────────
+function previewAndSubmitPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+
+  // Show uploading label
+  const uploadLabel = document.querySelector('label[for="photo-upload"]');
+  if (uploadLabel) uploadLabel.textContent = '⏳';
+
+  // Instantly preview the photo before form submits
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    // Find any existing avatar img and update it for instant feedback
+    const existingImg = document.querySelector('.player-hero img, .player-avatar-img');
+    if (existingImg) {
+      existingImg.src = e.target.result;
+    }
+    // Submit the form with the file
+    document.getElementById('photo-form').submit();
+  };
+  reader.readAsDataURL(file);
 }
 
 document.getElementById('qr-modal').addEventListener('click', function(e) {
@@ -810,21 +841,24 @@ document.getElementById('qr-modal').addEventListener('click', function(e) {
 });
 
 function downloadQR() {
-  const img = document.querySelector('#qr-render-target img, #qr-render-target canvas');
-  if (!img) return;
-  let dataUrl;
-  if (img.tagName === 'CANVAS') {
-    dataUrl = img.toDataURL('image/png');
-  } else {
-    const c = document.createElement('canvas');
-    c.width = img.width; c.height = img.height;
-    c.getContext('2d').drawImage(img, 0, 0);
-    dataUrl = c.toDataURL('image/png');
+  const img = document.querySelector('#qr-render-target img');
+  if (!img) { alert('Please wait for QR to generate first.'); return; }
+  // Draw to canvas then download
+  const c = document.createElement('canvas');
+  c.width = 200; c.height = 200;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 200, 200);
+  try {
+    ctx.drawImage(img, 0, 0, 200, 200);
+    const a = document.createElement('a');
+    a.href = c.toDataURL('image/png');
+    a.download = 'strikezone-qr-' + (playerId || 'player') + '.png';
+    a.click();
+  } catch(e) {
+    // crossOrigin blocked — open image directly for manual save
+    window.open(img.src, '_blank');
   }
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = 'player-qr-{{ player.id }}.png';
-  a.click();
 }
 
 // ── QR Scanner ──
@@ -835,47 +869,75 @@ function openScanner() {
   document.getElementById('scanner-modal').classList.add('open');
   const status = document.getElementById('scanner-status');
 
-  // Camera only works on HTTPS or localhost
-  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-    status.textContent = '❌ Camera requires HTTPS. Please open the site using https://';
+  // Camera API requires HTTPS (except localhost)
+  const isLocal = ['localhost','127.0.0.1'].includes(location.hostname);
+  if (location.protocol !== 'https:' && !isLocal) {
+    status.innerHTML = '❌ Camera needs HTTPS. <a href="' + location.href.replace('http://','https://') + '" style="color:#60a5fa;">Switch to HTTPS →</a>';
     status.className = 'scanner-status error';
     return;
   }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    status.textContent = '❌ Camera not supported in this browser.';
+    status.textContent = '❌ Camera not supported. Use Chrome or Safari.';
     status.className = 'scanner-status error';
     return;
   }
 
-  status.textContent = 'Requesting camera access…';
+  status.textContent = '📷 Requesting camera access…';
   status.className = 'scanner-status';
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-    .then(stream => {
-      scanStream = stream;
-      const video = document.getElementById('scanner-video');
-      video.srcObject = stream;
-      video.onloadedmetadata = () => {
-        video.play();
-        status.textContent = 'Scanning… point at a QR code';
-        startScanLoop();
-      };
-    })
-    .catch(function(err) {
-      var msg = '❌ Camera access denied.';
-      if (err.name === 'NotAllowedError') {
-        msg = '❌ Camera permission denied. Please allow camera access in your browser settings.';
-      } else if (err.name === 'NotFoundError') {
-        msg = '❌ No camera found on this device.';
-      } else if (err.name === 'NotSupportedError' || location.protocol !== 'https:') {
-        msg = '❌ Camera requires HTTPS. Try opening: ' + location.href.replace('http://', 'https://');
-      } else if (err.name === 'NotReadableError') {
-        msg = '❌ Camera is in use by another app. Close it and try again.';
-      } else {
-        msg = '❌ Camera error: ' + err.message;
-      }
-      status.textContent = msg;
-      status.className = 'scanner-status error';
-    });
+
+  const video = document.getElementById('scanner-video');
+  // iOS Safari: set playsinline BEFORE assigning srcObject
+  video.setAttribute('playsinline', '');
+  video.setAttribute('muted', '');
+
+  // Try back camera first, fall back to front/any
+  function tryGetCamera(useEnvironment) {
+    const constraints = useEnvironment
+      ? { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } }
+      : { video: true };
+
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(function(stream) {
+        scanStream = stream;
+        video.srcObject = stream;
+        // Must call play() explicitly — autoplay attribute alone is blocked on mobile
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.then(function() {
+            status.textContent = '✅ Camera ready — point at a QR code';
+            status.className = 'scanner-status';
+            startScanLoop();
+          }).catch(function(e) {
+            status.textContent = '❌ Video play blocked: ' + e.message;
+            status.className = 'scanner-status error';
+          });
+        } else {
+          status.textContent = '✅ Camera ready — point at a QR code';
+          status.className = 'scanner-status';
+          startScanLoop();
+        }
+      })
+      .catch(function(err) {
+        if (useEnvironment) {
+          // Back camera failed, try front camera
+          tryGetCamera(false);
+          return;
+        }
+        var msg;
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          msg = '❌ Camera blocked. Tap the 🔒 lock icon in your browser bar → tap Camera → Allow → reload page.';
+        } else if (err.name === 'NotFoundError') {
+          msg = '❌ No camera found on this device.';
+        } else if (err.name === 'NotReadableError') {
+          msg = '❌ Camera is being used by another app. Close it first.';
+        } else {
+          msg = '❌ Camera error: ' + err.name + '. Try a different browser.';
+        }
+        status.textContent = msg;
+        status.className = 'scanner-status error';
+      });
+  }
+  tryGetCamera(true);
 }
 
 function startScanLoop() {
@@ -928,7 +990,8 @@ document.getElementById('scanner-modal').addEventListener('click', function(e) {
 <script>
 // ── LIVE STAT UPDATES ─────────────────────────────────────────────────
 (function() {
-  const PLAYER_ID = {{ player.id }};
+  const PLAYER_ID = {% if player and player.id %}{{ player.id }}{% else %}0{% endif %};
+  if (!PLAYER_ID) return; // guest user - no stats to fetch
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   let fetchPending = false;
 

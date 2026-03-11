@@ -65,7 +65,7 @@ def player_stats(request):
             })
 
         if request.method == 'POST':
-            # Photo upload
+            # Photo upload — accepts either URL (from imgBB) or direct file upload
             if request.FILES.get('photo'):
                 guest.photo = request.FILES['photo']
                 guest.save(update_fields=['photo'])
@@ -318,8 +318,6 @@ def player_stats_api(request, player_id):
 
     photo_url = player.photo.url if player.photo else ''
     mom_count = ManOfTheMatch.objects.filter(player=player).count()
-    from scoring.models import HatTrick as HT
-    hat_trick_count = HT.objects.filter(bowler=player).count()
 
     return JsonResponse({
         'photo_url': photo_url,
@@ -341,7 +339,6 @@ def player_stats_api(request, player_id):
         'total_no_balls': total_no_balls,
         'recent_bowling': recent_bowling,
         'mom_count': mom_count,
-        'hat_trick_count': hat_trick_count,
     })
 
 
@@ -484,13 +481,6 @@ def public_player_profile(request, player_id):
         'tournament'
     ).order_by('-awarded_at')
 
-    # Hat-tricks
-    from scoring.models import HatTrick
-    hat_tricks = HatTrick.objects.filter(bowler=player).select_related(
-        'match__team1', 'match__team2', 'match__tournament',
-        'victim1', 'victim2', 'victim3',
-    ).order_by('-created_at')
-
     # Compute averages
     bat_avg = None
     sr = None
@@ -527,7 +517,6 @@ def public_player_profile(request, player_id):
         'bowl_avg': bowl_avg,
         'mom_awards': mom_awards,
         'tournament_awards': tournament_awards,
-        'hat_tricks': hat_tricks,
         'is_own': is_own,
         'is_logged_in': is_logged_in,
         'follower_count': follower_count,
