@@ -393,3 +393,30 @@ def match_scorecard(request, match_id):
 
 
 # ── ADMIN LOGIN / LOGOUT ──
+
+# ── Delete Match ──────────────────────────────────────────────────────────────
+
+@admin_required
+@require_POST
+def delete_match(request, match_id):
+    """Delete a match and all related data. Only for pro_plus users, employees and CEO."""
+    from subscriptions.decorators import _is_privileged
+    from subscriptions.decorators import _get_effective_plan
+
+    # Permission: must be privileged (employee/CEO) OR pro_plus plan
+    if not (_is_privileged(request) or _get_effective_plan(request) == 'pro_plus'):
+        return JsonResponse({'success': False, 'error': 'Permission denied.'}, status=403)
+
+    match = get_object_or_404(CreateMatch, id=match_id)
+    tournament_id = match.tournament_id
+    match_name = f"{match.team1.team_name} vs {match.team2.team_name}"
+
+    # CASCADE delete — Django handles Ball→Over→Innings, MatchStart, MatchResult,
+    # ManOfTheMatch, BattingScorecard, BowlingScorecard via on_delete=CASCADE
+    match.delete()
+
+    return JsonResponse({
+        'success': True,
+        'message': f'Match "{match_name}" has been deleted.',
+        'tournament_id': tournament_id,
+    })

@@ -172,6 +172,11 @@
   .btn-start-match:hover { background: rgba(16,185,129,0.2); }
   .btn-analysis { background: rgba(139,92,246,0.08); color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
   .btn-analysis:hover { background: rgba(139,92,246,0.18); }
+  .btn-delete-match {
+    background: rgba(239,68,68,0.08); color: #f87171;
+    border: 1px solid rgba(239,68,68,0.25); margin-left: auto;
+  }
+  .btn-delete-match:hover { background: rgba(239,68,68,0.2); border-color: #ef4444; }
 
   /* TEAMS */
   .teams-list {
@@ -345,6 +350,9 @@
         {% endif %}
         <div class="mc-actions">
           <a href="{% url 'public_live_scorecard' lm.match.id %}" class="btn-action btn-live-watch">🔴 Watch Live</a>
+          {% if can_manage %}
+          <button class="btn-action btn-delete-match" onclick="confirmDeleteMatch({{ lm.match.id }}, '{{ lm.match.team1.team_name }} vs {{ lm.match.team2.team_name }}')">🗑 Delete</button>
+          {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -385,6 +393,9 @@
           <a href="{% url 'match_start' %}" class="btn-action btn-start-match">▶ Start Match</a>
           {% else %}
           <span style="font-size:12px;color:var(--muted);padding:4px 2px;">⏳ Awaiting kickoff</span>
+          {% endif %}
+          {% if can_manage %}
+          <button class="btn-action btn-delete-match" onclick="confirmDeleteMatch({{ um.match.id }}, '{{ um.match.team1.team_name }} vs {{ um.match.team2.team_name }}')">🗑 Delete</button>
           {% endif %}
         </div>
       </div>
@@ -733,6 +744,79 @@ function switchTab(name, btn) {
     if (lb) switchTab('live', lb);
   } {% endif %}
 })();
+</script>
+
+<!-- ─── DELETE MATCH MODAL ─── -->
+<div id="deleteMatchModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
+  <div style="background:#111827;border:1px solid rgba(239,68,68,0.3);border-radius:14px;padding:24px;max-width:340px;width:90%;margin:auto;">
+    <div style="font-size:15px;font-weight:700;color:#f87171;margin-bottom:12px;">🗑 Delete Match?</div>
+    <div id="deleteMatchName" style="font-size:13px;color:#94a3b8;margin-bottom:16px;line-height:1.5;"></div>
+    <div style="font-size:12px;color:#f87171;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 12px;margin-bottom:18px;">
+      ⚠️ This will permanently delete the match and all its scoring data (balls, overs, innings, result). This cannot be undone.
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button id="confirmDeleteBtn" style="flex:1;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;" onclick="executeDeleteMatch()">
+        Yes, Delete Match
+      </button>
+      <button style="flex:1;background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid #1e2d45;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;" onclick="closeDeleteModal()">
+        Cancel
+      </button>
+    </div>
+    <div id="deleteMatchMsg" style="font-size:12px;margin-top:10px;display:none;text-align:center;"></div>
+  </div>
+</div>
+
+<script>
+  let _deleteMatchId = null;
+
+  function confirmDeleteMatch(matchId, matchName) {
+    _deleteMatchId = matchId;
+    document.getElementById('deleteMatchName').textContent =
+      'Are you sure you want to delete: ' + matchName + '?';
+    document.getElementById('deleteMatchMsg').style.display = 'none';
+    document.getElementById('deleteMatchModal').style.display = 'flex';
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('deleteMatchModal').style.display = 'none';
+    _deleteMatchId = null;
+  }
+
+  async function executeDeleteMatch() {
+    if (!_deleteMatchId) return;
+    const btn = document.getElementById('confirmDeleteBtn');
+    const msg = document.getElementById('deleteMatchMsg');
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+    try {
+      const res = await fetch(`/match/${_deleteMatchId}/delete/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+      });
+      const data = await res.json();
+      if (data.success) {
+        msg.style.display = 'block';
+        msg.style.color = '#4ade80';
+        msg.textContent = '✅ ' + data.message;
+        setTimeout(() => { location.reload(); }, 900);
+      } else {
+        msg.style.display = 'block';
+        msg.style.color = '#f87171';
+        msg.textContent = '❌ ' + data.error;
+        btn.disabled = false;
+        btn.textContent = 'Yes, Delete Match';
+      }
+    } catch(e) {
+      msg.style.display = 'block';
+      msg.style.color = '#f87171';
+      msg.textContent = '❌ Network error. Try again.';
+      btn.disabled = false;
+      btn.textContent = 'Yes, Delete Match';
+    }
+  }
 </script>
 
 {% endblock %}

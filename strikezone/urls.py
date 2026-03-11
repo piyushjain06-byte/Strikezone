@@ -71,6 +71,7 @@ urlpatterns = [
     path('match/<int:match_id>/update-overs/',           views.update_match_overs,   name='update_match_overs'),
     path('match/<int:match_id>/start-second-innings/',   views.start_second_innings, name='start_second_innings'),
     path('match/<int:match_id>/restart/',                views.restart_match,        name='restart_match'),
+    path('match/<int:match_id>/delete/',                 views.delete_match,         name='delete_match'),
 
     # 5c. Post-match — result & scorecard
     path('match/<int:match_id>/result/',                 views.match_result,         name='match_result'),
