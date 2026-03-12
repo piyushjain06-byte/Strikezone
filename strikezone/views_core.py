@@ -256,7 +256,51 @@ def tournaments(request):
             'status': status,
         })
 
-    return render(request, 'tournaments.html', {'tournament_list': tournament_list})
+    from subscriptions.context_processors import subscription_context
+    from subscriptions.decorators import _is_privileged
+    ctx = subscription_context(request)
+    can_manage = ctx.get('can_manage', False)
+    can_delete_tournament = _is_privileged(request)  # employees & CEO only, NOT pro_plus
+
+    return render(request, 'tournaments.html', {
+        'tournament_list': tournament_list,
+        'can_manage': can_manage,
+        'can_delete_tournament': can_delete_tournament,
+    })
+
+
+def delete_tournament(request, tournament_id):
+    """
+    Permanently deletes a tournament and ALL its cricket data via CASCADE:
+      TournamentDetails → StartTournament, TournamentAward,
+        CreateMatch → MatchStart, MatchResult, ManOfTheMatch,
+          Innings → Over → Ball, BattingScorecard, BowlingScorecard,
+        KnockoutStage → KnockoutMatch,
+        TournamentTeam → TournamentRoster
+
+    Players (PlayerDetails), teams (TeamDetails), accounts (GuestUser),
+    subscriptions, and all non-cricket data are preserved.
+
+    Accessible only to employees and superusers (CEO).
+    """
+    from subscriptions.decorators import _is_privileged
+    from django.http import JsonResponse
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+
+    if not _is_privileged(request):
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
+
+    tournament = get_object_or_404(TournamentDetails, id=tournament_id)
+    name = tournament.tournament_name
+
+    # Django CASCADE handles all related cricket records automatically:
+    # matches, innings, balls, scorecards, knockout stages, rosters, awards.
+    # PlayerDetails rows are NOT touched — only their tournament-scoped data.
+    tournament.delete()
+
+    return JsonResponse({'success': True, 'message': f'"{name}" has been permanently deleted.'})
 
 
 def tournamentdetails(request, id):
@@ -481,15 +525,6 @@ def tournamentdetails(request, id):
 
     qualified_team_ids = ko_team_ids if (all_league_done and ko_team_ids) else set()
 
-    # Can show 'Complete Tournament Now' button when:
-    # - all league matches are done AND tournament is not yet complete AND user can manage
-    has_knockout = KnockoutStage.objects.filter(tournament=tournament).exists()
-    can_force_complete = (
-        all_league_done
-        and not tournament_complete
-        and not tournament.is_force_completed
-    )
-
     return render(request, 'tournamentdetails.html', {
         'tournament': tournament,
         'teams': teams,
@@ -502,8 +537,6 @@ def tournamentdetails(request, id):
         'top_run_scorers': top_run_scorers,
         'top_strike_rates': top_strike_rates,
         'top_wicket_takers': top_wicket_takers,
-        'can_force_complete': can_force_complete,
-        'has_knockout': has_knockout,
         'top_economy': top_economy,
         'qualified_team_ids': qualified_team_ids,
     })

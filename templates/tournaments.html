@@ -174,6 +174,22 @@
     .total-badge { display: none; }
     .tournaments-grid { grid-template-columns: 1fr; }
   }
+
+  /* ── DELETE BUTTON ── */
+  .t-delete-btn {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 8px;
+    color: #f87171; font-size: 15px;
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+    opacity: 0;
+  }
+  .t-card-wrap:hover .t-delete-btn { opacity: 1; }
+  .t-delete-btn:hover { background: rgba(239,68,68,0.2); border-color: #ef4444; transform: scale(1.1); }
+  .t-card-wrap { position: relative; }
 </style>
 
 <div class="tournaments-wrap">
@@ -195,46 +211,54 @@
   <div class="tournaments-grid">
     {% for item in tournament_list %}
     {% with t=item.tournament status=item.status %}
-    <a href="{% url 'tournamentdetails' t.id %}" class="t-card-link">
-      <div class="t-card">
+    <div class="t-card-wrap">
+      {% if can_delete_tournament %}
+      <button class="t-delete-btn" title="Delete tournament"
+        onclick="event.stopPropagation(); confirmDeleteTournament({{ t.id }}, '{{ t.tournament_name|escapejs }}')">
+        🗑
+      </button>
+      {% endif %}
+      <a href="{% url 'tournamentdetails' t.id %}" class="t-card-link">
+        <div class="t-card">
 
-        <div class="t-card-top">
-          <div class="t-icon">🏏</div>
-          {% if status == 'LIVE' %}
-            <span class="t-status live">● Live</span>
-          {% elif status == 'COMPLETED' %}
-            <span class="t-status completed">✓ Completed</span>
-          {% else %}
-            <span class="t-status upcoming">◌ Upcoming</span>
-          {% endif %}
+          <div class="t-card-top">
+            <div class="t-icon">🏏</div>
+            {% if status == 'LIVE' %}
+              <span class="t-status live">● Live</span>
+            {% elif status == 'COMPLETED' %}
+              <span class="t-status completed">✓ Completed</span>
+            {% else %}
+              <span class="t-status upcoming">◌ Upcoming</span>
+            {% endif %}
+          </div>
+
+          <div>
+            <div class="t-name">{{ t.tournament_name }}</div>
+            {% if t.venue %}
+            <div class="t-venue">{{ t.venue }}</div>
+            {% endif %}
+          </div>
+
+          <div class="t-meta">
+            {% if t.get_tournament_type_display %}
+            <span class="t-pill">{{ t.get_tournament_type_display }}</span>
+            {% endif %}
+            {% if t.number_of_overs %}
+            <span class="t-pill">{{ t.number_of_overs }} overs</span>
+            {% endif %}
+            {% if t.start_date %}
+            <span class="t-pill">{{ t.start_date }}</span>
+            {% endif %}
+          </div>
+
+          <div class="t-arrow">
+            <span>View details</span>
+            <span class="t-arrow-icon">→</span>
+          </div>
+
         </div>
-
-        <div>
-          <div class="t-name">{{ t.tournament_name }}</div>
-          {% if t.venue %}
-          <div class="t-venue">{{ t.venue }}</div>
-          {% endif %}
-        </div>
-
-        <div class="t-meta">
-          {% if t.get_tournament_type_display %}
-          <span class="t-pill">{{ t.get_tournament_type_display }}</span>
-          {% endif %}
-          {% if t.number_of_overs %}
-          <span class="t-pill">{{ t.number_of_overs }} overs</span>
-          {% endif %}
-          {% if t.start_date %}
-          <span class="t-pill">{{ t.start_date }}</span>
-          {% endif %}
-        </div>
-
-        <div class="t-arrow">
-          <span>View details</span>
-          <span class="t-arrow-icon">→</span>
-        </div>
-
-      </div>
-    </a>
+      </a>
+    </div>
     {% endwith %}
     {% empty %}
     <div class="empty-state">
@@ -246,5 +270,84 @@
   </div>
 
 </div>
+
+<!-- ── DELETE TOURNAMENT MODAL ── -->
+<div id="deleteTournamentModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;">
+  <div style="background:#111827;border:1px solid rgba(239,68,68,0.35);border-radius:16px;padding:28px 24px;max-width:360px;width:92%;margin:auto;">
+    <div style="font-size:24px;margin-bottom:12px;text-align:center;">⚠️</div>
+    <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:8px;text-align:center;">Delete Tournament?</div>
+    <div id="deleteTournamentMsg" style="font-size:13px;color:#94a3b8;margin-bottom:18px;text-align:center;line-height:1.6;"></div>
+    <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px 14px;margin-bottom:20px;font-size:12px;color:#fca5a5;line-height:1.7;">
+      <strong>This will permanently delete:</strong><br>
+      All matches · Innings · Ball-by-ball data<br>
+      Scorecards · Awards · Knockout stages<br>
+      Team rosters for this tournament<br><br>
+      <span style="color:#4ade80;">✓ Players, teams &amp; accounts are safe</span>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button id="deleteTournamentConfirmBtn"
+        style="flex:1;background:linear-gradient(135deg,#991b1b,#ef4444);color:#fff;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;"
+        onclick="executeTournamentDelete()">
+        Delete Permanently
+      </button>
+      <button onclick="hideDeleteTournamentModal()"
+        style="flex:1;background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid #1e2d45;border-radius:8px;padding:11px;font-size:13px;cursor:pointer;">
+        Cancel
+      </button>
+    </div>
+    <div id="deleteTournamentResult" style="font-size:12px;margin-top:12px;text-align:center;display:none;"></div>
+  </div>
+</div>
+
+<script>
+  let _deleteTId = null;
+
+  function confirmDeleteTournament(id, name) {
+    _deleteTId = id;
+    document.getElementById('deleteTournamentMsg').textContent =
+      'You are about to delete "' + name + '" and all its cricket records. This cannot be undone.';
+    document.getElementById('deleteTournamentResult').style.display = 'none';
+    document.getElementById('deleteTournamentConfirmBtn').disabled = false;
+    document.getElementById('deleteTournamentConfirmBtn').textContent = 'Delete Permanently';
+    document.getElementById('deleteTournamentModal').style.display = 'flex';
+  }
+
+  function hideDeleteTournamentModal() {
+    document.getElementById('deleteTournamentModal').style.display = 'none';
+    _deleteTId = null;
+  }
+
+  async function executeTournamentDelete() {
+    if (!_deleteTId) return;
+    const btn = document.getElementById('deleteTournamentConfirmBtn');
+    const result = document.getElementById('deleteTournamentResult');
+    btn.disabled = true;
+    btn.textContent = 'Deleting…';
+    try {
+      const res = await fetch(`/tournaments/${_deleteTId}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+      });
+      const data = await res.json();
+      result.style.display = 'block';
+      if (data.success) {
+        result.style.color = '#4ade80';
+        result.textContent = '✅ ' + data.message;
+        setTimeout(() => { hideDeleteTournamentModal(); location.reload(); }, 1200);
+      } else {
+        result.style.color = '#f87171';
+        result.textContent = '❌ ' + (data.error || 'Something went wrong.');
+        btn.disabled = false;
+        btn.textContent = 'Delete Permanently';
+      }
+    } catch(e) {
+      result.style.display = 'block';
+      result.style.color = '#f87171';
+      result.textContent = '❌ Network error. Try again.';
+      btn.disabled = false;
+      btn.textContent = 'Delete Permanently';
+    }
+  }
+</script>
 
 {% endblock %}

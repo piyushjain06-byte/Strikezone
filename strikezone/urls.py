@@ -31,6 +31,7 @@ urlpatterns = [
     path('admin/',                          admin.site.urls),
     path('',                                views.home,               name='home'),
     path('tournaments/',                    views.tournaments,        name='tournaments'),
+    path('tournaments/<int:tournament_id>/delete/', views.delete_tournament, name='delete_tournament'),
     path('tournaments/<int:id>/',           views.tournamentdetails,  name='tournamentdetails'),
 
     # ─────────────────────────────────────────────────────────────
@@ -46,7 +47,6 @@ urlpatterns = [
     path('start_tournament/',               views.start_tournament,   name='start_tournament'),
     path('tournament/<int:tournament_id>/history/',  views.tournament_history, name='tournament_history'),
     path('tournament/<int:tournament_id>/awards/',   views.tournament_awards,  name='tournament_awards'),
-    path('tournament/<int:tournament_id>/force-complete/', views.force_complete_tournament, name='force_complete_tournament'),
 
     # ─────────────────────────────────────────────────────────────
     # 4. TEAM & PLAYER SETUP  (admin only)

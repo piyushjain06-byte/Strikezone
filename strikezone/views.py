@@ -16,7 +16,7 @@ ACTUAL CODE LIVES IN:
   views_analysis.py  player/team/match ML analysis
 """
 
-from .views_core      import admin_required, home, tournaments, tournamentdetails, teamdetails
+from .views_core      import admin_required, home, tournaments, tournamentdetails, teamdetails, delete_tournament
 from .views_admin     import manage_cricket, create_match, load_teams, start_tournament
 from .views_scoring   import (match_start, start_innings_view, scoring_view, record_ball_view,
                                select_new_batsman, undo_ball_view, next_over_view, start_second_innings,
@@ -31,8 +31,7 @@ from .views_knockout  import (get_tournament_leaderboard, all_league_matches_com
                                knockout_bracket, setup_knockout_stage, start_knockout_match,
                                auto_advance_knockout, link_knockout_matches, public_knockout_bracket)
 from .views_awards    import (_is_tournament_complete, _collect_player_stats, _best_batsman_score,
-                               _best_bowler_score, award_tournament_awards, calculate_uii, award_man_of_the_match,
-                               force_complete_tournament)
+                               _best_bowler_score, award_tournament_awards, calculate_uii, award_man_of_the_match)
 from .views_public    import (live_scores_api, flutter_live_matches_api, public_live_scorecard,
                                live_scorecard_api, public_team_profile, global_search_api)
 from .views_analysis  import (player_analysis_view, player_analysis_api, team_analysis_view,
