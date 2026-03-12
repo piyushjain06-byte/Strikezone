@@ -146,7 +146,15 @@
 </div>
 
 <script>
-  const teams = [
+  // ALL teams in the tournament — always selectable
+  const allTeams = [
+    {% for team in all_tournament_teams %}
+    { id: "{{ team.id }}", name: "{{ team.team_name }}" },
+    {% endfor %}
+  ];
+
+  // Suggested pre-fills from previous stage winners (or leaderboard for first stage)
+  const suggested = [
     {% for team, label in available_teams %}
     { id: "{{ team.id|default:'' }}", name: "{{ team.team_name|default:'TBD' }}", label: "{{ label }}" },
     {% endfor %}
@@ -159,6 +167,24 @@
     builder.innerHTML = '';
 
     for (let i = 1; i <= n; i++) {
+      // Suggested team for slot i (0-indexed pairs: match i uses slots 2i-2 and 2i-1)
+      const sug1 = suggested[(i-1)*2]     || null;
+      const sug2 = suggested[(i-1)*2 + 1] || null;
+
+      const teamOptions = allTeams.map(t =>
+        `<option value="${t.id}">${t.name}</option>`
+      ).join('');
+
+      const sel1 = `<select name="match_${i}_team1" required>
+        <option value="">-- Select Team --</option>
+        ${allTeams.map(t => `<option value="${t.id}" ${sug1 && t.id==sug1.id?'selected':''}>${t.name}</option>`).join('')}
+      </select>`;
+
+      const sel2 = `<select name="match_${i}_team2" required>
+        <option value="">-- Select Team --</option>
+        ${allTeams.map(t => `<option value="${t.id}" ${sug2 && t.id==sug2.id?'selected':''}>${t.name}</option>`).join('')}
+      </select>`;
+
       const div = document.createElement('div');
       div.className = 'form-card';
       div.innerHTML = `
@@ -169,14 +195,11 @@
           <div class="form-row">
             <div class="form-group">
               <label>Select Team</label>
-              <select name="match_${i}_team1" required>
-                <option value="">-- Select Team --</option>
-                ${teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
-              </select>
+              ${sel1}
             </div>
             <div class="form-group">
               <label>Label on Bracket</label>
-              <input type="text" name="match_${i}_team1_label" placeholder="e.g. TOP 1" />
+              <input type="text" name="match_${i}_team1_label" value="${sug1 ? sug1.label : ''}" placeholder="e.g. TOP 1" />
             </div>
           </div>
         </div>
@@ -188,14 +211,11 @@
           <div class="form-row">
             <div class="form-group">
               <label>Select Team</label>
-              <select name="match_${i}_team2" required>
-                <option value="">-- Select Team --</option>
-                ${teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
-              </select>
+              ${sel2}
             </div>
             <div class="form-group">
               <label>Label on Bracket</label>
-              <input type="text" name="match_${i}_team2_label" placeholder="e.g. TOP 8" />
+              <input type="text" name="match_${i}_team2_label" value="${sug2 ? sug2.label : ''}" placeholder="e.g. TOP 8" />
             </div>
           </div>
         </div>

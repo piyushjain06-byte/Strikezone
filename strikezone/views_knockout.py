@@ -169,23 +169,32 @@ def setup_knockout_stage(request, tournament_id):
         last_stage = existing_stages.last()
         next_stage_code = NEXT_STAGE.get(last_stage.stage)
 
+    # ALL tournament teams — always available for selection in any stage
+    all_tournament_teams = TeamDetails.objects.filter(
+        tournament_entries__tournament=tournament
+    ).distinct().order_by('team_name')
+
+    # Suggested teams = winners from last stage (used as default pre-selection hints)
     if not existing_stages.exists():
-        available_teams = [entry['team'] for entry in leaderboard]
-        available_labels = [f"TOP {entry['rank']} - {entry['team'].team_name}" for entry in leaderboard]
+        suggested_teams = [entry['team'] for entry in leaderboard]
+        suggested_labels = [f"TOP {entry['rank']} - {entry['team'].team_name}" for entry in leaderboard]
     else:
         last_stage = existing_stages.last()
         last_stage_matches = KnockoutMatch.objects.filter(stage=last_stage).order_by('match_number')
-        available_teams = []
-        available_labels = []
+        suggested_teams = []
+        suggested_labels = []
         for km in last_stage_matches:
             if km.winner:
-                available_teams.append(km.winner)
-                available_labels.append(
+                suggested_teams.append(km.winner)
+                suggested_labels.append(
                     f"{last_stage.get_stage_display()} M{km.match_number} Winner - {km.winner.team_name}"
                 )
             else:
-                available_teams.append(None)
-                available_labels.append(f"{last_stage.get_stage_display()} M{km.match_number} Winner - TBD")
+                suggested_teams.append(None)
+                suggested_labels.append(f"{last_stage.get_stage_display()} M{km.match_number} Winner - TBD")
+
+    # Keep available_teams as zipped list for template (suggested pre-fills)
+    available_teams = list(zip(suggested_teams, suggested_labels))
 
     if request.method == 'POST':
         stage_code = request.POST.get('stage_code')
@@ -245,7 +254,8 @@ def setup_knockout_stage(request, tournament_id):
     return render(request, 'setup_knockout_stage.html', {
         'tournament': tournament,
         'leaderboard': leaderboard,
-        'available_teams': list(zip(available_teams, available_labels)),
+        'available_teams': available_teams,  # zipped (team, label) suggested pre-fills
+        'all_tournament_teams': all_tournament_teams,
         'next_stage_code': next_stage_code,
         'stage_choices': stage_choices,
         'existing_stages': existing_stages,
