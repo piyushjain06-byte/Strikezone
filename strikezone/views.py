@@ -31,7 +31,8 @@ from .views_knockout  import (get_tournament_leaderboard, all_league_matches_com
                                knockout_bracket, setup_knockout_stage, start_knockout_match,
                                auto_advance_knockout, link_knockout_matches, public_knockout_bracket)
 from .views_awards    import (_is_tournament_complete, _collect_player_stats, _best_batsman_score,
-                               _best_bowler_score, award_tournament_awards, calculate_uii, award_man_of_the_match)
+                               _best_bowler_score, award_tournament_awards, calculate_uii, award_man_of_the_match,
+                               force_complete_tournament)
 from .views_public    import (live_scores_api, flutter_live_matches_api, public_live_scorecard,
                                live_scorecard_api, public_team_profile, global_search_api)
 from .views_analysis  import (player_analysis_view, player_analysis_api, team_analysis_view,

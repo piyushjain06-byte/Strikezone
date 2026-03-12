@@ -230,6 +230,15 @@
   .leader-stat { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; color: var(--accent); }
   .see-more-btn { display: block; text-align: center; padding: 10px; font-size: 12px; font-weight: 700; color: var(--accent); background: rgba(245,158,11,0.05); border-top: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
   .see-more-btn:hover { background: rgba(245,158,11,0.1); }
+  .btn-force-complete {
+    display: block; width: 100%; text-align: center;
+    padding: 12px 16px; margin: 12px 0;
+    background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.06));
+    border: 1px solid rgba(251,191,36,0.4); border-radius: 12px;
+    color: #fbbf24; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-force-complete:hover { background: linear-gradient(135deg, rgba(251,191,36,0.25), rgba(251,191,36,0.12)); border-color: #f59e0b; }
     display: flex; align-items: center; justify-content: center; gap: 8px;
     width: 100%; background: linear-gradient(135deg, #b45309, #f59e0b);
     border: none; border-radius: var(--radius); color: #000;
@@ -641,6 +650,14 @@
       🏆 &nbsp;Tournament Honours & Awards
     </a>
     {% endif %}
+    {% if can_force_complete and can_manage %}
+    <button class="btn-force-complete" onclick="showForceCompleteModal()">
+      🏁 Complete Tournament Now
+      <div style="font-size:10px;font-weight:400;color:rgba(251,191,36,0.7);margin-top:3px;">
+        {% if has_knockout %}Use this to end the tournament without playing knockout stages{% else %}All league matches done — click to finalise awards{% endif %}
+      </div>
+    </button>
+    {% endif %}
     <div class="empty-state" style="border-radius:var(--radius);">
       <span class="empty-icon">📜</span>
       <div class="empty-title">Tournament History</div>
@@ -815,6 +832,72 @@ function switchTab(name, btn) {
       msg.textContent = '❌ Network error. Try again.';
       btn.disabled = false;
       btn.textContent = 'Yes, Delete Match';
+    }
+  }
+</script>
+
+<!-- ─── FORCE COMPLETE TOURNAMENT MODAL ─── -->
+<div id="forceCompleteModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;">
+  <div style="background:#111827;border:1px solid rgba(251,191,36,0.35);border-radius:14px;padding:24px;max-width:340px;width:90%;margin:auto;">
+    <div style="font-size:15px;font-weight:700;color:#fbbf24;margin-bottom:10px;">🏁 Complete Tournament?</div>
+    <div style="font-size:13px;color:#94a3b8;margin-bottom:14px;line-height:1.6;">
+      This will mark the tournament as <strong style="color:#fff;">officially completed</strong> and calculate all awards right now.<br><br>
+      {% if has_knockout %}
+      <span style="color:#f87171;">⚠️ Knockout stages will be skipped.</span> Only use this if you want to end the tournament after the league phase.
+      {% else %}
+      All league matches are done — awards will be based on league performance.
+      {% endif %}
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button id="forceCompleteBtn"
+        style="flex:1;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;"
+        onclick="executeForceComplete()">
+        Yes, Complete Now
+      </button>
+      <button onclick="hideForceCompleteModal()"
+        style="flex:1;background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid #1e2d45;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;">
+        Cancel
+      </button>
+    </div>
+    <div id="forceCompleteMsg" style="font-size:12px;margin-top:10px;display:none;text-align:center;"></div>
+  </div>
+</div>
+
+<script>
+  function showForceCompleteModal() {
+    document.getElementById('forceCompleteModal').style.display = 'flex';
+  }
+  function hideForceCompleteModal() {
+    document.getElementById('forceCompleteModal').style.display = 'none';
+  }
+  async function executeForceComplete() {
+    const btn = document.getElementById('forceCompleteBtn');
+    const msg = document.getElementById('forceCompleteMsg');
+    btn.disabled = true;
+    btn.textContent = 'Processing…';
+    try {
+      const res = await fetch("{% url 'force_complete_tournament' tournament.id %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      msg.style.display = 'block';
+      if (data.success) {
+        msg.style.color = '#4ade80';
+        msg.textContent = '✅ ' + data.message;
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        msg.style.color = '#f87171';
+        msg.textContent = '❌ ' + (data.error || 'Something went wrong.');
+        btn.disabled = false;
+        btn.textContent = 'Yes, Complete Now';
+      }
+    } catch(e) {
+      msg.style.display = 'block';
+      msg.style.color = '#f87171';
+      msg.textContent = '❌ Network error. Try again.';
+      btn.disabled = false;
+      btn.textContent = 'Yes, Complete Now';
     }
   }
 </script>

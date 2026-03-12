@@ -33,25 +33,28 @@ def _is_tournament_complete(tournament):
     """
     Returns True if the tournament has concluded:
     - Has a Final knockout match that is completed, OR
-    - All created matches have completed innings (for round-robin only tournaments)
+    - Was manually force-completed via the 'Complete Tournament' button
+      (stored as tournament.is_force_completed flag)
+
+    NOTE: league-only tournaments do NOT auto-complete when all league
+    matches finish — the organiser must click 'Complete Tournament'.
     """
     from knockout.models import KnockoutStage, KnockoutMatch
-    # Check for Final stage
+
+    # Manual force-complete overrides everything
+    if getattr(tournament, 'is_force_completed', False):
+        return True
+
+    # Has a Final stage → complete only when Final is done
     final_stage = KnockoutStage.objects.filter(tournament=tournament, stage='F').first()
     if final_stage:
         final_matches = KnockoutMatch.objects.filter(stage=final_stage)
         if final_matches.exists():
             return all(m.is_completed for m in final_matches)
         return False
-    # No knockout — all matches completed
-    all_matches = CreateMatch.objects.filter(tournament=tournament)
-    if not all_matches.exists():
-        return False
-    for m in all_matches:
-        inn2 = Innings.objects.filter(match=m, innings_number=2).first()
-        if not inn2 or inn2.status != 'COMPLETED':
-            return False
-    return True
+
+    # No knockout exists → never auto-complete (wait for manual button)
+    return False
 
 
 def _collect_player_stats(tournament):
@@ -549,3 +552,36 @@ def award_man_of_the_match(match_id):
 
 
 # ── LIVE SCORE API (used by home page auto-refresh) ──
+
+
+# ── Force Complete Tournament (manual button) ─────────────────────────────────
+def force_complete_tournament(request, tournament_id):
+    """
+    Allows organiser to manually complete a tournament (e.g. league-only,
+    or after league before knockout is set up).
+    Sets is_force_completed=True and triggers awards.
+    Only POST. Only for can_manage users.
+    """
+    from django.views.decorators.http import require_POST as _require_POST
+    from subscriptions.decorators import _is_privileged, _get_effective_plan
+    from .views_core import admin_required as _admin_required
+
+    if request.method != 'POST':
+        from django.http import JsonResponse
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    if not (_is_privileged(request) or _get_effective_plan(request) == 'pro_plus'):
+        from django.http import JsonResponse
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
+
+    tournament = get_object_or_404(TournamentDetails, id=tournament_id)
+
+    # Mark as force-completed
+    tournament.is_force_completed = True
+    tournament.save(update_fields=['is_force_completed'])
+
+    # Run awards
+    award_tournament_awards(tournament_id)
+
+    from django.http import JsonResponse
+    return JsonResponse({'success': True, 'message': 'Tournament completed and awards calculated.'})

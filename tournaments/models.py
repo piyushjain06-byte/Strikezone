@@ -64,6 +64,12 @@ class TournamentDetails(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Set to True when organiser manually completes the tournament
+    is_force_completed = models.BooleanField(
+        default=False,
+        help_text='Manually mark tournament as completed (e.g. league-only or early completion).'
+    )
+
     class Meta:
         verbose_name_plural = 'Tournaments'
 

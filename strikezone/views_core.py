@@ -481,6 +481,15 @@ def tournamentdetails(request, id):
 
     qualified_team_ids = ko_team_ids if (all_league_done and ko_team_ids) else set()
 
+    # Can show 'Complete Tournament Now' button when:
+    # - all league matches are done AND tournament is not yet complete AND user can manage
+    has_knockout = KnockoutStage.objects.filter(tournament=tournament).exists()
+    can_force_complete = (
+        all_league_done
+        and not tournament_complete
+        and not tournament.is_force_completed
+    )
+
     return render(request, 'tournamentdetails.html', {
         'tournament': tournament,
         'teams': teams,
@@ -493,6 +502,8 @@ def tournamentdetails(request, id):
         'top_run_scorers': top_run_scorers,
         'top_strike_rates': top_strike_rates,
         'top_wicket_takers': top_wicket_takers,
+        'can_force_complete': can_force_complete,
+        'has_knockout': has_knockout,
         'top_economy': top_economy,
         'qualified_team_ids': qualified_team_ids,
     })
