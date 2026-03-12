@@ -47,6 +47,7 @@ urlpatterns = [
     path('start_tournament/',               views.start_tournament,   name='start_tournament'),
     path('tournament/<int:tournament_id>/history/',  views.tournament_history, name='tournament_history'),
     path('tournament/<int:tournament_id>/awards/',   views.tournament_awards,  name='tournament_awards'),
+    path('tournament/<int:tournament_id>/force-complete/', views.force_complete_tournament, name='force_complete_tournament'),
 
     # ─────────────────────────────────────────────────────────────
     # 4. TEAM & PLAYER SETUP  (admin only)
