@@ -12,8 +12,8 @@ from django.conf import settings
 RAZORPAY_API = "https://api.razorpay.com/v1"
 
 PLAN_PRICES = {
-    'pro':      19900,   # ₹199 in paise
-    'pro_plus': 49900,   # ₹499 in paise
+    'pro':      300,   # ₹3 in paise (TEST)
+    'pro_plus': 500,   # ₹5 in paise (TEST)
 }
 
 PLAN_NAMES = {
