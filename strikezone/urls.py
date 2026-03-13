@@ -133,14 +133,6 @@ urlpatterns = [
     # ─────────────────────────────────────────────────────────────
     path('crickbot/',       crickbot_views.crickbot_page,     name='crickbot'),
     path('crickbot/chat/',  crickbot_views.crickbot_chat_api, name='crickbot_chat'),
-    
-    
-    
-     path('subscription/', include('subscriptions.urls')),
-     path('employee/',     include('employee.urls')),
-     path('ceo/',          include('ceo.urls')),
-
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
     # ─────────────────────────────────────────────────────────────
     # 11. ENHANCED FEATURES - Search, Analytics, Admin Tools
@@ -167,4 +159,10 @@ urlpatterns = [
     path('manifest.json', views_enhanced.pwa_manifest_view, name='pwa_manifest'),
     path('service-worker.js', views_enhanced.service_worker_view, name='service_worker'),
     path('install-app/', views_enhanced.install_pwa_view, name='install_pwa'),
+    
+    # Other apps
+    path('subscription/', include('subscriptions.urls')),
+    path('employee/',     include('employee.urls')),
+    path('ceo/',          include('ceo.urls')),
 
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
