@@ -20,8 +20,11 @@ from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import render
 from . import views
 from . import crickbot_views
+from . import views_enhanced
+from teams.models import PlayerDetails
 
 urlpatterns = [
 
@@ -138,3 +141,30 @@ urlpatterns = [
      path('ceo/',          include('ceo.urls')),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+    # ─────────────────────────────────────────────────────────────
+    # 11. ENHANCED FEATURES - Search, Analytics, Admin Tools
+    # ─────────────────────────────────────────────────────────────
+    
+    # Search
+    path('search/', lambda request: render(request, 'search_results.html'), name='search_page'),
+    path('api/search-enhanced/', views_enhanced.enhanced_search_view, name='search_enhanced'),
+    
+    # Analytics & Comparison
+    path('player-comparison/', lambda request: render(request, 'player_comparison.html', {'all_players': PlayerDetails.objects.all()}), name='player_comparison'),
+    path('api/player-comparison/', views_enhanced.player_comparison_view, name='api_player_comparison'),
+    path('api/player/<int:player_id>/form/', views_enhanced.player_form_view, name='player_form'),
+    path('api/team-h2h/<int:team1_id>/<int:team2_id>/', views_enhanced.team_head_to_head_view, name='team_h2h'),
+    path('tournament/<int:tournament_id>/stats/', views_enhanced.tournament_stats_view, name='tournament_stats'),
+    
+    # Admin Tools
+    path('admin/bulk-upload-players/', views_enhanced.bulk_upload_players_view, name='bulk_upload_players'),
+    path('match/<int:match_id>/export-pdf/', views_enhanced.export_scorecard_pdf_view, name='export_scorecard_pdf'),
+    path('tournament/<int:tournament_id>/export-csv/', views_enhanced.export_tournament_data_view, name='export_tournament_csv'),
+    path('tournament/<int:tournament_id>/calendar/', views_enhanced.tournament_calendar_view, name='tournament_calendar'),
+    
+    # PWA Support
+    path('manifest.json', views_enhanced.pwa_manifest_view, name='pwa_manifest'),
+    path('service-worker.js', views_enhanced.service_worker_view, name='service_worker'),
+    path('install-app/', views_enhanced.install_pwa_view, name='install_pwa'),
+

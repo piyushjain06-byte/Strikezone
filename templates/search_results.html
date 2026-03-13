@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .search-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+  .search-box { position: relative; margin-bottom: 30px; }
+  .search-input { width: 100%; padding: 15px 50px 15px 20px; font-size: 16px; border: 2px solid #1e2d45; border-radius: 12px; background: #111827; color: #e2e8f0; }
+  .search-input:focus { outline: none; border-color: #f59e0b; }
+  .search-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 20px; color: #64748b; }
+  .results-section { margin-bottom: 30px; }
+  .section-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #1e2d45; }
+  .result-card { background: #111827; border: 1px solid #1e2d45; border-radius: 10px; padding: 15px 20px; margin-bottom: 10px; transition: all 0.2s; cursor: pointer; }
+  .result-card:hover { border-color: #f59e0b; transform: translateX(5px); }
+  .result-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 5px; }
+  .result-meta { font-size: 13px; color: #64748b; }
+  .no-results { text-align: center; padding: 60px 20px; color: #64748b; }
+  .loading { text-align: center; padding: 40px; color: #64748b; }
+</style>
+
+<div class="search-container">
+  <div class="search-box">
+    <input type="text" id="searchInput" class="search-input" placeholder="Search players, teams, tournaments, matches..." autofocus>
+    <span class="search-icon">🔍</span>
+  </div>
+
+  <div id="searchResults"></div>
+</div>
+
+<script>
+let searchTimeout;
+const searchInput = document.getElementById('searchInput');
+const resultsDiv = document.getElementById('searchResults');
+
+searchInput.addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const query = this.value.trim();
+  
+  if (query.length < 2) {
+    resultsDiv.innerHTML = '';
+    return;
+  }
+  
+  resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+  
+  searchTimeout = setTimeout(() => {
+    fetch(`/api/search-enhanced/?q=${encodeURIComponent(query)}`)
+      .then(res => res.json())
+      .then(data => {
+        displayResults(data);
+      })
+      .catch(err => {
+        resultsDiv.innerHTML = '<div class="no-results">Error searching. Please try again.</div>';
+      });
+  }, 300);
+});
+
+function displayResults(data) {
+  if (data.total === 0) {
+    resultsDiv.innerHTML = '<div class="no-results">No results found</div>';
+    return;
+  }
+  
+  let html = '';
+  
+  // Players
+  if (data.players.length > 0) {
+    html += '<div class="results-section"><div class="section-title">👤 Players (' + data.players.length + ')</div>';
+    data.players.forEach(p => {
+      html += `<div class="result-card" onclick="window.location.href='/player/${p.id}/profile/'">
+        <div class="result-name">${p.name}</div>
+        <div class="result-meta">${p.mobile || 'No mobile'}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  
+  // Teams
+  if (data.teams.length > 0) {
+    html += '<div class="results-section"><div class="section-title">🏏 Teams (' + data.teams.length + ')</div>';
+    data.teams.forEach(t => {
+      html += `<div class="result-card" onclick="window.location.href='/team/${t.id}/'">
+        <div class="result-name">${t.name}</div>
+        <div class="result-meta">Code: ${t.code || 'N/A'}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  
+  // Tournaments
+  if (data.tournaments.length > 0) {
+    html += '<div class="results-section"><div class="section-title">🏆 Tournaments (' + data.tournaments.length + ')</div>';
+    data.tournaments.forEach(t => {
+      html += `<div class="result-card" onclick="window.location.href='/tournaments/${t.id}/'">
+        <div class="result-name">${t.name}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  
+  // Matches
+  if (data.matches.length > 0) {
+    html += '<div class="results-section"><div class="section-title">🎯 Matches (' + data.matches.length + ')</div>';
+    data.matches.forEach(m => {
+      html += `<div class="result-card" onclick="window.location.href='/match/${m.id}/scorecard/'">
+        <div class="result-name">${m.teams}</div>
+        <div class="result-meta">${m.venue} · ${m.date}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  
+  resultsDiv.innerHTML = html;
+}
+</script>
+{% endblock %}

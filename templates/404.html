@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .error-container { max-width: 600px; margin: 100px auto; padding: 40px 20px; text-align: center; }
+  .error-code { font-size: 120px; font-weight: 900; color: #f59e0b; line-height: 1; margin-bottom: 20px; font-family: 'Rajdhani', sans-serif; }
+  .error-title { font-size: 32px; font-weight: 700; color: #fff; margin-bottom: 15px; }
+  .error-message { font-size: 16px; color: #64748b; margin-bottom: 30px; line-height: 1.6; }
+  .error-icon { font-size: 80px; margin-bottom: 20px; }
+  .btn-home { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #b45309, #f59e0b); color: #000; font-weight: 700; border-radius: 12px; text-decoration: none; transition: all 0.2s; }
+  .btn-home:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245,158,11,0.3); }
+</style>
+
+<div class="error-container">
+  <div class="error-icon">🏏</div>
+  <div class="error-code">404</div>
+  <div class="error-title">Page Not Found</div>
+  <div class="error-message">
+    Oops! The page you're looking for doesn't exist.<br>
+    It might have been moved or deleted.
+  </div>
+  <a href="/" class="btn-home">🏠 Go Home</a>
+</div>
+{% endblock %}

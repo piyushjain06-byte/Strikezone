@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f59e0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+{% endblock %}
+
+{% block content %}
+<style>
+  .install-container { max-width: 700px; margin: 60px auto; padding: 0 20px; }
+  .install-header { text-align: center; margin-bottom: 40px; }
+  .install-icon { font-size: 80px; margin-bottom: 20px; }
+  .install-title { font-size: 32px; font-weight: 700; color: #fff; margin-bottom: 15px; }
+  .install-subtitle { font-size: 16px; color: #64748b; }
+  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 40px 0; }
+  .feature-card { background: #111827; border: 2px solid #1e2d45; border-radius: 16px; padding: 25px; text-align: center; }
+  .feature-icon { font-size: 40px; margin-bottom: 15px; }
+  .feature-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .feature-desc { font-size: 13px; color: #64748b; }
+  .install-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #b45309, #f59e0b); color: #000; font-weight: 700; border-radius: 12px; text-decoration: none; font-size: 16px; margin: 20px 0; cursor: pointer; border: none; }
+  .install-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245,158,11,0.3); }
+  .install-steps { background: #111827; border: 2px solid #1e2d45; border-radius: 16px; padding: 30px; margin-top: 40px; }
+  .step { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-start; }
+  .step-number { width: 32px; height: 32px; background: #f59e0b; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+  .step-content { flex: 1; }
+  .step-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+  .step-desc { font-size: 14px; color: #64748b; }
+</style>
+
+<div class="install-container">
+  <div class="install-header">
+    <div class="install-icon">📱</div>
+    <h1 class="install-title">Install StrikeZone App</h1>
+    <p class="install-subtitle">Get the full app experience on your device</p>
+  </div>
+  
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Lightning Fast</div>
+      <div class="feature-desc">Instant loading and smooth performance</div>
+    </div>
+    
+    <div class="feature-card">
+      <div class="feature-icon">📴</div>
+      <div class="feature-title">Works Offline</div>
+      <div class="feature-desc">Access scores even without internet</div>
+    </div>
+    
+    <div class="feature-card">
+      <div class="feature-icon">🔔</div>
+      <div class="feature-title">Push Notifications</div>
+      <div class="feature-desc">Get live match updates instantly</div>
+    </div>
+    
+    <div class="feature-card">
+      <div class="feature-icon">🏠</div>
+      <div class="feature-title">Home Screen</div>
+      <div class="feature-desc">Launch like a native app</div>
+    </div>
+  </div>
+  
+  <div style="text-align:center;">
+    <button id="installBtn" class="install-btn" style="display:none;">📥 Install App</button>
+    <p id="installMessage" style="color:#64748b;font-size:14px;margin-top:10px;"></p>
+  </div>
+  
+  <div class="install-steps">
+    <h2 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:25px;">📋 Manual Installation</h2>
+    
+    <div class="step">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <div class="step-title">Open Browser Menu</div>
+        <div class="step-desc">Tap the menu icon (⋮ or ⋯) in your browser</div>
+      </div>
+    </div>
+    
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <div class="step-title">Add to Home Screen</div>
+        <div class="step-desc">Look for "Add to Home Screen" or "Install App" option</div>
+      </div>
+    </div>
+    
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-content">
+        <div class="step-title">Confirm Installation</div>
+        <div class="step-desc">Tap "Add" or "Install" to complete</div>
+      </div>
+    </div>
+    
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-content">
+        <div class="step-title">Launch App</div>
+        <div class="step-desc">Find the StrikeZone icon on your home screen</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+const installMessage = document.getElementById('installMessage');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'inline-block';
+  installMessage.textContent = 'Click the button above to install';
+});
+
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) {
+    return;
+  }
+  
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  
+  if (outcome === 'accepted') {
+    installMessage.textContent = '✅ App installed successfully!';
+    installMessage.style.color = '#10b981';
+  } else {
+    installMessage.textContent = 'Installation cancelled';
+  }
+  
+  deferredPrompt = null;
+  installBtn.style.display = 'none';
+});
+
+window.addEventListener('appinstalled', () => {
+  installMessage.textContent = '✅ App installed! Check your home screen';
+  installMessage.style.color = '#10b981';
+  installBtn.style.display = 'none';
+});
+
+// Check if already installed
+if (window.matchMedia('(display-mode: standalone)').matches) {
+  installMessage.textContent = '✅ App is already installed';
+  installMessage.style.color = '#10b981';
+}
+</script>
+{% endblock %}
