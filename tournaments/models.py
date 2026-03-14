@@ -6,8 +6,6 @@ from django.db import models
 # ---------------------------------
 class UpperCategory(models.Model):
     category_name = models.CharField(max_length=30, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name_plural = 'Categories'
@@ -60,6 +58,22 @@ class TournamentDetails(models.Model):
         help_text="Longitude (auto-filled by Google Maps)"
     )
     # ──────────────────────────────────────────────────────────────────
+
+    # Who created this tournament
+    created_by_player = models.ForeignKey(
+        'teams.PlayerDetails',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='tournament_created_by_player',
+        help_text='Pro Plus player who created this tournament'
+    )
+    created_by_admin = models.ForeignKey(
+        'auth.User',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='tournament_created_by_admin',
+        help_text='Admin/CEO who created this tournament'
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

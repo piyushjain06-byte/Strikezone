@@ -815,11 +815,17 @@
 
     function buildDropdown(data, query) {
       dropdown.innerHTML = '';
-      const total = (data.tournaments || []).length + (data.teams || []).length + (data.players || []).length;
+      const total = (data.tournaments || []).length + (data.teams || []).length + (data.players || []).length + (data.matches || []).length;
       if (total === 0) {
         dropdown.innerHTML = '<div class="sd-empty">No results for "' + query + '"</div>';
         dropdown.classList.add('open');
         return;
+      }
+
+      function addDivider() {
+        if (dropdown.children.length) {
+          const d = document.createElement('div'); d.className = 'sd-divider'; dropdown.appendChild(d);
+        }
       }
 
       // Tournaments
@@ -845,7 +851,7 @@
 
       // Teams
       if (data.teams && data.teams.length) {
-        if (dropdown.children.length) { const d = document.createElement('div'); d.className='sd-divider'; dropdown.appendChild(d); }
+        addDivider();
         const lbl = document.createElement('div');
         lbl.className = 'sd-group-label';
         lbl.textContent = '🛡️ Teams';
@@ -867,7 +873,7 @@
 
       // Players
       if (data.players && data.players.length) {
-        if (dropdown.children.length) { const d = document.createElement('div'); d.className='sd-divider'; dropdown.appendChild(d); }
+        addDivider();
         const lbl = document.createElement('div');
         lbl.className = 'sd-group-label';
         lbl.textContent = '🏏 Players';
@@ -876,9 +882,6 @@
           const a = document.createElement('a');
           a.className = 'sd-item';
           a.href = '/player/' + p.id + '/profile/';
-          const avatarContent = p.photo
-            ? `<img src="${p.photo}" alt="">`
-            : p.name[0].toUpperCase();
           a.innerHTML = `
             <div class="sd-avatar player">${p.photo ? '<img src="' + p.photo + '" alt="">' : p.name[0].toUpperCase()}</div>
             <div class="sd-info">
@@ -886,6 +889,32 @@
               <div class="sd-sub">${p.sub}</div>
             </div>
             <span class="sd-badge player">Player</span>`;
+          dropdown.appendChild(a);
+        });
+      }
+
+      // Matches
+      if (data.matches && data.matches.length) {
+        addDivider();
+        const lbl = document.createElement('div');
+        lbl.className = 'sd-group-label';
+        lbl.textContent = '🎯 Matches';
+        dropdown.appendChild(lbl);
+        data.matches.forEach(m => {
+          const a = document.createElement('a');
+          a.className = 'sd-item';
+          a.href = '/match/' + m.id + '/scorecard/';
+          const isLive = m.status === 'live';
+          const badge = isLive
+            ? '<span class="sd-badge" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);">🔴 Live</span>'
+            : '<span class="sd-badge" style="background:rgba(100,116,139,.1);color:#94a3b8;border:1px solid rgba(100,116,139,.2);">Match</span>';
+          a.innerHTML = `
+            <div class="sd-avatar" style="background:linear-gradient(135deg,#1e3a5f,#0ea5e9);color:#fff;font-size:14px;">🎯</div>
+            <div class="sd-info">
+              <div class="sd-name">${highlight(m.name, query)}</div>
+              <div class="sd-sub">${m.sub}</div>
+            </div>
+            ${badge}`;
           dropdown.appendChild(a);
         });
       }

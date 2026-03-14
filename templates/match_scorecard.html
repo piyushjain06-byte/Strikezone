@@ -117,6 +117,18 @@
     transition: all 0.2s; width: 100%; justify-content: center;
     letter-spacing: 0.5px;
   }
+  .btn-download {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: linear-gradient(135deg, #064e3b, #10b981);
+    border: none; border-radius: 10px; color: #fff;
+    font-size: 13px; font-weight: 700; padding: 10px 18px;
+    text-decoration: none; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(16,185,129,.3);
+    transition: all .2s; font-family: inherit;
+  }
+  .btn-download:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+  .btn-download svg { flex-shrink: 0; }
+
   .btn-analysis:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 28px rgba(124,58,237,0.55);
@@ -263,12 +275,27 @@
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:10px;flex-wrap:wrap;">
     <a href="{% url 'tournament_history' match.tournament.id %}" class="btn-back" style="margin-bottom:0">← Back to Tournament</a>
-    {% if sc2 and sc2.innings.status == 'COMPLETED' %}
-    <a href="{% url 'match_analysis' match.id %}" class="btn-analysis" style="width:auto;margin:0;padding:10px 18px;font-size:13px;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-      ML Analysis
-    </a>
-    {% endif %}
+
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      {% if sc2 and sc2.innings.status == 'COMPLETED' %}
+      <a href="{% url 'match_analysis' match.id %}" class="btn-analysis" style="width:auto;margin:0;padding:10px 18px;font-size:13px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        ML Analysis
+      </a>
+      {% endif %}
+
+      <!-- DOWNLOAD SCORECARD PDF -->
+      <a href="{% url 'export_scorecard_pdf' match.id %}"
+         class="btn-download"
+         onclick="setTimeout(()=>window.location.href=window.location.href, 800)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download Scorecard PDF
+      </a>
+    </div>
   </div>
 
   <!-- RESULT HERO -->

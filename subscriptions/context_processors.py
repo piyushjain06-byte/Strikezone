@@ -28,11 +28,28 @@ def subscription_context(request):
         request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
     )
 
+    # For pro_plus players: IDs of tournaments they personally created
+    owned_tournament_ids = set()
+    if plan == 'pro_plus' and not is_privileged:
+        pid = request.session.get('player_id')
+        if pid and pid != 'guest':
+            try:
+                from tournaments.models import TournamentDetails
+                owned_tournament_ids = set(
+                    TournamentDetails.objects
+                    .filter(created_by_player_id=pid)
+                    .values_list('id', flat=True)
+                )
+            except Exception:
+                pass
+
     return {
-        'user_plan':        plan,
-        'user_plan_label':  plan_label,
-        'can_manage':       plan == 'pro_plus' or is_privileged,
-        'can_use_ml':       plan in ('pro', 'pro_plus') or is_privileged,
-        'can_use_crickbot': plan in ('pro', 'pro_plus') or is_privileged,
-        'is_employee':      is_employee,
+        'user_plan':             plan,
+        'user_plan_label':       plan_label,
+        'can_manage':            plan == 'pro_plus' or is_privileged,
+        'can_use_ml':            plan in ('pro', 'pro_plus') or is_privileged,
+        'can_use_crickbot':      plan in ('pro', 'pro_plus') or is_privileged,
+        'is_employee':           is_employee,
+        'is_privileged':         is_privileged,
+        'owned_tournament_ids':  owned_tournament_ids,
     }

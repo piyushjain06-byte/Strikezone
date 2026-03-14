@@ -1,5 +1,5 @@
 # Analytics & Insights
-from django.db.models import Sum, Avg, Count, Q, F
+from django.db.models import Sum, Avg, Count, Q, F, Max
 from scoring.models import BattingScorecard, BowlingScorecard, Innings
 from matches.models import CreateMatch
 from datetime import datetime, timedelta
@@ -66,8 +66,6 @@ def get_player_comparison(player1_id, player2_id, tournament_id=None):
             bowling['economy'] = 0
         
         return {'batting': batting, 'bowling': bowling}
-    
-    from django.db.models import Max
     
     return {
         'player1': get_stats(player1_id),
@@ -209,8 +207,6 @@ def get_tournament_leaderboard_enhanced(tournament_id):
             bowler['economy'] = round(bowler['runs_given'] / float(bowler['overs']), 2)
     
     best_economy = sorted(best_economy, key=lambda x: x.get('economy', 999))[:10]
-    
-    from django.db.models import Max
     
     return {
         'top_batsmen': list(top_batsmen),

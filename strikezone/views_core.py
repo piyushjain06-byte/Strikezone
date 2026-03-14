@@ -533,6 +533,30 @@ def tournamentdetails(request, id):
         and not getattr(tournament, 'is_force_completed', False)
     )
 
+    # ── Tournament manager name ──────────────────────────────────────────
+    manager_name = None
+    if tournament.created_by_player:
+        manager_name = tournament.created_by_player.player_name
+    elif tournament.created_by_admin:
+        manager_name = tournament.created_by_admin.get_full_name() or tournament.created_by_admin.username
+
+    # ── For pro_plus players: restrict can_manage to own tournaments ──
+    from subscriptions.decorators import _is_privileged, _get_effective_plan
+    from subscriptions.context_processors import subscription_context as _sub_ctx
+    _ctx = _sub_ctx(request)
+    ctx_can_manage = _ctx.get('can_manage', False)
+    if ctx_can_manage and not _is_privileged(request):
+        # pro_plus player — only allow managing their own tournaments
+        pid = request.session.get('player_id')
+        if pid and pid != 'guest':
+            owns = (tournament.created_by_player_id == pid)
+        else:
+            owns = False
+        # Override can_manage for this page only
+        page_can_manage = owns
+    else:
+        page_can_manage = ctx_can_manage  # admin/employee: full access
+
     return render(request, 'tournamentdetails.html', {
         'tournament': tournament,
         'teams': teams,
@@ -549,6 +573,8 @@ def tournamentdetails(request, id):
         'qualified_team_ids': qualified_team_ids,
         'can_force_complete': can_force_complete,
         'has_knockout': has_knockout,
+        'manager_name': manager_name,
+        'page_can_manage': page_can_manage,
     })
 
 

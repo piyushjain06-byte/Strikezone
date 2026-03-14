@@ -7,7 +7,7 @@ Run daily via Task Scheduler:
 Windows Task Scheduler setup:
     Program: python
     Arguments: manage.py expire_plans
-    Start in: C:\path\to\your\pravas
+    Start in: C:/path/to/your/pravas
     Schedule: Daily at midnight
 """
 

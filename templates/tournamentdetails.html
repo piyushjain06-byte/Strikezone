@@ -260,6 +260,12 @@
       <div class="info-item"><div class="info-label">Start Date</div><div class="info-value">{{ tournament.start_date|default:"TBD" }}</div></div>
       <div class="info-item"><div class="info-label">End Date</div><div class="info-value">{{ tournament.end_date|default:"TBD" }}</div></div>
     </div>
+    {% if manager_name %}
+    <div style="margin-top:12px;display:inline-flex;align-items:center;gap:7px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:20px;padding:5px 14px;">
+      <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px;">🏅 Tournament Manager</span>
+      <span style="font-size:12px;font-weight:700;color:#f59e0b;">{{ manager_name }}</span>
+    </div>
+    {% endif %}
   </div>
 
   <!-- TABS BAR -->
@@ -359,7 +365,7 @@
         {% endif %}
         <div class="mc-actions">
           <a href="{% url 'public_live_scorecard' lm.match.id %}" class="btn-action btn-live-watch">🔴 Watch Live</a>
-          {% if can_manage %}
+          {% if page_can_manage %}
           <button class="btn-action btn-delete-match" onclick="confirmDeleteMatch({{ lm.match.id }}, '{{ lm.match.team1.team_name }} vs {{ lm.match.team2.team_name }}')">🗑 Delete</button>
           {% endif %}
         </div>
@@ -403,7 +409,7 @@
           {% else %}
           <span style="font-size:12px;color:var(--muted);padding:4px 2px;">⏳ Awaiting kickoff</span>
           {% endif %}
-          {% if can_manage %}
+          {% if page_can_manage %}
           <button class="btn-action btn-delete-match" onclick="confirmDeleteMatch({{ um.match.id }}, '{{ um.match.team1.team_name }} vs {{ um.match.team2.team_name }}')">🗑 Delete</button>
           {% endif %}
         </div>
@@ -650,7 +656,7 @@
       🏆 &nbsp;Tournament Honours & Awards
     </a>
     {% endif %}
-    {% if can_force_complete and can_manage %}
+    {% if can_force_complete and page_can_manage %}
     <button class="btn-force-complete" onclick="showForceCompleteModal()">
       🏁 Complete Tournament Now
       <div style="font-size:10px;font-weight:400;color:rgba(251,191,36,0.7);margin-top:3px;">

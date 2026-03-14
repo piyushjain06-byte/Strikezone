@@ -219,6 +219,23 @@
   .mc-wkts { color: var(--accent); }
   .mc-overs { font-size: 11px; color: var(--muted); margin-top: 3px; }
   .mc-result { padding: 10px 20px; font-size: 12px; font-weight: 600; color: var(--success); background: rgba(16,185,129,0.06); border-top: 1px solid rgba(16,185,129,0.12); }
+  .btn-view-sc {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; padding: 10px 16px;
+    background: rgba(59,130,246,0.08); border: none; border-top: 1px solid rgba(59,130,246,0.15);
+    color: #60a5fa; font-size: 13px; font-weight: 700; font-family: inherit;
+    text-decoration: none; transition: background 0.15s, color 0.15s; cursor: pointer;
+  }
+  .btn-view-sc:hover { background: rgba(59,130,246,0.15); color: #93c5fd; }
+  .btn-view-sc svg { flex-shrink: 0; }
+  .fm-view-sc {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 11px 24px; margin: 14px 20px 4px;
+    background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 10px; color: #60a5fa; font-size: 13px; font-weight: 700;
+    text-decoration: none; transition: all 0.15s; width: fit-content;
+  }
+  .fm-view-sc:hover { background: rgba(59,130,246,0.18); color: #93c5fd; border-color: rgba(59,130,246,0.4); }
   .mc-pending { padding: 14px 20px; font-size: 13px; color: var(--muted); font-style: italic; display: flex; align-items: center; justify-content: space-between; }
   .mc-pending a { color: var(--accent); font-style: normal; font-weight: 600; font-size: 12px; text-decoration: none; }
 
@@ -454,8 +471,12 @@
   </div>
   {% endif %}
 
+  <a href="/match/{{ mc.match.id }}/scorecard/" class="fm-view-sc">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+    View Full Scorecard
+  </a>
   <div class="sc-toggle" id="toggle-feat" onclick="toggleSC('sc-feat','toggle-feat')">
-    <span>📊 View Full Scorecard</span><span class="arr">▼</span>
+    <span>📊 Quick Preview</span><span class="arr">▼</span>
   </div>
   <div class="sc-body" id="sc-feat">
     {% if mc.batting_sc1 %}
@@ -566,8 +587,12 @@
       {% endif %}
     </div>
     {% if mc.winner %}<div class="mc-result">🏆 {{ mc.winner }} won by {{ mc.margin }}</div>{% elif mc.margin %}<div class="mc-result">⚖️ {{ mc.margin }}</div>{% endif %}
+    <a href="/match/{{ mc.match.id }}/scorecard/" class="btn-view-sc">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      View Full Scorecard
+    </a>
     <div class="sc-toggle" id="tog-c{{ forloop.counter }}" onclick="toggleSC('sc-c{{ forloop.counter }}','tog-c{{ forloop.counter }}')">
-      <span>📊 View Full Scorecard</span><span class="arr">▼</span>
+      <span>📊 Quick Preview</span><span class="arr">▼</span>
     </div>
     <div class="sc-body" id="sc-c{{ forloop.counter }}">
       {% if mc.batting_sc1 %}

@@ -41,11 +41,27 @@ def match_start(request):
     # Only show matches that have NOT been started yet (no MatchStart record)
     started_match_ids = MatchStart.objects.values_list('match_id', flat=True)
     matches = CreateMatch.objects.exclude(id__in=started_match_ids).select_related('team1', 'team2', 'tournament').order_by('tournament__tournament_name', 'match_date')
+    # Pro Plus players only see matches from their own tournaments
+    from subscriptions.decorators import _is_privileged
+    if not _is_privileged(request):
+        pid = request.session.get('player_id')
+        if pid and pid != 'guest':
+            from tournaments.models import TournamentDetails
+            owned_ids = TournamentDetails.objects.filter(
+                created_by_player_id=pid
+            ).values_list('id', flat=True)
+            matches = matches.filter(tournament_id__in=owned_ids)
     if request.method == "POST":
         match_id = request.POST.get("match_id")
         toss_winner_id = request.POST.get("toss_winner")
         decision = request.POST.get("decision")
         match = get_object_or_404(CreateMatch, id=match_id)
+        # Ownership check for pro_plus players
+        from subscriptions.decorators import _is_privileged, _player_owns_tournament
+        if not _is_privileged(request):
+            if not _player_owns_tournament(request, match.tournament_id):
+                messages.warning(request, 'You can only manage tournaments you have created.')
+                return redirect('upgrade_plan')
         toss_winner = get_object_or_404(TeamDetails, id=toss_winner_id)
         try:
             _ = match.match_start

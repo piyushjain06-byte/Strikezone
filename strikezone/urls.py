@@ -122,7 +122,7 @@ urlpatterns = [
     # ─────────────────────────────────────────────────────────────
     # 9. JSON / AJAX APIs
     # ─────────────────────────────────────────────────────────────
-    path('api/search/',                             views.global_search_api,  name='global_search_api'),
+    path('api/search/',                             views_enhanced.enhanced_search_view,  name='global_search_api'),
     path('api/live-scores/',                        views.live_scores_api,          name='live_scores_api'),
     path('api/live-matches/',                       views.flutter_live_matches_api, name='flutter_live_matches_api'),
     path('api/match/<int:match_id>/live/',          views.live_scorecard_api, name='live_scorecard_api'),
@@ -139,13 +139,12 @@ urlpatterns = [
     # ─────────────────────────────────────────────────────────────
     
     # Search
-    path('search/', lambda request: render(request, 'search_results.html'), name='search_page'),
     path('api/search-enhanced/', views_enhanced.enhanced_search_view, name='search_enhanced'),
     
     # Analytics & Comparison
-    path('player-comparison/', lambda request: render(request, 'player_comparison.html', {'all_players': PlayerDetails.objects.all()}), name='player_comparison'),
-    path('api/player-comparison/', views_enhanced.player_comparison_view, name='api_player_comparison'),
-    path('api/player/<int:player_id>/form/', views_enhanced.player_form_view, name='player_form'),
+    path('player/<int:player_id>/form/', views_enhanced.player_form_view, name='player_form'),
+    path('player/<int:p1_id>/compare/<int:p2_id>/', views_enhanced.player_comparison_view, name='player_comparison'),
+    path('player/<int:p1_id>/compare/<int:p2_id>/pdf/', views_enhanced.player_comparison_pdf_view, name='player_comparison_pdf'),
     path('api/team-h2h/<int:team1_id>/<int:team2_id>/', views_enhanced.team_head_to_head_view, name='team_h2h'),
     path('tournament/<int:tournament_id>/stats/', views_enhanced.tournament_stats_view, name='tournament_stats'),
     

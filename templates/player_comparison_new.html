@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  :root{--bg:#0a0f1e;--surface:#111827;--surface2:#1a2235;--border:#1e2d45;
+        --accent:#f59e0b;--success:#10b981;--info:#3b82f6;--text:#e2e8f0;--muted:#64748b;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+  .cmp-page{max-width:860px;margin:0 auto;padding:28px 16px 60px;}
+  .btn-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    color:var(--muted);text-decoration:none;background:var(--surface2);
+    border:1px solid var(--border);border-radius:8px;padding:6px 14px;
+    transition:all .15s;margin-bottom:20px;}
+  .btn-back:hover{color:var(--accent);border-color:rgba(245,158,11,.3);}
+
+  .cmp-title{text-align:center;margin-bottom:6px;}
+  .cmp-title h1{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;
+    letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+  .cmp-title h2{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:800;color:#fff;}
+
+  .verdict-pill{display:flex;align-items:center;justify-content:center;gap:10px;
+    margin:12px auto 24px;background:var(--surface);border:1px solid var(--border);
+    border-radius:40px;padding:8px 24px;width:fit-content;}
+  .vp-score{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:800;}
+  .vp-score.amber{color:var(--accent);}
+  .vp-score.blue{color:var(--info);}
+  .vp-sep{font-size:14px;color:var(--muted);}
+  .vp-label{font-size:12px;color:var(--muted);font-weight:600;}
+
+  /* Main card */
+  .cmp-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:20px;}
+
+  /* Player header */
+  .cmp-header{display:grid;grid-template-columns:1fr 100px 1fr;}
+  .ph-side{padding:22px 16px 18px;text-align:center;}
+  .ph-side.p1{background:linear-gradient(145deg,#1a1400,#2a1c00);border-bottom:3px solid #f59e0b;}
+  .ph-side.p2{background:linear-gradient(145deg,#001020,#001a36);border-bottom:3px solid #3b82f6;}
+  .ph-av{width:68px;height:68px;border-radius:50%;object-fit:cover;margin:0 auto 10px;display:block;}
+  .ph-av-init{width:68px;height:68px;border-radius:50%;margin:0 auto 10px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:#fff;}
+  .ph-av-init.p1{background:linear-gradient(135deg,#92400e,#f59e0b);}
+  .ph-av-init.p2{background:linear-gradient(135deg,#1e3a8a,#3b82f6);}
+  .ph-name{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:800;color:#fff;line-height:1.1;margin-bottom:5px;}
+  .ph-role{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+    padding:3px 10px;border-radius:20px;display:inline-block;}
+  .ph-role.p1{background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3);}
+  .ph-role.p2{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);}
+  .ph-team{font-size:11px;color:var(--muted);margin-top:5px;}
+  .ph-vs{display:flex;align-items:center;justify-content:center;
+    background:var(--surface2);border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:3px solid var(--border);}
+  .ph-vs span{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:800;color:var(--accent);}
+
+  /* Section label */
+  .stat-section-label{background:var(--surface2);border-top:1px solid var(--border);
+    padding:7px 20px;font-size:9px;font-weight:700;letter-spacing:2px;
+    text-transform:uppercase;color:var(--muted);text-align:center;}
+
+  /* Stat row */
+  .stat-row{display:grid;grid-template-columns:1fr 150px 1fr;
+    border-top:1px solid rgba(255,255,255,.04);transition:background .12s;}
+  .stat-row:hover{background:rgba(255,255,255,.02);}
+  .sr-val{padding:12px 18px;font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#fff;display:flex;align-items:center;}
+  .sr-val.p1{justify-content:flex-end;border-right:1px solid rgba(255,255,255,.04);}
+  .sr-val.p2{justify-content:flex-start;border-left:1px solid rgba(255,255,255,.04);}
+  .sr-val.winner.p1{color:#f59e0b;background:linear-gradient(90deg,transparent,rgba(245,158,11,.07));}
+  .sr-val.winner.p2{color:#60a5fa;background:linear-gradient(90deg,rgba(59,130,246,.07),transparent);}
+  .win-crown{font-size:12px;margin:0 5px;}
+  .sr-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:9px 8px;text-align:center;background:rgba(255,255,255,.015);}
+  .sr-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);line-height:1.3;margin-bottom:5px;}
+  .mini-bar{width:100%;height:5px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;display:flex;}
+  .mb-fill1{height:100%;background:linear-gradient(90deg,#b45309,#f59e0b);}
+  .mb-fill2{height:100%;background:linear-gradient(90deg,#1d4ed8,#3b82f6);}
+
+  /* Form section */
+  .form-section{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:20px;}
+  .form-header{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border);}
+  .fh-side{padding:12px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+  .fh-side.p1{color:#f59e0b;border-right:1px solid var(--border);}
+  .fh-side.p2{color:#60a5fa;}
+  .form-body{display:grid;grid-template-columns:1fr 1fr;}
+  .form-col{padding:16px 20px;}
+  .form-col.p1{border-right:1px solid var(--border);}
+  .spark-row{display:flex;align-items:flex-end;gap:6px;height:56px;margin-bottom:6px;}
+  .spark-b{flex:1;border-radius:4px 4px 0 0;min-height:4px;}
+  .spark-vals{display:flex;gap:6px;}
+  .spark-val{flex:1;text-align:center;font-size:10px;color:var(--muted);}
+  .form-empty{font-size:12px;color:var(--muted);padding:12px 0;text-align:center;}
+
+  /* Download */
+  .dl-row{display:flex;justify-content:center;margin-top:4px;}
+  .btn-dl{display:inline-flex;align-items:center;gap:8px;padding:13px 32px;border-radius:12px;
+    background:linear-gradient(135deg,#064e3b,#10b981);color:#fff;font-size:14px;font-weight:700;
+    text-decoration:none;box-shadow:0 6px 20px rgba(16,185,129,.3);transition:all .2s;border:none;font-family:inherit;cursor:pointer;}
+  .btn-dl:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(16,185,129,.4);color:#fff;}
+
+  @media(max-width:580px){
+    .cmp-header{grid-template-columns:1fr 60px 1fr;}
+    .ph-name{font-size:14px;}
+    .ph-av,.ph-av-init{width:50px;height:50px;font-size:20px;}
+    .sr-val{font-size:17px;padding:10px 10px;}
+    .sr-label{font-size:8px;}
+  }
+</style>
+
+<div class="cmp-page">
+  <a href="/player/{{ s1.player.id }}/profile/" class="btn-back">← Back to {{ s1.player.player_name }}</a>
+
+  <div class="cmp-title">
+    <h1>⚔️ Player Face-off</h1>
+    <h2>{{ s1.player.player_name }} vs {{ s2.player.player_name }}</h2>
+  </div>
+
+  <div class="verdict-pill">
+    <span class="vp-score amber">{{ p1_wins }}</span>
+    <span class="vp-sep">—</span>
+    <span class="vp-label">
+      {% if p1_wins > p2_wins %}🏆 {{ s1.player.player_name }} leads
+      {% elif p2_wins > p1_wins %}🏆 {{ s2.player.player_name }} leads
+      {% else %}⚖️ Tied{% endif %}
+    </span>
+    <span class="vp-sep">—</span>
+    <span class="vp-score blue">{{ p2_wins }}</span>
+  </div>
+
+  <div class="cmp-card">
+    <!-- HEADERS -->
+    <div class="cmp-header">
+      <div class="ph-side p1">
+        {% if s1.player.photo %}<img src="{{ s1.player.photo.url }}" class="ph-av" alt="">
+        {% else %}<div class="ph-av-init p1">{{ s1.player.player_name|first|upper }}</div>{% endif %}
+        <div class="ph-name">{{ s1.player.player_name }}</div>
+        <span class="ph-role p1">{{ s1.role }}</span>
+        <div class="ph-team">{{ s1.team }}</div>
+      </div>
+      <div class="ph-vs"><span>VS</span></div>
+      <div class="ph-side p2">
+        {% if s2.player.photo %}<img src="{{ s2.player.photo.url }}" class="ph-av" alt="">
+        {% else %}<div class="ph-av-init p2">{{ s2.player.player_name|first|upper }}</div>{% endif %}
+        <div class="ph-name">{{ s2.player.player_name }}</div>
+        <span class="ph-role p2">{{ s2.role }}</span>
+        <div class="ph-team">{{ s2.team }}</div>
+      </div>
+    </div>
+
+    <!-- BATTING -->
+    <div class="stat-section-label">🏏 Batting Stats</div>
+    {% for row in rows|slice:":10" %}
+    <div class="stat-row">
+      <div class="sr-val p1 {% if row.winner == 1 %}winner{% endif %}">
+        {% if row.winner == 1 %}<span class="win-crown">🏆</span>{% endif %}{{ row.v1 }}
+      </div>
+      <div class="sr-mid">
+        <div class="sr-label">{{ row.label }}</div>
+        <div class="mini-bar">
+          {% if row.v1 or row.v2 %}
+            {% widthratio row.v1 row.v1|add:row.v2 100 as b1 %}
+            <div class="mb-fill1" style="width:{{ b1|default:50 }}%;"></div>
+            <div class="mb-fill2" style="width:{% widthratio row.v2 row.v1|add:row.v2 100 %}%;"></div>
+          {% else %}
+            <div class="mb-fill1" style="width:50%;"></div><div class="mb-fill2" style="width:50%;"></div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="sr-val p2 {% if row.winner == 2 %}winner{% endif %}">
+        {{ row.v2 }}{% if row.winner == 2 %}<span class="win-crown">🏆</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- BOWLING -->
+    <div class="stat-section-label">🎯 Bowling Stats</div>
+    {% for row in rows|slice:"10:" %}
+    <div class="stat-row">
+      <div class="sr-val p1 {% if row.winner == 1 %}winner{% endif %}">
+        {% if row.winner == 1 %}<span class="win-crown">🏆</span>{% endif %}{{ row.v1 }}
+      </div>
+      <div class="sr-mid">
+        <div class="sr-label">{{ row.label }}</div>
+        <div class="mini-bar">
+          {% if row.v1 or row.v2 %}
+            {% widthratio row.v1 row.v1|add:row.v2 100 as b1 %}
+            <div class="mb-fill1" style="width:{{ b1|default:50 }}%;"></div>
+            <div class="mb-fill2" style="width:{% widthratio row.v2 row.v1|add:row.v2 100 %}%;"></div>
+          {% else %}
+            <div class="mb-fill1" style="width:50%;"></div><div class="mb-fill2" style="width:50%;"></div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="sr-val p2 {% if row.winner == 2 %}winner{% endif %}">
+        {{ row.v2 }}{% if row.winner == 2 %}<span class="win-crown">🏆</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- RECENT FORM -->
+  <div class="form-section">
+    <div class="form-header">
+      <div class="fh-side p1">📈 {{ s1.player.player_name }} — Last 5</div>
+      <div class="fh-side p2">📈 {{ s2.player.player_name }} — Last 5</div>
+    </div>
+    <div class="form-body">
+      <div class="form-col p1">
+        {% if s1.recent %}
+          {% with mx=s1.recent.0 %}
+          <div class="spark-row">
+            {% for r in s1.recent %}{% widthratio r mx 56 as h %}<div class="spark-b" style="height:{{ h|default:4 }}px;background:linear-gradient(180deg,#f59e0b,#b45309);"></div>{% endfor %}
+          </div>
+          <div class="spark-vals">{% for r in s1.recent %}<div class="spark-val">{{ r }}</div>{% endfor %}</div>
+          {% endwith %}
+        {% else %}<div class="form-empty">No innings data yet</div>{% endif %}
+      </div>
+      <div class="form-col">
+        {% if s2.recent %}
+          {% with mx=s2.recent.0 %}
+          <div class="spark-row">
+            {% for r in s2.recent %}{% widthratio r mx 56 as h %}<div class="spark-b" style="height:{{ h|default:4 }}px;background:linear-gradient(180deg,#3b82f6,#1d4ed8);"></div>{% endfor %}
+          </div>
+          <div class="spark-vals">{% for r in s2.recent %}<div class="spark-val">{{ r }}</div>{% endfor %}</div>
+          {% endwith %}
+        {% else %}<div class="form-empty">No innings data yet</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- DOWNLOAD -->
+  <div class="dl-row">
+    <a href="/player/{{ s1.player.id }}/compare/{{ s2.player.id }}/pdf/"
+       class="btn-dl"
+       onclick="setTimeout(()=>window.location.href=window.location.href,800)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download Comparison PDF
+    </a>
+  </div>
+</div>
+{% endblock %}

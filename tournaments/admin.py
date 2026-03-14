@@ -1,5 +1,3 @@
-
-
 # Register your models here.
 from django.contrib import admin
 from .models import UpperCategory, TournamentDetails, StartTournament
@@ -7,7 +5,7 @@ from .models import UpperCategory, TournamentDetails, StartTournament
 
 @admin.register(UpperCategory)
 class UpperCategoryAdmin(admin.ModelAdmin):
-    list_display = ('category_name', 'created_at')
+    list_display = ('category_name',)
     search_fields = ('category_name',)
 
 

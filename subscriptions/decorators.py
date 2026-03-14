@@ -46,12 +46,51 @@ def _get_effective_plan(request):
     return 'free'
 
 
+def _player_owns_tournament(request, tournament_id):
+    """
+    Returns True if the current pro_plus player created this tournament,
+    OR if the user is privileged (admin/employee).
+    """
+    if _is_privileged(request):
+        return True
+    pid = request.session.get('player_id')
+    if not pid or pid == 'guest':
+        return False
+    try:
+        from tournaments.models import TournamentDetails
+        return TournamentDetails.objects.filter(
+            id=tournament_id, created_by_player_id=pid
+        ).exists()
+    except Exception:
+        return False
+
+
+def _get_tournament_id_from_kwargs(kwargs):
+    """Extract tournament_id from view kwargs — directly or via match_id."""
+    # Direct tournament_id kwarg
+    if 'tournament_id' in kwargs:
+        return kwargs['tournament_id']
+    # Via match_id → look up tournament
+    if 'match_id' in kwargs:
+        try:
+            from matches.models import CreateMatch
+            return CreateMatch.objects.filter(
+                id=kwargs['match_id']
+            ).values_list('tournament_id', flat=True).first()
+        except Exception:
+            pass
+    return None
+
+
 def require_plan(*plans):
     """
     Decorator that checks the current user's subscription plan.
 
-    Employees and admins (CEO) ALWAYS bypass this check — they get
-    full access to all features regardless of subscription.
+    Employees and admins (CEO) ALWAYS bypass this check.
+
+    For pro_plus players: if the view involves a specific tournament or match,
+    the player must have CREATED that tournament to get pro_plus access.
+    For tournaments they did NOT create, they are treated as pro-level only.
 
     Usage:
         @require_plan('pro', 'pro_plus')   <- allows Pro AND Pro Plus
@@ -60,7 +99,6 @@ def require_plan(*plans):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            # Must be logged in as someone
             is_admin  = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
             is_player = bool(request.session.get('player_mobile'))
 
@@ -72,6 +110,30 @@ def require_plan(*plans):
                 return view_func(request, *args, **kwargs)
 
             effective = _get_effective_plan(request)
+
+            # Pro Plus player — check tournament ownership if a tournament/match is involved
+            if effective == 'pro_plus' and 'pro_plus' in plans:
+                tournament_id = _get_tournament_id_from_kwargs(kwargs)
+                if tournament_id:
+                    # Must own this tournament to get pro_plus powers
+                    if not _player_owns_tournament(request, tournament_id):
+                        # Treat as pro for this tournament
+                        is_ajax = (
+                            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+                            or request.content_type == 'application/json'
+                        )
+                        if is_ajax:
+                            return JsonResponse({
+                                'error': 'You can only manage tournaments you created.',
+                                'upgrade_required': False,
+                            }, status=403)
+                        messages.warning(
+                            request,
+                            'You can only manage tournaments you have created.'
+                        )
+                        return redirect('upgrade_plan')
+                # No tournament_id in kwargs (e.g. manage_cricket listing page) — allow
+                return view_func(request, *args, **kwargs)
 
             if effective not in plans:
                 if 'pro_plus' in plans:

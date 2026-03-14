@@ -54,6 +54,29 @@
   .btn-follow-following:hover{background:rgba(239,68,68,.12);color:#ef4444;border-color:rgba(239,68,68,.3);}
   .btn-follow:disabled{opacity:.5;cursor:not-allowed;}
 
+  /* ── COMPARE MODAL ── */
+  .cmp-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;padding:20px;}
+  .cmp-overlay.open{display:flex;}
+  .cmp-box{background:linear-gradient(145deg,#0f1b2d,#1a2a40);border:1px solid rgba(59,130,246,.3);border-radius:20px;padding:28px;width:100%;max-width:480px;position:relative;}
+  .cmp-box-title{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:#fff;margin-bottom:6px;}
+  .cmp-box-sub{font-size:12px;color:var(--muted);margin-bottom:18px;}
+  .cmp-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;}
+  .cmp-close:hover{color:#fff;}
+  .cmp-search-wrap{position:relative;}
+  .cmp-search-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px 11px 38px;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;}
+  .cmp-search-input:focus{border-color:rgba(59,130,246,.5);box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+  .cmp-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none;}
+  .cmp-results{max-height:280px;overflow-y:auto;margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+  .cmp-result-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;text-decoration:none;}
+  .cmp-result-item:hover{border-color:rgba(59,130,246,.4);background:var(--surface2);}
+  .cmp-r-av{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+  .cmp-r-av-init{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1e3a8a,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
+  .cmp-r-name{font-size:13px;font-weight:600;color:#fff;}
+  .cmp-r-sub{font-size:11px;color:var(--muted);}
+  .cmp-empty{font-size:13px;color:var(--muted);text-align:center;padding:20px 0;}
+  .btn-compare{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#1e3a8a,#3b82f6);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;padding:10px 18px;text-decoration:none;box-shadow:0 4px 16px rgba(59,130,246,.3);transition:all .2s;cursor:pointer;}
+  .btn-compare:hover{transform:translateY(-1px);color:#fff;}
+
   /* QR modal */
   .qr-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;padding:20px;}
   .qr-overlay.open{display:flex;}
@@ -173,6 +196,18 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           {% if is_own %}My Performance Analysis{% else %}View Analysis{% endif %}
         </a>
+
+        <!-- FORM TRACKER BUTTON -->
+        <a href="{% url 'player_form' player.id %}" class="btn-analysis" style="background:linear-gradient(135deg,#065f46,#10b981);box-shadow:0 4px 16px rgba(16,185,129,.3);">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          📈 Track Form
+        </a>
+
+        <!-- COMPARE BUTTON -->
+        <button class="btn-compare" id="btn-open-compare" data-pid="{{ player.id }}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          ⚔️ Compare With
+        </button>
 
         <!-- QR BUTTON - opens modal below -->
         <button class="btn-qr" id="btn-open-qr">📱 Player QR Card</button>
@@ -515,4 +550,71 @@ if (followBtn) {
 })();
 </script>
 
+
+<!-- ── COMPARE MODAL ── -->
+<div class="cmp-overlay" id="cmp-overlay">
+  <div class="cmp-box">
+    <button class="cmp-close" id="cmp-close">✕</button>
+    <div class="cmp-box-title">⚔️ Compare With Another Player</div>
+    <div class="cmp-box-sub">Search and select a player to compare with {{ player.player_name }}</div>
+    <div class="cmp-search-wrap">
+      <span class="cmp-search-icon">🔍</span>
+      <input type="text" class="cmp-search-input" id="cmp-search-input" placeholder="Search player name…" autocomplete="off">
+    </div>
+    <div class="cmp-results" id="cmp-results">
+      <div class="cmp-empty">Start typing to search players…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const overlay   = document.getElementById('cmp-overlay');
+  const closeBtn  = document.getElementById('cmp-close');
+  const openBtn   = document.getElementById('btn-open-compare');
+  const input     = document.getElementById('cmp-search-input');
+  const results   = document.getElementById('cmp-results');
+  const myId      = openBtn ? openBtn.dataset.pid : null;
+
+  if(!openBtn) return;
+
+  openBtn.addEventListener('click', () => {
+    overlay.classList.add('open');
+    setTimeout(() => input.focus(), 100);
+  });
+  closeBtn.addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.classList.remove('open'); });
+
+  let timer = null;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if(!q){ results.innerHTML='<div class="cmp-empty">Start typing to search players…</div>'; return; }
+    results.innerHTML='<div class="cmp-empty">Searching…</div>';
+    timer = setTimeout(() => {
+      fetch('/api/search/?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(data => {
+          const players = (data.players || []).filter(p => String(p.id) !== String(myId));
+          if(!players.length){
+            results.innerHTML='<div class="cmp-empty">No players found</div>';
+            return;
+          }
+          results.innerHTML = '';
+          players.forEach(p => {
+            const a = document.createElement('a');
+            a.className = 'cmp-result-item';
+            a.href = '/player/' + myId + '/compare/' + p.id + '/';
+            const av = p.photo
+              ? `<img src="${p.photo}" class="cmp-r-av" alt="">`
+              : `<div class="cmp-r-av-init">${p.name[0].toUpperCase()}</div>`;
+            a.innerHTML = `${av}<div><div class="cmp-r-name">${p.name}</div><div class="cmp-r-sub">${p.sub||''}</div></div>`;
+            results.appendChild(a);
+          });
+        })
+        .catch(() => { results.innerHTML='<div class="cmp-empty">Search failed, try again</div>'; });
+    }, 250);
+  });
+})();
+</script>
 {% endblock %}

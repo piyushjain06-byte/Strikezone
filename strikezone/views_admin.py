@@ -50,7 +50,17 @@ def manage_cricket(request):
         if "tournament_submit" in request.POST:
             tournament_form = TournamentForm(request.POST)
             if tournament_form.is_valid():
-                tournament_form.save()
+                tournament = tournament_form.save(commit=False)
+                # Track who created it
+                if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
+                    tournament.created_by_admin = request.user
+                elif request.session.get('player_id') and request.session['player_id'] != 'guest':
+                    from teams.models import PlayerDetails
+                    try:
+                        tournament.created_by_player_id = request.session['player_id']
+                    except Exception:
+                        pass
+                tournament.save()
                 messages.success(request, "Tournament created successfully!")
                 tournament_form = TournamentForm()
             active_tab = 'tournament'
@@ -200,6 +210,13 @@ def create_match(request):
     if request.method == "POST":
         form = MatchForm(request.POST)
         if form.is_valid():
+            # Ownership check for pro_plus players
+            from subscriptions.decorators import _is_privileged, _player_owns_tournament
+            tournament_id = form.cleaned_data.get('tournament').id if form.cleaned_data.get('tournament') else None
+            if tournament_id and not _is_privileged(request):
+                if not _player_owns_tournament(request, tournament_id):
+                    messages.warning(request, 'You can only create matches in tournaments you have created.')
+                    return redirect('upgrade_plan')
             form.save()
             return redirect('create_match')
     else:

@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  :root {
+    --bg:#0a0f1e;--surface:#111827;--surface2:#1a2235;
+    --border:#1e2d45;--accent:#f59e0b;--success:#10b981;
+    --danger:#ef4444;--info:#3b82f6;--text:#e2e8f0;--muted:#64748b;
+    --radius:14px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── HERO ── */
+  .pf-hero {
+    position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #050e20 0%, #0a1628 50%, #050e1e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 44px 20px 36px;
+  }
+  .pf-hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 55% 80% at 70% 50%, rgba(16,185,129,.08) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .pf-hero-inner { max-width: 1100px; margin: 0 auto; position: relative; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+
+  .pf-avatar {
+    width: 80px; height: 80px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+    border: 3px solid rgba(16,185,129,.4);
+    box-shadow: 0 0 0 6px rgba(16,185,129,.08), 0 0 36px rgba(16,185,129,.2);
+  }
+  .pf-avatar-init {
+    width: 80px; height: 80px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #064e3b, #10b981);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif; font-size: 36px; font-weight: 700; color: #fff;
+    border: 3px solid rgba(16,185,129,.4);
+    box-shadow: 0 0 0 6px rgba(16,185,129,.08), 0 0 36px rgba(16,185,129,.2);
+  }
+  .pf-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: #34d399; background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.25);
+    border-radius: 20px; padding: 3px 12px; display: inline-block; margin-bottom: 8px;
+  }
+  .pf-name { font-family: 'Rajdhani', sans-serif; font-size: 40px; font-weight: 700; color: #fff; line-height: 1; margin-bottom: 8px; }
+  .pf-sub { font-size: 13px; color: var(--muted); }
+  .pf-back {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+    color: var(--muted); text-decoration: none; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px;
+    transition: all .15s; position: absolute; top: 0; right: 0;
+  }
+  .pf-back:hover { color: var(--accent); border-color: rgba(245,158,11,.3); }
+
+  /* ── FORM METER ── */
+  .pf-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 60px; }
+
+  .section-title {
+    font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* Form meter badge */
+  .form-meter-row { display: flex; align-items: center; gap: 20px; margin-bottom: 32px; flex-wrap: wrap; }
+  .form-badge {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 110px; height: 110px; border-radius: 50%;
+    font-family: 'Rajdhani', sans-serif; font-weight: 800; flex-shrink: 0;
+    border: 3px solid; position: relative;
+    box-shadow: 0 0 32px var(--glow);
+  }
+  .form-badge .fb-score { font-size: 42px; line-height: 1; }
+  .form-badge .fb-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; opacity: .8; }
+
+  .form-badge.hot    { --glow: rgba(239,68,68,.4);   border-color: #ef4444; color: #fca5a5; background: rgba(239,68,68,.08); }
+  .form-badge.good   { --glow: rgba(16,185,129,.35);  border-color: #10b981; color: #6ee7b7; background: rgba(16,185,129,.08); }
+  .form-badge.avg    { --glow: rgba(245,158,11,.3);   border-color: #f59e0b; color: #fcd34d; background: rgba(245,158,11,.08); }
+  .form-badge.cold   { --glow: rgba(100,116,139,.25); border-color: #64748b; color: #94a3b8; background: rgba(100,116,139,.08); }
+
+  .form-summary { flex: 1; min-width: 200px; }
+  .form-summary h2 { font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .form-summary p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* quick stats */
+  .quick-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 32px; }
+  .qs-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 14px; text-align: center; position: relative; overflow: hidden;
+  }
+  .qs-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 12px 12px 0 0; }
+  .qs-card.amber::before { background: linear-gradient(90deg, #b45309, #f59e0b); }
+  .qs-card.green::before { background: linear-gradient(90deg, #047857, #10b981); }
+  .qs-card.blue::before  { background: linear-gradient(90deg, #1d4ed8, #3b82f6); }
+  .qs-card.purple::before{ background: linear-gradient(90deg, #6d28d9, #8b5cf6); }
+  .qs-num { font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .qs-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+
+  /* match cards */
+  .match-cards { display: flex; flex-direction: column; gap: 14px; margin-bottom: 36px; }
+
+  .mc {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 22px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    position: relative; overflow: hidden; transition: border-color .15s, transform .15s;
+  }
+  .mc:hover { border-color: rgba(245,158,11,.25); transform: translateX(3px); }
+  .mc::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px; }
+  .mc.hot::before   { background: linear-gradient(180deg, #ef4444, #b91c1c); }
+  .mc.good::before  { background: linear-gradient(180deg, #10b981, #047857); }
+  .mc.avg::before   { background: linear-gradient(180deg, #f59e0b, #b45309); }
+  .mc.cold::before  { background: linear-gradient(180deg, #64748b, #334155); }
+
+  .mc-num {
+    font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700;
+    color: var(--muted); width: 24px; flex-shrink: 0; text-align: center;
+  }
+  .mc-score-big {
+    font-family: 'Rajdhani', sans-serif; font-size: 44px; font-weight: 800; line-height: 1;
+    flex-shrink: 0; width: 72px; text-align: center;
+  }
+  .mc-score-big.hot   { color: #f87171; }
+  .mc-score-big.good  { color: #34d399; }
+  .mc-score-big.avg   { color: #fbbf24; }
+  .mc-score-big.cold  { color: #94a3b8; }
+
+  .mc-info { flex: 1; min-width: 160px; }
+  .mc-match { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .mc-date  { font-size: 12px; color: var(--muted); }
+
+  .mc-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+  .mcs { text-align: center; }
+  .mcs-val { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: #fff; line-height: 1; }
+  .mcs-lbl { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+  .mc-badge {
+    font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px;
+    white-space: nowrap; flex-shrink: 0; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .mc-badge.hot    { background: rgba(239,68,68,.15);  color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+  .mc-badge.good   { background: rgba(16,185,129,.15); color: #34d399; border: 1px solid rgba(16,185,129,.3); }
+  .mc-badge.avg    { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.3); }
+  .mc-badge.cold   { background: rgba(100,116,139,.12);color: #94a3b8; border: 1px solid rgba(100,116,139,.25); }
+
+  /* Run chart bars */
+  .run-chart { margin-bottom: 36px; }
+  .rc-bars { display: flex; align-items: flex-end; gap: 10px; height: 120px; padding: 0 4px; }
+  .rc-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .rc-bar {
+    width: 100%; border-radius: 6px 6px 0 0; min-height: 4px;
+    transition: opacity .2s;
+    position: relative;
+  }
+  .rc-bar:hover { opacity: .8; }
+  .rc-bar-val { font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700; color: #fff; }
+  .rc-bar-lbl { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
+
+  /* no data */
+  .no-data {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 48px 24px; text-align: center;
+  }
+  .no-data-icon { font-size: 48px; margin-bottom: 12px; }
+  .no-data h3 { font-family: 'Rajdhani', sans-serif; font-size: 22px; color: #fff; margin-bottom: 8px; }
+  .no-data p  { font-size: 13px; color: var(--muted); }
+
+  @media (max-width: 600px) {
+    .pf-name { font-size: 28px; }
+    .mc { padding: 16px 16px 16px 20px; }
+    .mc-score-big { font-size: 36px; width: 58px; }
+    .rc-bars { height: 80px; }
+  }
+</style>
+
+<!-- HERO -->
+<div class="pf-hero">
+  <div class="pf-hero-inner">
+    {% if player.photo %}
+      <img src="{{ player.photo.url }}" alt="{{ player.player_name }}" class="pf-avatar">
+    {% else %}
+      <div class="pf-avatar-init">{{ player.player_name|first|upper }}</div>
+    {% endif %}
+    <div>
+      <div class="pf-tag">📈 Form Tracker</div>
+      <div class="pf-name">{{ player.player_name }}</div>
+      <div class="pf-sub">Last {{ form_data|length }} innings analysed</div>
+    </div>
+    <a href="{% url 'public_player_profile' player.id %}" class="pf-back">← Back to Profile</a>
+  </div>
+</div>
+
+<div class="pf-wrap">
+
+  {% if form_data %}
+
+  <!-- FORM METER -->
+  <div class="section-title">📊 Form Summary</div>
+  <div class="form-meter-row">
+    <div class="form-badge {{ form_class }}">
+      <span class="fb-score">{{ form_score }}</span>
+      <span class="fb-label">{{ form_label }}</span>
+    </div>
+    <div class="form-summary">
+      <h2>{{ form_headline }}</h2>
+      <p>{{ form_description }}</p>
+    </div>
+  </div>
+
+  <!-- QUICK STATS -->
+  <div class="section-title">⚡ Last {{ form_data|length }} Innings at a Glance</div>
+  <div class="quick-stats">
+    <div class="qs-card amber">
+      <div class="qs-num" style="color:#f59e0b;">{{ total_runs }}</div>
+      <div class="qs-lbl">Total Runs</div>
+    </div>
+    <div class="qs-card green">
+      <div class="qs-num" style="color:#10b981;">{{ avg_runs }}</div>
+      <div class="qs-lbl">Avg / Innings</div>
+    </div>
+    <div class="qs-card blue">
+      <div class="qs-num" style="color:#3b82f6;">{{ avg_sr }}</div>
+      <div class="qs-lbl">Avg S/R</div>
+    </div>
+    <div class="qs-card purple">
+      <div class="qs-num" style="color:#a78bfa;">{{ best_score }}</div>
+      <div class="qs-lbl">Best Score</div>
+    </div>
+    <div class="qs-card amber">
+      <div class="qs-num" style="color:#fb923c;">{{ total_fours }}</div>
+      <div class="qs-lbl">Fours</div>
+    </div>
+    <div class="qs-card green">
+      <div class="qs-num" style="color:#34d399;">{{ total_sixes }}</div>
+      <div class="qs-lbl">Sixes</div>
+    </div>
+  </div>
+
+  <!-- RUN CHART -->
+  <div class="section-title">📉 Run Trend</div>
+  <div class="run-chart">
+    {% with max_runs=best_score %}
+    <div class="rc-bars">
+      {% for entry in form_data %}
+        {% with pct=entry.bar_pct color=entry.bar_color %}
+        <div class="rc-bar-wrap">
+          <div class="rc-bar-val">{{ entry.runs }}</div>
+          <div class="rc-bar" style="height:{{ pct }}%;background:{{ color }};"></div>
+          <div class="rc-bar-lbl" title="{{ entry.match }}">M{{ forloop.counter }}</div>
+        </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+    {% endwith %}
+  </div>
+
+  <!-- MATCH BY MATCH -->
+  <div class="section-title">🎯 Match by Match</div>
+  <div class="match-cards">
+    {% for entry in form_data %}
+    <div class="mc {{ entry.perf_class }}">
+      <div class="mc-num">#{{ forloop.counter }}</div>
+      <div class="mc-score-big {{ entry.perf_class }}">{{ entry.runs }}</div>
+      <div class="mc-info">
+        <div class="mc-match">{{ entry.match }}</div>
+        <div class="mc-date">{{ entry.date|date:"d M Y" }}{% if entry.status %} &nbsp;·&nbsp; {{ entry.status }}{% endif %}</div>
+      </div>
+      <div class="mc-stats">
+        <div class="mcs">
+          <div class="mcs-val">{{ entry.balls }}</div>
+          <div class="mcs-lbl">Balls</div>
+        </div>
+        <div class="mcs">
+          <div class="mcs-val">{{ entry.sr }}</div>
+          <div class="mcs-lbl">S/R</div>
+        </div>
+        <div class="mcs">
+          <div class="mcs-val">{{ entry.fours }}</div>
+          <div class="mcs-lbl">4s</div>
+        </div>
+        <div class="mcs">
+          <div class="mcs-val">{{ entry.sixes }}</div>
+          <div class="mcs-lbl">6s</div>
+        </div>
+      </div>
+      <div class="mc-badge {{ entry.perf_class }}">{{ entry.perf_label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <!-- NO DATA -->
+  <div class="no-data">
+    <div class="no-data-icon">📭</div>
+    <h3>No Innings Data Yet</h3>
+    <p>{{ player.player_name }} hasn't batted in any recorded matches yet.<br>Check back after the next game!</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
