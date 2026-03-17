@@ -155,3 +155,30 @@ class TournamentAward(models.Model):
 
     def __str__(self):
         return f"{self.get_award_type_display()} — {self.player.player_name} ({self.tournament})"
+
+# ── Tournament Hired Staff ──────────────────────────────────────────────────
+class TournamentHire(models.Model):
+    """
+    Tracks pro_plus players hired by a tournament creator to co-manage
+    a specific tournament. Hired players get full manage access for that
+    tournament only.
+    """
+    tournament  = models.ForeignKey(
+        TournamentDetails,
+        on_delete=models.CASCADE,
+        related_name='hired_staff'
+    )
+    hired_player = models.ForeignKey(
+        'teams.PlayerDetails',
+        on_delete=models.CASCADE,
+        related_name='hired_for_tournaments'
+    )
+    hired_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('tournament', 'hired_player')
+        verbose_name = 'Tournament Hire'
+        verbose_name_plural = 'Tournament Hires'
+
+    def __str__(self):
+        return f"{self.hired_player.player_name} hired for {self.tournament.tournament_name}"

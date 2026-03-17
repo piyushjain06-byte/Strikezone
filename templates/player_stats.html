@@ -640,6 +640,85 @@
   </div>
 
 
+
+
+  <!-- ── MANAGED TOURNAMENTS ── -->
+  {% if managed_tournaments %}
+  <div class="section-title">🏆 <span>Tournaments Managed</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:28px;">
+    {% for t in managed_tournaments %}
+    <a href="{% url 'tournamentdetails' t.id %}" style="text-decoration:none;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+                  padding:16px 18px;transition:border-color .15s,transform .15s;
+                  border-top:3px solid #f59e0b;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;right:0;bottom:0;width:60px;
+                    background:radial-gradient(ellipse at right,rgba(245,158,11,.08),transparent);
+                    pointer-events:none;"></div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+                    color:#f59e0b;margin-bottom:6px;">🏏 Tournament</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;
+                    color:#fff;line-height:1.2;margin-bottom:8px;">{{ t.tournament_name }}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="font-size:10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);
+                       color:#fbbf24;border-radius:20px;padding:2px 9px;font-weight:600;">
+            {{ t.get_tournament_type_display }}
+          </span>
+          <span style="font-size:10px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);
+                       color:#60a5fa;border-radius:20px;padding:2px 9px;font-weight:600;">
+            {{ t.number_of_overs }} overs
+          </span>
+          {% if t.start_date %}
+          <span style="font-size:10px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);
+                       color:#34d399;border-radius:20px;padding:2px 9px;font-weight:600;">
+            📅 {{ t.start_date|date:"M Y" }}
+          </span>
+          {% endif %}
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:#64748b;display:flex;align-items:center;gap:4px;">
+          View Tournament →
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+
+  <!-- ── HIRED FOR TOURNAMENTS ── -->
+  {% if hired_for_tournaments %}
+  <div class="section-title">👥 <span>Hired as Staff For</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:28px;">
+    {% for h in hired_for_tournaments %}
+    <a href="{% url 'tournamentdetails' h.tournament.id %}" style="text-decoration:none;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+                  padding:16px 18px;transition:border-color .15s;border-top:3px solid #818cf8;
+                  position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;right:0;bottom:0;width:60px;
+                    background:radial-gradient(ellipse at right,rgba(99,102,241,.08),transparent);
+                    pointer-events:none;"></div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+                    color:#a5b4fc;margin-bottom:6px;">👥 Staff Role</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;
+                    color:#fff;line-height:1.2;margin-bottom:8px;">{{ h.tournament.tournament_name }}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="font-size:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);
+                       color:#a5b4fc;border-radius:20px;padding:2px 9px;font-weight:600;">
+            {{ h.tournament.get_tournament_type_display }}
+          </span>
+          <span style="font-size:10px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);
+                       color:#60a5fa;border-radius:20px;padding:2px 9px;font-weight:600;">
+            {{ h.tournament.number_of_overs }} overs
+          </span>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:#64748b;">
+          Hired {{ h.hired_at|date:"d M Y" }} → View Tournament
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <!-- ── RECENT BATTING ── -->
   <div class="section-title">📋 <span>Recent Innings</span></div>
   <div class="table-card">

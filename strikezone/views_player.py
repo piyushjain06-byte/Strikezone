@@ -224,6 +224,17 @@ def player_stats(request):
     guest_followers  = GuestFollow.objects.filter(following=player).select_related('guest').order_by('-created_at')
     follower_count   = player_followers.count() + guest_followers.count()
 
+    # Tournaments this player has created (always show regardless of current plan)
+    managed_tournaments = TournamentDetails.objects.filter(
+        created_by_player=player
+    ).order_by('-created_at')
+
+    # Tournaments this player was hired to manage
+    from tournaments.models import TournamentHire
+    hired_for_tournaments = TournamentHire.objects.filter(
+        hired_player=player
+    ).select_related('tournament').order_by('-hired_at')
+
     return render(request, 'player_stats.html', {
         'player': player,
         'is_guest': False,
@@ -261,6 +272,8 @@ def player_stats(request):
         'run_outs': run_outs,
         'stumpings': stumpings,
         'recent_dismissals': recent_dismissals,
+        'managed_tournaments': managed_tournaments,
+        'hired_for_tournaments': hired_for_tournaments,
     })
 
 
@@ -534,12 +547,25 @@ def public_player_profile(request, player_id):
 @require_plan('pro_plus')
 def edit_player(request, player_id):
     """Edit a player's details via AJAX POST — returns JSON."""
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
     player = get_object_or_404(PlayerDetails, id=player_id)
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
         except Exception:
             data = request.POST
+        # Ownership check via roster_id if provided
+        if not _is_privileged(request):
+            rid = data.get('roster_id')
+            if rid:
+                try:
+                    from teams.models import TournamentRoster
+                    roster = TournamentRoster.objects.select_related('tournament_team__tournament').get(id=rid)
+                    tid = roster.tournament_team.tournament_id
+                    if not _player_owns_tournament(request, tid):
+                        return JsonResponse({'success': False, 'error': 'You can only edit players in your own tournaments.'}, status=403)
+                except Exception:
+                    pass
 
         player_name    = (data.get('player_name') or '').strip()
         mobile_number  = (data.get('mobile_number') or '').strip() or None
@@ -585,6 +611,7 @@ def edit_player(request, player_id):
 @require_plan('pro_plus')
 def delete_player(request, player_id):
     """Remove a player from a tournament roster (or fully delete if no roster_id)."""
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
     player = get_object_or_404(PlayerDetails, id=player_id)
     if request.method == 'POST':
         try:
@@ -593,6 +620,15 @@ def delete_player(request, player_id):
             data = request.POST
 
         roster_id = data.get('roster_id')
+        # Ownership check
+        if not _is_privileged(request) and roster_id:
+            try:
+                from teams.models import TournamentRoster
+                roster = TournamentRoster.objects.select_related('tournament_team__tournament').get(id=roster_id)
+                if not _player_owns_tournament(request, roster.tournament_team.tournament_id):
+                    return JsonResponse({'success': False, 'error': 'You can only remove players from your own tournaments.'}, status=403)
+            except Exception:
+                pass
         if roster_id:
             # Remove only from this tournament's roster
             TournamentRoster.objects.filter(id=roster_id).delete()

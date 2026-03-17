@@ -145,6 +145,9 @@ urlpatterns = [
     path('player/<int:player_id>/form/', views_enhanced.player_form_view, name='player_form'),
     path('player/<int:p1_id>/compare/<int:p2_id>/', views_enhanced.player_comparison_view, name='player_comparison'),
     path('player/<int:p1_id>/compare/<int:p2_id>/pdf/', views_enhanced.player_comparison_pdf_view, name='player_comparison_pdf'),
+    path('api/proplus-players/', views_enhanced.search_proplus_players, name='search_proplus_players'),
+    path('api/tournament/<int:tournament_id>/hire/', views_enhanced.hire_player_view, name='hire_player'),
+    path('api/tournament/<int:tournament_id>/remove-hire/<int:player_id>/', views_enhanced.remove_hire_view, name='remove_hire'),
     path('api/team-h2h/<int:team1_id>/<int:team2_id>/', views_enhanced.team_head_to_head_view, name='team_h2h'),
     path('tournament/<int:tournament_id>/stats/', views_enhanced.tournament_stats_view, name='tournament_stats'),
     

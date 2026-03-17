@@ -128,6 +128,12 @@ NEXT_STAGE  = {'PQF': 'QF', 'QF': 'SF', 'SF': 'F', 'F': None}
 @require_plan('pro_plus')
 def knockout_bracket(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
+    if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
+        from django.contrib import messages
+        messages.warning(request, 'You can only manage tournaments you have created.')
+        return redirect('upgrade_plan')
+
     leaderboard = get_tournament_leaderboard(tournament)
     league_done = all_league_matches_completed(tournament)
 
@@ -159,6 +165,12 @@ def knockout_bracket(request, tournament_id):
 @require_plan('pro_plus')
 def setup_knockout_stage(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
+    if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
+        from django.contrib import messages
+        messages.warning(request, 'You can only manage tournaments you have created.')
+        return redirect('upgrade_plan')
+
     leaderboard = get_tournament_leaderboard(tournament)
 
     existing_stages = KnockoutStage.objects.filter(tournament=tournament).order_by('stage_order')
@@ -267,6 +279,12 @@ def setup_knockout_stage(request, tournament_id):
 def start_knockout_match(request, knockout_match_id):
     km = get_object_or_404(KnockoutMatch, id=knockout_match_id)
     tournament = km.stage.tournament
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
+    if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
+        from django.contrib import messages
+        messages.warning(request, 'You can only manage tournaments you have created.')
+        return redirect('upgrade_plan')
+
 
     if km.is_completed:
         messages.error(request, "This knockout match is already completed.")
@@ -330,6 +348,12 @@ def auto_advance_knockout(match_id):
 @require_plan('pro_plus')
 def link_knockout_matches(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
+    if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
+        from django.contrib import messages
+        messages.warning(request, 'You can only manage tournaments you have created.')
+        return redirect('upgrade_plan')
+
 
     if request.method == 'POST':
         for key, value in request.POST.items():

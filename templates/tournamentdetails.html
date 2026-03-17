@@ -266,7 +266,140 @@
       <span style="font-size:12px;font-weight:700;color:#f59e0b;">{{ manager_name }}</span>
     </div>
     {% endif %}
+
+    {% if hired_staff %}
+    <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">👥 Staff:</span>
+      {% for h in hired_staff %}
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);border-radius:20px;padding:4px 10px;">
+        {% if h.hired_player.photo %}
+          <img src="{{ h.hired_player.photo.url }}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;">
+        {% else %}
+          <div style="width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#818cf8);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;">{{ h.hired_player.player_name|first|upper }}</div>
+        {% endif %}
+        <span style="font-size:11px;font-weight:600;color:#a5b4fc;">{{ h.hired_player.player_name }}</span>
+        {% if is_creator %}
+        <button onclick="removeHire({{ h.hired_player.id }}, '{{ h.hired_player.player_name }}')"
+          style="background:none;border:none;cursor:pointer;color:#f87171;font-size:13px;line-height:1;padding:0 2px;"
+          title="Remove">✕</button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if is_creator %}
+    <div style="margin-top:12px;">
+      <button id="btn-hire-open"
+        style="display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.12);
+               border:1px solid rgba(99,102,241,.3);border-radius:10px;color:#a5b4fc;
+               font-size:12px;font-weight:700;padding:8px 16px;cursor:pointer;
+               font-family:inherit;transition:all .15s;">
+        ➕ Hire a Pro Plus User
+      </button>
+    </div>
+    {% endif %}
   </div>
+
+  <!-- ── HIRE MODAL ── -->
+  {% if is_creator %}
+  <div id="hire-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:linear-gradient(145deg,#0f1b2d,#1a2a40);border:1px solid rgba(99,102,241,.3);border-radius:20px;padding:28px;width:100%;max-width:460px;position:relative;">
+      <button onclick="document.getElementById('hire-overlay').style.display='none'"
+        style="position:absolute;top:14px;right:16px;background:none;border:none;color:#64748b;font-size:20px;cursor:pointer;">✕</button>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;">➕ Hire a Pro Plus User</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:16px;">Search and add a Pro Plus player to help manage <strong style="color:#fff;">{{ tournament.tournament_name }}</strong></div>
+      <div style="position:relative;">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#64748b;font-size:14px;">🔍</span>
+        <input type="text" id="hire-search-input" placeholder="Search Pro Plus player name…"
+          style="width:100%;background:#1a2235;border:1px solid #1e2d45;border-radius:10px;
+                 padding:11px 14px 11px 36px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none;"
+          autocomplete="off">
+      </div>
+      <div id="hire-results" style="margin-top:10px;max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:12px;color:#64748b;text-align:center;padding:16px 0;">Start typing to search Pro Plus players…</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    const overlay   = document.getElementById('hire-overlay');
+    const openBtn   = document.getElementById('btn-hire-open');
+    const input     = document.getElementById('hire-search-input');
+    const results   = document.getElementById('hire-results');
+    const tid       = {{ tournament.id }};
+    const csrfToken = '{{ csrf_token }}';
+
+    openBtn.addEventListener('click', () => {
+      overlay.style.display = 'flex';
+      setTimeout(() => input.focus(), 100);
+    });
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.style.display = 'none'; });
+
+    let timer = null;
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      const q = input.value.trim();
+      if (!q) { results.innerHTML = '<div style="font-size:12px;color:#64748b;text-align:center;padding:16px 0;">Start typing…</div>'; return; }
+      results.innerHTML = '<div style="font-size:12px;color:#64748b;text-align:center;padding:16px 0;">Searching…</div>';
+      timer = setTimeout(() => {
+        fetch(`/api/proplus-players/?q=${encodeURIComponent(q)}&tid=${tid}`)
+          .then(r => r.json())
+          .then(data => {
+            if (!data.players.length) {
+              results.innerHTML = '<div style="font-size:12px;color:#64748b;text-align:center;padding:16px 0;">No Pro Plus players found</div>';
+              return;
+            }
+            results.innerHTML = '';
+            data.players.forEach(p => {
+              const item = document.createElement('div');
+              item.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;background:#111827;border:1px solid #1e2d45;border-radius:10px;cursor:pointer;transition:border-color .15s;';
+              item.onmouseover = () => item.style.borderColor = 'rgba(99,102,241,.4)';
+              item.onmouseout  = () => item.style.borderColor = '#1e2d45';
+              const av = p.photo
+                ? `<img src="${p.photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`
+                : `<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#818cf8);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">${p.name[0].toUpperCase()}</div>`;
+              item.innerHTML = `${av}<div style="flex:1;"><div style="font-size:13px;font-weight:600;color:#fff;">${p.name}</div><div style="font-size:10px;color:#a5b4fc;font-weight:700;">⚡ PRO PLUS</div></div><button style="background:linear-gradient(135deg,#4f46e5,#818cf8);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;cursor:pointer;font-family:inherit;">+ Hire</button>`;
+              item.querySelector('button').addEventListener('click', (e) => {
+                e.stopPropagation();
+                hirePlayer(p.id, p.name, item);
+              });
+              results.appendChild(item);
+            });
+          })
+          .catch(() => { results.innerHTML = '<div style="font-size:12px;color:#f87171;text-align:center;padding:16px 0;">Search failed, try again</div>'; });
+      }, 250);
+    });
+
+    window.hirePlayer = function(pid, name, itemEl) {
+      fetch(`/api/tournament/${tid}/hire/`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({player_id: pid})
+      }).then(r => r.json()).then(data => {
+        if (data.success) {
+          if (itemEl) itemEl.innerHTML = `<span style="font-size:12px;color:#34d399;font-weight:600;">✓ ${name} hired!</span>`;
+          setTimeout(() => location.reload(), 900);
+        } else {
+          alert(data.error || 'Failed to hire player');
+        }
+      });
+    };
+
+    window.removeHire = function(pid, name) {
+      if (!confirm(`Remove ${name} from this tournament's staff?`)) return;
+      fetch(`/api/tournament/${tid}/remove-hire/${pid}/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+      }).then(r => r.json()).then(data => {
+        if (data.success) location.reload();
+        else alert(data.error || 'Failed to remove');
+      });
+    };
+  })();
+  </script>
+  {% endif %}
 
   <!-- TABS BAR -->
   <div class="tabs-bar">
@@ -404,8 +537,8 @@
           <span class="badge badge-sched">Scheduled</span>
         </div>
         <div class="mc-actions">
-          {% if is_admin %}
-          <a href="{% url 'match_start' %}" class="btn-action btn-start-match">▶ Start Match</a>
+          {% if is_admin or page_can_manage %}
+          <a href="{% url 'match_start' %}?match_id={{ um.match.id }}" class="btn-action btn-start-match">▶ Start Match</a>
           {% else %}
           <span style="font-size:12px;color:var(--muted);padding:4px 2px;">⏳ Awaiting kickoff</span>
           {% endif %}

@@ -49,7 +49,30 @@ def _get_effective_plan(request):
 def _player_owns_tournament(request, tournament_id):
     """
     Returns True if the current pro_plus player created this tournament,
-    OR if the user is privileged (admin/employee).
+    OR is hired staff for it, OR if the user is privileged (admin/employee).
+    """
+    if _is_privileged(request):
+        return True
+    pid = request.session.get('player_id')
+    if not pid or pid == 'guest':
+        return False
+    try:
+        from tournaments.models import TournamentDetails, TournamentHire
+        # Creator check
+        if TournamentDetails.objects.filter(id=tournament_id, created_by_player_id=pid).exists():
+            return True
+        # Hired staff check
+        if TournamentHire.objects.filter(tournament_id=tournament_id, hired_player_id=pid).exists():
+            return True
+        return False
+    except Exception:
+        return False
+
+
+def _player_is_creator(request, tournament_id):
+    """
+    Returns True ONLY if the player is the original creator (not just hired staff).
+    Used to restrict hire/remove buttons to creator only.
     """
     if _is_privileged(request):
         return True

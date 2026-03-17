@@ -540,22 +540,30 @@ def tournamentdetails(request, id):
     elif tournament.created_by_admin:
         manager_name = tournament.created_by_admin.get_full_name() or tournament.created_by_admin.username
 
-    # ── For pro_plus players: restrict can_manage to own tournaments ──
-    from subscriptions.decorators import _is_privileged, _get_effective_plan
+    # ── Hired staff for this tournament ──────────────────────────────────
+    from tournaments.models import TournamentHire
+    hired_staff = TournamentHire.objects.filter(
+        tournament=tournament
+    ).select_related('hired_player')
+
+    # ── For pro_plus players: restrict can_manage to own/hired tournaments ──
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament, _player_is_creator
     from subscriptions.context_processors import subscription_context as _sub_ctx
     _ctx = _sub_ctx(request)
     ctx_can_manage = _ctx.get('can_manage', False)
+    pid = request.session.get('player_id')
+
     if ctx_can_manage and not _is_privileged(request):
-        # pro_plus player — only allow managing their own tournaments
-        pid = request.session.get('player_id')
-        if pid and pid != 'guest':
-            owns = (tournament.created_by_player_id == pid)
-        else:
-            owns = False
-        # Override can_manage for this page only
-        page_can_manage = owns
+        page_can_manage = _player_owns_tournament(request, tournament.id)
     else:
         page_can_manage = ctx_can_manage  # admin/employee: full access
+
+    # is_creator: original creator OR page_can_manage if tournament has no creator set
+    # (fallback for tournaments created before this feature was added)
+    is_creator = _player_is_creator(request, tournament.id)
+    if not is_creator and page_can_manage and not tournament.created_by_player and not tournament.created_by_admin:
+        # Old tournament with no creator recorded — treat the managing user as creator
+        is_creator = True
 
     return render(request, 'tournamentdetails.html', {
         'tournament': tournament,
@@ -575,6 +583,8 @@ def tournamentdetails(request, id):
         'has_knockout': has_knockout,
         'manager_name': manager_name,
         'page_can_manage': page_can_manage,
+        'hired_staff': hired_staff,
+        'is_creator': is_creator,
     })
 
 

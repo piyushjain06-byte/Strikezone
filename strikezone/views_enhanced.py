@@ -80,9 +80,9 @@ def enhanced_search_view(request):
         for t in teams_qs
     ]
 
-    # Players
+    # Players — search by name OR mobile number
     players_qs = PlayerDetails.objects.filter(
-        player_name__icontains=query
+        Q(player_name__icontains=query) | Q(mobile_number__icontains=query)
     ).annotate(
         match_count=Count(
             'tournament_rosters__tournament_team__tournament__matches',
@@ -95,11 +95,15 @@ def enhanced_search_view(request):
         photo_url = p.photo.url if p.photo else None
         roster = p.tournament_rosters.select_related('tournament_team__team').order_by('-id').first()
         team_name = roster.tournament_team.team.team_name if roster else 'No team'
+        # Show mobile in sub if query matches mobile
+        sub = team_name
+        if p.mobile_number and query in p.mobile_number:
+            sub = f"{p.mobile_number} · {team_name}"
         player_results.append({
             'id': p.id,
             'name': p.player_name,
             'photo': photo_url,
-            'sub': team_name,
+            'sub': sub,
         })
 
     # Matches — search by venue or team name
@@ -626,3 +630,120 @@ def player_comparison_pdf_view(request, p1_id, p2_id):
     resp = HttpResponse(buffer, content_type='application/pdf')
     resp['Content-Disposition'] = f'attachment; filename="{fname}"'
     return resp
+
+# ═══════════════════════════════════════════════════════════
+# TOURNAMENT HIRE VIEWS
+# ═══════════════════════════════════════════════════════════
+
+def search_proplus_players(request):
+    """Search pro_plus players by name or mobile — for hire modal."""
+    from django.db.models import Q
+    from teams.models import PlayerDetails
+    from accounts.models import GuestUser
+
+    q = request.GET.get('q', '').strip()
+    tournament_id = request.GET.get('tid')
+
+    if len(q) < 1:
+        return JsonResponse({'players': []})
+
+    # Find PlayerDetails whose linked GuestUser has pro_plus plan
+    proplus_mobiles = set(
+        GuestUser.objects.filter(plan='pro_plus').values_list('mobile_number', flat=True)
+    )
+    players = PlayerDetails.objects.filter(
+        Q(player_name__icontains=q) | Q(mobile_number__icontains=q),
+        mobile_number__in=proplus_mobiles
+    ).exclude(id=request.session.get('player_id'))[:8]
+
+    # Exclude already hired
+    already_hired = set()
+    if tournament_id:
+        from tournaments.models import TournamentHire
+        already_hired = set(TournamentHire.objects.filter(
+            tournament_id=tournament_id
+        ).values_list('hired_player_id', flat=True))
+
+    results = []
+    for p in players:
+        if p.id not in already_hired:
+            results.append({
+                'id': p.id,
+                'name': p.player_name,
+                'photo': p.photo.url if p.photo else None,
+            })
+
+    return JsonResponse({'players': results})
+
+
+def hire_player_view(request, tournament_id):
+    """Hire a pro_plus player to co-manage this tournament. Creator only."""
+    from django.shortcuts import get_object_or_404
+    from tournaments.models import TournamentDetails, TournamentHire
+    from teams.models import PlayerDetails
+    from subscriptions.decorators import _player_is_creator
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    if not _player_is_creator(request, tournament_id):
+        return JsonResponse({'error': 'Only the tournament creator can hire staff.'}, status=403)
+
+    import json
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        data = request.POST
+
+    player_id = data.get('player_id')
+    if not player_id:
+        return JsonResponse({'error': 'player_id required'}, status=400)
+
+    tournament = get_object_or_404(TournamentDetails, id=tournament_id)
+    player = get_object_or_404(PlayerDetails, id=player_id)
+
+    # Verify target is pro_plus
+    from accounts.models import GuestUser
+    guest = GuestUser.objects.filter(mobile_number=player.mobile_number).first()
+    if not guest or guest.effective_plan() != 'pro_plus':
+        return JsonResponse({'error': 'Player must have Pro Plus plan to be hired.'}, status=400)
+
+    hire, created = TournamentHire.objects.get_or_create(
+        tournament=tournament,
+        hired_player=player,
+    )
+    if created:
+        return JsonResponse({
+            'success': True,
+            'message': f'{player.player_name} hired for {tournament.tournament_name}',
+            'hire': {
+                'id': hire.id,
+                'player_id': player.id,
+                'name': player.player_name,
+                'photo': player.photo.url if player.photo else None,
+            }
+        })
+    else:
+        return JsonResponse({'error': 'Player already hired for this tournament.'}, status=400)
+
+
+def remove_hire_view(request, tournament_id, player_id):
+    """Remove a hired player from this tournament. Creator only."""
+    from tournaments.models import TournamentHire
+    from subscriptions.decorators import _player_is_creator
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    if not _player_is_creator(request, tournament_id):
+        return JsonResponse({'error': 'Only the tournament creator can remove staff.'}, status=403)
+
+    deleted, _ = TournamentHire.objects.filter(
+        tournament_id=tournament_id,
+        hired_player_id=player_id
+    ).delete()
+
+    if deleted:
+        return JsonResponse({'success': True, 'message': 'Staff member removed.'})
+    else:
+        return JsonResponse({'error': 'Hire record not found.'}, status=404)

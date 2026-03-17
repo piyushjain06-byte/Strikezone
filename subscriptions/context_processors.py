@@ -28,18 +28,18 @@ def subscription_context(request):
         request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
     )
 
-    # For pro_plus players: IDs of tournaments they personally created
+    # For pro_plus players: IDs of tournaments they created OR are hired for
     owned_tournament_ids = set()
     if plan == 'pro_plus' and not is_privileged:
         pid = request.session.get('player_id')
         if pid and pid != 'guest':
             try:
-                from tournaments.models import TournamentDetails
-                owned_tournament_ids = set(
-                    TournamentDetails.objects
-                    .filter(created_by_player_id=pid)
-                    .values_list('id', flat=True)
-                )
+                from tournaments.models import TournamentDetails, TournamentHire
+                created = set(TournamentDetails.objects.filter(
+                    created_by_player_id=pid).values_list('id', flat=True))
+                hired = set(TournamentHire.objects.filter(
+                    hired_player_id=pid).values_list('tournament_id', flat=True))
+                owned_tournament_ids = created | hired
             except Exception:
                 pass
 

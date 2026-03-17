@@ -68,99 +68,115 @@ def manage_cricket(request):
             team_form = TeamForm(request.POST)
             if team_form.is_valid():
                 tournament = team_form.cleaned_data["tournament"]
-                team_code = (team_form.cleaned_data.get("team_code") or "").strip()
-                team_name = (team_form.cleaned_data.get("team_name") or "").strip()
-                team_created_date = team_form.cleaned_data.get("team_created_date")
-
-                team = None
-                if team_code:
-                    team = TeamDetails.objects.filter(team_code__iexact=team_code).first()
-                    if not team:
-                        messages.error(request, f"No team found with Team ID '{team_code}'.")
-                        active_tab = 'team'
-                        tournaments_qs = TournamentDetails.objects.all()
-                        # fall through to render at end
-                    else:
-                        TournamentTeam.objects.get_or_create(
-                            tournament=tournament,
-                            team=team,
-                        )
-                        messages.success(request, f"Team '{team.team_name}' ({team.team_code}) registered for {tournament.tournament_name}!")
-                        team_form = TeamForm()
+                # Ownership check
+                from subscriptions.decorators import _is_privileged, _player_owns_tournament
+                if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
+                    messages.warning(request, 'You can only add teams to tournaments you have created.')
                 else:
-                    if not team_name:
-                        messages.error(request, "Team name is required when Team ID is not provided.")
+                    team_code = (team_form.cleaned_data.get("team_code") or "").strip()
+                    team_name = (team_form.cleaned_data.get("team_name") or "").strip()
+                    team_created_date = team_form.cleaned_data.get("team_created_date")
+
+                    team = None
+                    if team_code:
+                        team = TeamDetails.objects.filter(team_code__iexact=team_code).first()
+                        if not team:
+                            messages.error(request, f"No team found with Team ID '{team_code}'.")
+                        else:
+                            TournamentTeam.objects.get_or_create(
+                                tournament=tournament,
+                                team=team,
+                            )
+                            messages.success(request, f"Team '{team.team_name}' ({team.team_code}) registered for {tournament.tournament_name}!")
+                            team_form = TeamForm()
                     else:
-                        team = TeamDetails.objects.create(
-                            team_name=team_name,
-                            team_created_date=team_created_date,
-                        )
-                        TournamentTeam.objects.get_or_create(
-                            tournament=tournament,
-                            team=team,
-                        )
-                        messages.success(request, f"New Team '{team.team_name}' created with ID {team.team_code} and registered for {tournament.tournament_name}!")
-                        team_form = TeamForm()
+                        if not team_name:
+                            messages.error(request, "Team name is required when Team ID is not provided.")
+                        else:
+                            team = TeamDetails.objects.create(
+                                team_name=team_name,
+                                team_created_date=team_created_date,
+                            )
+                            TournamentTeam.objects.get_or_create(
+                                tournament=tournament,
+                                team=team,
+                            )
+                            messages.success(request, f"New Team '{team.team_name}' created with ID {team.team_code} and registered for {tournament.tournament_name}!")
+                            team_form = TeamForm()
             active_tab = 'team'
         elif "player_submit" in request.POST:
             player_form = PlayerForm(request.POST, request.FILES)
             if player_form.is_valid():
                 tournament = player_form.cleaned_data["tournament"]
                 team = player_form.cleaned_data["team"]
-                player_name = (player_form.cleaned_data.get("player_name") or "").strip()
-                mobile_number = (player_form.cleaned_data.get("mobile_number") or "").strip() or None
-                photo = player_form.cleaned_data.get("photo")
-
-                role = player_form.cleaned_data.get("role") or "BATSMAN"
-                is_captain = bool(player_form.cleaned_data.get("is_captain"))
-                is_vice_captain = bool(player_form.cleaned_data.get("is_vice_captain"))
-                jersey_number = player_form.cleaned_data.get("jersey_number")
-
-                tournament_team, _ = TournamentTeam.objects.get_or_create(
-                    tournament=tournament,
-                    team=team,
-                )
-
-                # mobile_number is always present (required by form)
-                player = PlayerDetails.objects.filter(mobile_number=mobile_number).first()
-
-                if player:
-                    # Existing player found by mobile — update name only if a new one was given
-                    if player_name and player.player_name != player_name:
-                        player.player_name = player_name
-                        player.save(update_fields=["player_name"])
+                # Ownership check
+                from subscriptions.decorators import _is_privileged, _player_owns_tournament
+                if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
+                    messages.warning(request, 'You can only add players to tournaments you have created.')
                 else:
-                    # New player — auto-generate name from mobile if admin left name blank
-                    if not player_name:
-                        player_name = f"Player {mobile_number}"
-                    player = PlayerDetails.objects.create(
-                        player_name=player_name,
-                        mobile_number=mobile_number,
+                    player_name = (player_form.cleaned_data.get("player_name") or "").strip()
+                    mobile_number = (player_form.cleaned_data.get("mobile_number") or "").strip() or None
+                    photo = player_form.cleaned_data.get("photo")
+
+                    role = player_form.cleaned_data.get("role") or "BATSMAN"
+                    is_captain = bool(player_form.cleaned_data.get("is_captain"))
+                    is_vice_captain = bool(player_form.cleaned_data.get("is_vice_captain"))
+                    jersey_number = player_form.cleaned_data.get("jersey_number")
+
+                    tournament_team, _ = TournamentTeam.objects.get_or_create(
+                        tournament=tournament,
+                        team=team,
                     )
 
-                if photo and player:
-                    player.photo = photo
-                    player.save(update_fields=["photo"])
+                    # mobile_number is always present (required by form)
+                    player = PlayerDetails.objects.filter(mobile_number=mobile_number).first()
 
-                try:
-                    TournamentRoster.objects.create(
-                        tournament_team=tournament_team,
-                        player=player,
-                        role=role,
-                        is_captain=is_captain,
-                        is_vice_captain=is_vice_captain,
-                        jersey_number=jersey_number,
-                    )
-                    messages.success(request, f"{player.player_name} added to {team.team_name} ({tournament.tournament_name})!")
-                    player_form = PlayerForm()
-                except IntegrityError:
-                    messages.error(
-                        request,
-                        f"{player.player_name} is already assigned to a team in {tournament.tournament_name}.",
-                    )
+                    if player:
+                        # Existing player found by mobile — update name only if a new one was given
+                        if player_name and player.player_name != player_name:
+                            player.player_name = player_name
+                            player.save(update_fields=["player_name"])
+                    else:
+                        # New player — auto-generate name from mobile if admin left name blank
+                        if not player_name:
+                            player_name = f"Player {mobile_number}"
+                        player = PlayerDetails.objects.create(
+                            player_name=player_name,
+                            mobile_number=mobile_number,
+                        )
+
+                    if photo and player:
+                        player.photo = photo
+                        player.save(update_fields=["photo"])
+
+                    try:
+                        TournamentRoster.objects.create(
+                            tournament_team=tournament_team,
+                            player=player,
+                            role=role,
+                            is_captain=is_captain,
+                            is_vice_captain=is_vice_captain,
+                            jersey_number=jersey_number,
+                        )
+                        messages.success(request, f"{player.player_name} added to {team.team_name} ({tournament.tournament_name})!")
+                        player_form = PlayerForm()
+                    except IntegrityError:
+                        messages.error(
+                            request,
+                            f"{player.player_name} is already assigned to a team in {tournament.tournament_name}.",
+                        )
             active_tab = 'player'
 
-    tournaments_qs = TournamentDetails.objects.all()
+    # Filter to owned tournaments for pro_plus players
+    from subscriptions.decorators import _is_privileged
+    if _is_privileged(request):
+        tournaments_qs = TournamentDetails.objects.all()
+    else:
+        pid = request.session.get('player_id')
+        if pid and pid != 'guest':
+            tournaments_qs = TournamentDetails.objects.filter(created_by_player_id=pid)
+        else:
+            tournaments_qs = TournamentDetails.objects.none()
     tournament_progress = []
     for t in tournaments_qs:
         tournament_teams = list(
@@ -189,6 +205,12 @@ def manage_cricket(request):
             'is_complete': teams_added >= teams_needed,
             'team_data': team_data,
         })
+
+    # Filter team_form and player_form tournament dropdown for pro_plus players
+    if not _is_privileged(request):
+        owned_qs = tournaments_qs  # already filtered above
+        team_form.fields['tournament'].queryset = owned_qs
+        player_form.fields['tournament'].queryset = owned_qs
 
     context = {
         'is_admin': is_admin,
@@ -245,10 +267,24 @@ def load_teams(request):
 @admin_required
 @require_plan('pro_plus')
 def start_tournament(request):
-    tournaments_qs = TournamentDetails.objects.all()
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
+    # Filter tournaments list for pro_plus players
+    if _is_privileged(request):
+        tournaments_qs = TournamentDetails.objects.all()
+    else:
+        pid = request.session.get('player_id')
+        if pid and pid != 'guest':
+            tournaments_qs = TournamentDetails.objects.filter(created_by_player_id=pid)
+        else:
+            tournaments_qs = TournamentDetails.objects.none()
+
     if request.method == "POST":
         tournament_id = request.POST.get("tournament_id")
         tournament = get_object_or_404(TournamentDetails, id=tournament_id)
+        # Ownership check
+        if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
+            messages.warning(request, 'You can only start tournaments you have created.')
+            return redirect('upgrade_plan')
         start_obj, created = StartTournament.objects.get_or_create(tournament=tournament)
         start_obj.is_started = True
         start_obj.save()
