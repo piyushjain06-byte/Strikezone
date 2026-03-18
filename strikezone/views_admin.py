@@ -167,14 +167,21 @@ def manage_cricket(request):
                         )
             active_tab = 'player'
 
-    # Filter to owned tournaments for pro_plus players
+    # Filter to owned + hired tournaments for pro_plus players
     from subscriptions.decorators import _is_privileged
     if _is_privileged(request):
         tournaments_qs = TournamentDetails.objects.all()
     else:
         pid = request.session.get('player_id')
         if pid and pid != 'guest':
-            tournaments_qs = TournamentDetails.objects.filter(created_by_player_id=pid)
+            from tournaments.models import TournamentHire
+            from django.db.models import Q
+            hired_ids = TournamentHire.objects.filter(
+                hired_player_id=pid
+            ).values_list('tournament_id', flat=True)
+            tournaments_qs = TournamentDetails.objects.filter(
+                Q(created_by_player_id=pid) | Q(id__in=hired_ids)
+            )
         else:
             tournaments_qs = TournamentDetails.objects.none()
     tournament_progress = []
@@ -206,11 +213,10 @@ def manage_cricket(request):
             'team_data': team_data,
         })
 
-    # Filter team_form and player_form tournament dropdown for pro_plus players
+    # Filter tournament dropdown for pro_plus players (owned + hired)
     if not _is_privileged(request):
-        owned_qs = tournaments_qs  # already filtered above
-        team_form.fields['tournament'].queryset = owned_qs
-        player_form.fields['tournament'].queryset = owned_qs
+        team_form.fields['tournament'].queryset = tournaments_qs
+        player_form.fields['tournament'].queryset = tournaments_qs
 
     context = {
         'is_admin': is_admin,
