@@ -55,7 +55,6 @@ def manage_cricket(request):
                 if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
                     tournament.created_by_admin = request.user
                 elif request.session.get('player_id') and request.session['player_id'] != 'guest':
-                    from teams.models import PlayerDetails
                     try:
                         tournament.created_by_player_id = request.session['player_id']
                     except Exception:

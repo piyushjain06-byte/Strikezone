@@ -717,6 +717,17 @@
   <div class="mobile-nav" id="mobile-nav">
 
     <div class="mn-links">
+      <!-- Mobile Search Bar -->
+      <div style="padding:8px 4px 12px;position:relative;">
+        <div style="display:flex;align-items:center;gap:8px;background:#1a2235;border:1px solid #1e2d45;border-radius:10px;padding:0 12px;height:40px;transition:border-color .2s;" id="mn-search-box">
+          <span style="color:#64748b;font-size:14px;flex-shrink:0;">🔍</span>
+          <input type="text" id="mn-search-input" placeholder="Search players, teams, tournaments…"
+            style="background:none;border:none;outline:none;font-family:inherit;font-size:14px;color:#e2e8f0;width:100%;"
+            autocomplete="off">
+          <button id="mn-search-clear" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:16px;display:none;padding:0;">✕</button>
+        </div>
+        <div id="mn-search-dropdown" style="display:none;position:absolute;top:calc(100% - 4px);left:4px;right:4px;background:#111827;border:1px solid #1e2d45;border-radius:12px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.6);z-index:9999;max-height:360px;overflow-y:auto;"></div>
+      </div>
       <span class="mn-section-label">Navigation</span>
 
       {% for i in categories %}
@@ -1040,6 +1051,97 @@
     // Close on outside click
     document.addEventListener('click', (e) => {
       if (!document.getElementById('search-wrap').contains(e.target)) closeDropdown();
+    });
+  })();
+  </script>
+  <script>
+  // ── MOBILE NAV SEARCH ──
+  (function () {
+    const input    = document.getElementById('mn-search-input');
+    const dropdown = document.getElementById('mn-search-dropdown');
+    const clearBtn = document.getElementById('mn-search-clear');
+    if (!input) return;
+
+    let debounceTimer = null;
+
+    function highlight(text, query) {
+      if (!query) return text;
+      const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<mark style="background:rgba(245,158,11,.3);color:#fff;border-radius:3px;padding:0 2px;">$1</mark>');
+    }
+
+    function buildMobileDropdown(data, query) {
+      dropdown.innerHTML = '';
+      const total = (data.tournaments||[]).length + (data.teams||[]).length + (data.players||[]).length + (data.matches||[]).length;
+      if (total === 0) {
+        dropdown.innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:#64748b;">No results for "' + query + '"</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+
+      function addSection(label, items, avatarClass, badgeClass, hrefFn, subFn) {
+        if (!items || !items.length) return;
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;padding:10px 14px 4px;';
+        lbl.textContent = label;
+        dropdown.appendChild(lbl);
+        items.forEach(item => {
+          const a = document.createElement('a');
+          a.href = hrefFn(item);
+          a.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;transition:background .12s;border-bottom:1px solid rgba(255,255,255,.04);';
+          a.onmouseover = () => a.style.background = '#1a2235';
+          a.onmouseout  = () => a.style.background = '';
+          a.onclick = () => { document.getElementById('mobile-nav').classList.remove('open'); document.getElementById('mn-backdrop').classList.remove('open'); document.body.style.overflow=''; };
+          const name = item.name || item.teams || '';
+          const avatarEl = item.photo
+            ? `<img src="${item.photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+            : `<div style="width:32px;height:32px;border-radius:50%;background:${avatarClass};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">${name[0]?name[0].toUpperCase():''}</div>`;
+          a.innerHTML = `${avatarEl}<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${highlight(name,query)}</div><div style="font-size:11px;color:#64748b;margin-top:1px;">${subFn(item)}</div></div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;${badgeClass}">${item.type||label.split(' ')[1]||''}</span>`;
+          dropdown.appendChild(a);
+        });
+      }
+
+      addSection('🏆 Tournaments', data.tournaments,
+        'linear-gradient(135deg,#78350f,#f59e0b)', 'background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.25);',
+        t => '/tournaments/'+t.id+'/', t => t.sub||'');
+      addSection('🛡️ Teams', data.teams,
+        'linear-gradient(135deg,#1e3a8a,#3b82f6)', 'background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.25);',
+        t => '/team/'+t.id+'/', t => t.sub||'');
+      addSection('🏏 Players', data.players,
+        'linear-gradient(135deg,#14532d,#22c55e)', 'background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25);',
+        p => '/player/'+p.id+'/profile/', p => p.sub||'');
+      addSection('🎯 Matches', data.matches,
+        'linear-gradient(135deg,#1e3a5f,#0ea5e9)', 'background:rgba(100,116,139,.1);color:#94a3b8;border:1px solid rgba(100,116,139,.2);',
+        m => '/match/'+m.id+'/scorecard/', m => m.sub||'');
+
+      dropdown.style.display = 'block';
+    }
+
+    input.addEventListener('input', () => {
+      const q = input.value;
+      clearBtn.style.display = q ? 'block' : 'none';
+      clearTimeout(debounceTimer);
+      if (!q.trim()) { dropdown.style.display = 'none'; return; }
+      debounceTimer = setTimeout(() => {
+        fetch('/api/search/?q=' + encodeURIComponent(q.trim()))
+          .then(r => r.json())
+          .then(data => buildMobileDropdown(data, q.trim()))
+          .catch(() => { dropdown.style.display = 'none'; });
+      }, 250);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      clearBtn.style.display = 'none';
+      dropdown.style.display = 'none';
+      input.focus();
+    });
+
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('mn-search-box');
+      if (wrap && !wrap.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
     });
   })();
   </script>
