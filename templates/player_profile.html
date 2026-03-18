@@ -111,6 +111,25 @@
 
   .pp-body{max-width:1280px;margin:0 auto;padding:26px 20px 60px;display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start;}
   @media(max-width:900px){.pp-body{grid-template-columns:1fr;}}
+  @media(max-width:600px){
+    .pp-hero-inner{flex-direction:column;align-items:center;text-align:center;gap:14px;}
+    .pp-name{font-size:28px !important;}
+    .pp-photo,.pp-av-init{width:72px !important;height:72px !important;font-size:28px !important;}
+    .pp-chips{justify-content:center;}
+    .hero-actions{justify-content:center;}
+    .btn-analysis,.btn-compare,.btn-qr,.btn-follow{font-size:12px !important;padding:8px 12px !important;}
+    .stat-row{grid-template-columns:repeat(2,1fr) !important;}
+    .stat-num{font-size:28px !important;}
+    .pp-back{position:relative;top:auto;right:auto;display:inline-flex;margin-bottom:10px;}
+    .pp-tag{font-size:9px;}
+    .follower-pill{padding:6px 12px;}
+    .fp-num{font-size:16px;}
+  }
+  @media(max-width:400px){
+    .pp-name{font-size:22px !important;}
+    .btn-analysis,.btn-compare,.btn-qr{font-size:11px !important;padding:7px 9px !important;}
+    .stat-num{font-size:24px !important;}
+  }
   .sec{margin-bottom:28px;}
   .sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
   .sec-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:#fff;}

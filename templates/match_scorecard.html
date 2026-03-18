@@ -14,6 +14,29 @@
   .sc-nav-btn { font-size: 12px; padding: 7px 12px; flex-shrink: 0; }
   .extras-row { font-size: 12px; padding: 8px 10px; }
   .fow-section { font-size: 11px; }
+  /* Result hero */
+  .result-hero { padding: 20px 14px !important; }
+  .match-title { font-size: 18px !important; }
+  .scores-row { flex-direction: column !important; }
+  .score-half { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,.08) !important; padding: 14px 12px !important; }
+  .score-half:last-child { border-bottom: none !important; }
+  /* Top bar buttons */
+  .wrap > div:first-child { flex-wrap: wrap !important; gap: 8px !important; }
+  .btn-back, .btn-analysis, .btn-download { font-size: 12px !important; padding: 8px 12px !important; }
+  .btn-view-sc, .btn-download { font-size: 12px !important; }
+  /* Scorecard inline table */
+  .sc-table { font-size: 11px !important; }
+  .sc-table th, .sc-table td { padding: 7px 6px !important; font-size: 11px !important; }
+  .sc-player-link { font-size: 11px !important; }
+  .sc-av, .sc-av-init { width: 20px !important; height: 20px !important; font-size: 9px !important; }
+  /* MOM card */
+  .home-mom { flex-wrap: wrap; gap: 8px; padding: 12px 14px !important; }
+  .inn-total { font-size: 12px !important; padding: 8px 12px !important; }
+}
+@media (max-width: 420px) {
+  .match-title { font-size: 15px !important; }
+  .score-big { font-size: 22px !important; }
+  .sc-table { font-size: 10px !important; }
 }
 </style>
 {% endblock %}

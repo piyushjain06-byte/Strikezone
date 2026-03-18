@@ -2,7 +2,7 @@
 {% block extra_style %}
 <style>
 @media (max-width: 768px) {
-  .tabs { overflow-x: auto; white-space: nowrap; }
+  .tabs { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
   .tab-btn { font-size: 12px; padding: 8px 12px; flex-shrink: 0; }
   .form-card { padding: 16px 14px; }
   .form-card h3 { font-size: 16px; }
@@ -13,6 +13,19 @@
   .pill-btn { font-size: 10px; padding: 4px 10px; }
   .venue-map-wrap { border-radius: 8px; }
   #venue-map { height: 160px !important; }
+  /* Form inputs */
+  .form-group label { font-size: 12px !important; }
+  .form-row { flex-direction: column !important; gap: 0 !important; }
+  .input-wrap { width: 100% !important; }
+  /* Tournament progress cards */
+  .t-progress-card .team-row { flex-wrap: wrap; gap: 6px; }
+  .player-pill { font-size: 10px !important; padding: 3px 8px !important; }
+  /* Page wrap */
+  .wrap { padding: 14px 12px 60px !important; }
+}
+@media (max-width: 420px) {
+  .team-count-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .tab-btn { font-size: 11px; padding: 7px 9px; }
 }
 </style>
 {% endblock %}

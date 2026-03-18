@@ -416,100 +416,159 @@
     /* ═══════════════════════════════════════════════════
        GLOBAL MOBILE RESPONSIVE — applies to ALL pages
        ═══════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════
+       GLOBAL MOBILE RESPONSIVE — applies to ALL pages
+       ═══════════════════════════════════════════════════ */
     @media (max-width: 768px) {
-      /* Base layout */
       body { font-size: 14px; }
 
-      /* Header tighter on mobile */
-      .main-header { padding: 0 14px; }
+      /* ── Header ── */
+      .main-header { padding: 0 12px; gap: 10px; }
       .logo { font-size: 20px !important; letter-spacing: 1px !important; }
-      .tagline { font-size: 8px !important; }
+      .tagline { font-size: 7px !important; }
 
-      /* Common page wrapper — reduce side padding */
-      .wrap, .container, .page-wrap, .content-wrap {
+      /* ── Page wrappers ── */
+      .wrap, .container, .page-wrap, .content-wrap,
+      .td-wrap, .pp-wrap, .cmp-page, .pf-wrap {
         padding-left: 12px !important;
         padding-right: 12px !important;
       }
 
-      /* Cards — reduce padding on mobile */
+      /* ── Cards ── */
       .card, .form-card, .match-card, .t-card,
+      .stat-card, .score-card, .info-card,
       [class*="-card"], [class*="card-"] {
         padding: 14px 12px !important;
         border-radius: 12px !important;
       }
 
-      /* Tables — make scrollable horizontally */
+      /* ── Tables ── */
       table {
         display: block;
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
         font-size: 12px !important;
+        width: 100%;
       }
-      table th, table td {
-        padding: 8px 10px !important;
-        font-size: 12px !important;
-      }
+      table th, table td { padding: 8px 10px !important; font-size: 12px !important; }
 
-      /* Headings scale down */
+      /* ── Typography ── */
       h1 { font-size: 22px !important; }
       h2 { font-size: 18px !important; }
       h3 { font-size: 16px !important; }
 
-      /* Buttons — full width on mobile */
+      /* ── Buttons ── */
       .btn-submit, .btn-primary {
-        width: 100% !important;
-        padding: 12px !important;
-        font-size: 14px !important;
+        width: 100% !important; padding: 12px !important; font-size: 14px !important;
       }
 
-      /* Two-column grids → single column */
-      .grid-2, .two-col, .stats-grid,
+      /* ── Grids → single column ── */
+      .grid-2, .two-col, .stats-grid, .spark-section,
+      .quick-stats, .form-body,
       [style*="grid-template-columns: 1fr 1fr"],
-      [style*="grid-template-columns:1fr 1fr"] {
+      [style*="grid-template-columns:1fr 1fr"],
+      [style*="grid-template-columns: repeat(2"],
+      [style*="grid-template-columns:repeat(2"] {
         grid-template-columns: 1fr !important;
       }
 
-      /* Stat numbers — smaller on mobile */
-      .stat-num, .big-num, .score-big {
-        font-size: 26px !important;
-      }
+      /* ── Auto-fit grids: min 140px on mobile ── */
+      [style*="auto-fill"] { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }
 
-      /* Hide decorative elements on mobile */
-      .stadium-lights { display: none; }
+      /* ── Stat numbers ── */
+      .stat-num, .big-num, .score-big, .qs-num { font-size: 24px !important; }
 
-      /* Tabs — scrollable horizontal */
-      .tabs, .tab-list, .nav-tabs-page {
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 4px;
-      }
+      /* ── Hero sections ── */
+      .pf-hero, .cmp-hero, [class*="-hero"] { padding: 28px 14px 22px !important; }
+      .pp-hero { padding: 32px 14px 28px !important; }
+      .pp-name { font-size: 28px !important; }
+      .pp-hero-inner { gap: 16px !important; }
+      .pp-photo, .pp-av-init { width: 72px !important; height: 72px !important; font-size: 30px !important; }
 
-      /* Forms */
+      /* ── Hero actions: wrap on mobile ── */
+      .hero-actions { gap: 6px !important; }
+      .btn-analysis, .btn-compare, .btn-qr, .btn-follow { font-size: 12px !important; padding: 8px 12px !important; }
+
+      /* ── Player comparison ── */
+      .cmp-header { grid-template-columns: 1fr 50px 1fr !important; }
+      .ph-name { font-size: 14px !important; }
+      .ph-av, .ph-av-init { width: 52px !important; height: 52px !important; font-size: 20px !important; }
+      .sr-val { font-size: 18px !important; padding: 10px 8px !important; }
+      .sr-mid { padding: 8px 4px !important; }
+      .sr-label { font-size: 9px !important; }
+      .stat-row { grid-template-columns: 1fr 120px 1fr !important; }
+
+      /* ── Tournament detail ── */
+      .td-header { padding: 20px 14px !important; }
+      .td-title { font-size: 22px !important; }
+      .tabs-bar { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; padding: 0 14px; }
+      .tab-btn { font-size: 11px !important; padding: 8px 10px !important; flex-shrink: 0; }
+      .match-card { margin-bottom: 10px !important; }
+      .mc-head { flex-wrap: wrap; gap: 6px; padding: 12px 14px !important; }
+      .mc-teams { font-size: 13px !important; }
+      .mc-scores { flex-direction: column !important; }
+      .mc-score-half { padding: 10px 14px !important; border-right: none !important; border-bottom: 1px solid var(--border); }
+      .mc-score-half:last-child { border-bottom: none !important; }
+      .mc-score-num { font-size: 28px !important; }
+      .mc-actions { padding: 10px 14px !important; gap: 6px !important; flex-wrap: wrap; }
+      .btn-action { font-size: 12px !important; padding: 7px 12px !important; }
+
+      /* ── Player stats page ── */
+      .stat-row-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .player-hero-inner { flex-direction: column !important; align-items: center !important; text-align: center !important; }
+
+      /* ── Forms ── */
       .form-group { margin-bottom: 14px !important; }
-      input, select, textarea {
-        font-size: 16px !important; /* prevents iOS zoom */
-        padding: 12px !important;
-      }
+      input, select, textarea { font-size: 16px !important; padding: 12px !important; }
+      .form-row { flex-direction: column !important; gap: 10px !important; }
 
-      /* Flex rows that should stack on mobile */
-      .flex-row-mobile-stack {
-        flex-direction: column !important;
-        align-items: stretch !important;
-      }
+      /* ── Manage cricket ── */
+      .mc-form-grid { grid-template-columns: 1fr !important; }
 
-      /* Section padding */
-      section, .section {
-        padding: 16px 0 !important;
+      /* ── Scorecard ── */
+      .sc-toggle { padding: 10px 12px !important; font-size: 12px !important; }
+      .scores-row { flex-direction: column !important; }
+      .score-half { border-right: none !important; border-bottom: 1px solid var(--border) !important; padding: 14px 12px !important; }
+      .result-hero { padding: 20px 14px !important; }
+      .match-title { font-size: 20px !important; }
+
+      /* ── Misc ── */
+      .stadium-lights { display: none; }
+      .tabs, .tab-list, .nav-tabs-page {
+        overflow-x: auto; white-space: nowrap;
+        -webkit-overflow-scrolling: touch; padding-bottom: 4px;
       }
+      .flex-row-mobile-stack { flex-direction: column !important; align-items: stretch !important; }
+      section, .section { padding: 16px 0 !important; }
+
+      /* ── Inline style overrides for fixed widths ── */
+      [style*="max-width: 1"] { max-width: 100% !important; }
+      [style*="min-width: 2"], [style*="min-width: 3"] { min-width: unset !important; }
     }
 
     @media (max-width: 480px) {
-      /* Extra small phones */
       h1 { font-size: 19px !important; }
+      h2 { font-size: 16px !important; }
       .logo { font-size: 18px !important; }
       table th, table td { font-size: 11px !important; padding: 6px 8px !important; }
+      .stat-num, .qs-num { font-size: 20px !important; }
+      .mc-score-num { font-size: 24px !important; }
+      .td-title { font-size: 18px !important; }
+      .pp-name { font-size: 22px !important; }
+      .btn-analysis, .btn-compare, .btn-qr { font-size: 11px !important; padding: 7px 10px !important; }
+      /* Stack player comparison header on very small phones */
+      .cmp-header { grid-template-columns: 1fr !important; }
+      .ph-vs { display: none !important; }
+      /* Form tracker bars shrink */
+      .rc-bars { height: 60px !important; }
+      .spark-bars { height: 40px !important; }
+    }
+
+    @media (max-width: 360px) {
+      .main-header { padding: 0 10px; }
+      .logo { font-size: 16px !important; }
+      body { font-size: 13px; }
     }
   </style>
 </head>
@@ -717,6 +776,9 @@
           </div>
         </div>
         <div class="mn-actions">
+          {% if request.session.player_mobile and is_employee %}
+          <a href="{% url 'employee_dashboard' %}" class="mn-btn mn-btn-admin" onclick="closeMobileNav()">👔 Employee Dashboard</a>
+          {% endif %}
           <a href="{% url 'upgrade_plan' %}" class="mn-btn mn-btn-primary" onclick="closeMobileNav()">⚡ Upgrade Plan</a>
           <form method="post" action="{% url 'player_logout' %}">
             {% csrf_token %}
@@ -733,6 +795,9 @@
           </div>
         </div>
         <div class="mn-actions">
+          {% if request.user.is_superuser %}
+          <a href="{% url 'ceo_dashboard' %}" class="mn-btn" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);" onclick="closeMobileNav()">👑 CEO Dashboard</a>
+          {% endif %}
           <a href="{% url 'manage_cricket' %}" class="mn-btn mn-btn-admin" onclick="closeMobileNav()">⚙️ Manage Cricket</a>
           <form method="post" action="{% url 'admin_logout' %}">
             {% csrf_token %}

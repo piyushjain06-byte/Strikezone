@@ -4,8 +4,8 @@
 @media (max-width: 768px) {
   .info-grid { grid-template-columns: 1fr 1fr !important; }
   .hero-title { font-size: 22px !important; }
-  .tab-bar { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
-  .tab-btn { font-size: 12px; padding: 8px 12px; flex-shrink: 0; }
+  .tab-bar, .tabs-bar { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; padding: 0 12px; }
+  .tab-btn { font-size: 11px !important; padding: 8px 10px !important; flex-shrink: 0; }
   .match-row { flex-direction: column; gap: 8px; padding: 12px; }
   .match-teams { width: 100%; }
   .match-meta { font-size: 11px; flex-wrap: wrap; }
@@ -13,6 +13,34 @@
   .points-table { overflow-x: auto; display: block; }
   .t-progress-card { padding: 12px; }
   .ep-grid { grid-template-columns: 1fr 1fr !important; }
+  /* Match cards */
+  .mc-scores { flex-direction: column !important; }
+  .mc-score-half { border-right: none !important; border-bottom: 1px solid var(--border) !important; padding: 12px 14px !important; }
+  .mc-score-half:last-child { border-bottom: none !important; }
+  .mc-score-num { font-size: 26px !important; }
+  .mc-team-label { font-size: 12px !important; }
+  .mc-actions { flex-wrap: wrap; gap: 6px; padding: 10px 14px !important; }
+  .btn-action { font-size: 12px !important; padding: 7px 12px !important; }
+  .mc-head { flex-wrap: wrap; gap: 6px; }
+  /* Leaderboard */
+  .lb-table th, .lb-table td { font-size: 11px !important; padding: 8px 6px !important; }
+  .lb-table { font-size: 11px; }
+  /* Points table */
+  .points-card { overflow-x: auto; }
+  /* Player leaderboards */
+  .leader-card { padding: 0 !important; }
+  .leader-row { padding: 10px 12px !important; gap: 8px !important; }
+  .lr-name { font-size: 12px !important; }
+  .lr-val { font-size: 16px !important; }
+  /* td-wrap */
+  .td-wrap { padding: 14px 12px 60px !important; }
+  .td-header { padding: 20px 14px 16px !important; }
+  .td-title { font-size: 20px !important; }
+}
+@media (max-width: 420px) {
+  .tab-btn { font-size: 10px !important; padding: 7px 8px !important; }
+  .mc-score-num { font-size: 22px !important; }
+  .td-title { font-size: 18px !important; }
 }
 </style>
 {% endblock %}

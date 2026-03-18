@@ -244,6 +244,18 @@
     cursor: pointer; font-family: 'DM Sans', sans-serif;
   }
 
+  @media (max-width: 600px) {
+    .stat-row { grid-template-columns: repeat(2,1fr) !important; }
+    .stat-card { padding: 14px 10px !important; }
+    .stat-num { font-size: 28px !important; }
+    .profile-hero { padding: 24px 14px !important; }
+    .hero-inner { flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+    .player-avatar, .player-av-init { width: 72px !important; height: 72px !important; }
+    .player-name { font-size: 26px !important; }
+    .table-card { overflow-x: auto; }
+    .table-card table { min-width: 420px; }
+    .section-title { font-size: 12px !important; }
+  }
   @media (max-width: 400px) {
     .stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
     .stats-grid-3 { grid-template-columns: repeat(3, 1fr); }

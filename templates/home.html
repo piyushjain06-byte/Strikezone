@@ -50,6 +50,17 @@
   .empty-state { padding: 28px 16px; }
   .empty-state h3 { font-size: 16px; }
 }
+@media (max-width: 600px) {
+  .fm-scores, .mc-scores { flex-direction: column !important; }
+  .fm-score-half, .mc-score-half { border-right: none !important; border-bottom: 1px solid var(--border) !important; padding: 12px 14px !important; }
+  .fm-score-half:last-child, .mc-score-half:last-child { border-bottom: none !important; }
+  .fm-runs { font-size: 32px !important; }
+  .fm-team-name { font-size: 13px !important; }
+  .featured-match { border-radius: 12px !important; }
+  .fm-header { padding: 14px 12px !important; flex-wrap: wrap; gap: 8px; }
+  .fm-teams { font-size: 14px !important; }
+  .main-grid { padding: 14px 12px 60px !important; }
+}
 @media (max-width: 480px) {
   .fm-runs { font-size: 24px !important; }
   .fm-team-name { font-size: 12px; }
