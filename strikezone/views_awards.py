@@ -516,6 +516,176 @@ def calculate_uii(match):
     return best_player, best_uii if best_player else (None, 0)
 
 
+
+def get_match_intensity(match):
+    """
+    Analyse a completed match and return a rich intensity report.
+    Returns dict with intensity_label, intensity_class, score, and breakdown.
+    """
+    try:
+        inn1 = Innings.objects.filter(match=match, innings_number=1).first()
+        inn2 = Innings.objects.filter(match=match, innings_number=2).first()
+        if not inn1 or not inn2:
+            return None
+
+        score = 0
+        factors = []
+
+        # 1. Run rate — high scoring = intense
+        total_runs = inn1.total_runs + inn2.total_runs
+        if total_runs >= 300: score += 25; factors.append("🔥 High-scoring match")
+        elif total_runs >= 200: score += 15; factors.append("💥 Good run-scoring")
+        elif total_runs < 100: score += 5;  factors.append("🎯 Low-scoring thriller")
+        else: score += 10
+
+        # 2. Close finish — margin of victory
+        try:
+            result = match.result
+            summary = result.result_summary or ''
+            if 'run' in summary.lower():
+                import re
+                nums = re.findall(r'\d+', summary)
+                margin = int(nums[0]) if nums else 999
+                if margin <= 5:   score += 30; factors.append(f"⚔️ Won by just {margin} run{'s' if margin>1 else ''}!")
+                elif margin <= 15: score += 20; factors.append(f"🏃 Tight finish — {margin} runs")
+                elif margin <= 30: score += 10; factors.append(f"📊 {margin}-run win")
+            elif 'wicket' in summary.lower():
+                nums = re.findall(r'\d+', summary)
+                wkts = int(nums[0]) if nums else 10
+                if wkts <= 2:   score += 30; factors.append(f"⚡ Nail-biting — won by {wkts} wicket{'s' if wkts>1 else ''}!")
+                elif wkts <= 4: score += 20; factors.append(f"🎯 {wkts}-wicket win")
+                elif wkts >= 8: score -= 5;  factors.append(f"🏆 Dominant {wkts}-wicket win")
+        except Exception:
+            pass
+
+        # 3. Wickets — more wickets = more dramatic
+        total_wickets = inn1.total_wickets + inn2.total_wickets
+        if total_wickets >= 16: score += 20; factors.append("💀 Wickets tumbled!")
+        elif total_wickets >= 12: score += 12; factors.append("🎳 Plenty of wickets")
+        elif total_wickets <= 6:  score += 5;  factors.append("🛡️ Batsmen dominated")
+
+        # 4. Last-over finish — check if chase was completed in last 2 overs
+        if inn2.status == 'COMPLETED':
+            max_overs = inn2.max_overs
+            overs_float = float(inn2.overs_completed or 0)
+            if overs_float >= (max_overs - 2):
+                score += 20; factors.append("⏱️ Chase went to the wire!")
+
+        # 5. Sixes — entertainment factor
+        total_sixes = (
+            BattingScorecard.objects.filter(innings__match=match)
+            .aggregate(s=Sum('sixes'))['s'] or 0
+        )
+        if total_sixes >= 12: score += 15; factors.append(f"💣 {total_sixes} sixes — six-fest!")
+        elif total_sixes >= 6: score += 8;  factors.append(f"🏏 {total_sixes} sixes hit")
+
+        # 6. Multiple 50s/100s
+        fifties  = BattingScorecard.objects.filter(innings__match=match, runs__gte=50).count()
+        hundreds = BattingScorecard.objects.filter(innings__match=match, runs__gte=100).count()
+        if hundreds >= 2: score += 15; factors.append(f"💯 {hundreds} centuries scored!")
+        elif hundreds == 1: score += 10; factors.append("💯 A century was scored")
+        if fifties >= 4: score += 8; factors.append(f"⭐ {fifties} fifty-plus scores")
+
+        # Intensity classification
+        if score >= 80:   label, cls = "🔥 Epic Thriller",     "epic"
+        elif score >= 60: label, cls = "⚡ High Intensity",    "high"
+        elif score >= 40: label, cls = "💥 Competitive",       "medium"
+        elif score >= 20: label, cls = "📊 One-sided",         "low"
+        else:             label, cls = "😴 Quiet Match",       "flat"
+
+        return {
+            'score': min(score, 100),
+            'label': label,
+            'cls': cls,
+            'factors': factors[:4],  # top 4 factors
+            'total_runs': total_runs,
+            'total_wickets': total_wickets,
+            'total_sixes': total_sixes,
+        }
+    except Exception:
+        return None
+
+
+def get_tournament_intensity(tournament):
+    """
+    Analyse a completed tournament and return intensity breakdown.
+    """
+    try:
+        all_matches = CreateMatch.objects.filter(tournament=tournament)
+        completed = [
+            m for m in all_matches
+            if Innings.objects.filter(match=m, innings_number=2, status='COMPLETED').exists()
+        ]
+        if not completed:
+            return None
+
+        total_runs = 0; total_wickets = 0; total_sixes = 0
+        close_finishes = 0; centuries = 0; five_wkts = 0
+
+        for m in completed:
+            innings = Innings.objects.filter(match=m)
+            for inn in innings:
+                total_runs += inn.total_runs
+                total_wickets += inn.total_wickets
+            bat_sc = BattingScorecard.objects.filter(innings__match=m)
+            total_sixes  += bat_sc.aggregate(s=Sum('sixes'))['s'] or 0
+            centuries    += bat_sc.filter(runs__gte=100).count()
+            five_wkts    += BowlingScorecard.objects.filter(innings__match=m, wickets__gte=5).count()
+            try:
+                summary = m.result.result_summary or ''
+                import re
+                nums = re.findall(r'\d+', summary)
+                if 'run' in summary.lower() and nums and int(nums[0]) <= 10:
+                    close_finishes += 1
+                elif 'wicket' in summary.lower() and nums and int(nums[0]) <= 3:
+                    close_finishes += 1
+            except Exception:
+                pass
+
+        n = len(completed)
+        avg_runs_per_match = total_runs / n if n else 0
+        score = 0
+        factors = []
+
+        if avg_runs_per_match >= 280: score += 25; factors.append(f"🔥 Avg {int(avg_runs_per_match)} runs/match — high scoring!")
+        elif avg_runs_per_match >= 200: score += 15; factors.append(f"💥 Avg {int(avg_runs_per_match)} runs/match")
+        else: score += 8
+
+        if close_finishes >= 3: score += 30; factors.append(f"⚔️ {close_finishes} nail-biting finishes!")
+        elif close_finishes >= 1: score += 15; factors.append(f"🎯 {close_finishes} close finish{'es' if close_finishes>1 else ''}")
+
+        if centuries >= 4: score += 20; factors.append(f"💯 {centuries} centuries in the tournament!")
+        elif centuries >= 2: score += 10; factors.append(f"💯 {centuries} centuries scored")
+
+        if five_wkts >= 3: score += 20; factors.append(f"🎳 {five_wkts} five-wicket hauls!")
+        elif five_wkts >= 1: score += 10; factors.append(f"⚡ {five_wkts} five-wicket haul{'s' if five_wkts>1 else ''}")
+
+        sixes_per_match = total_sixes / n if n else 0
+        if sixes_per_match >= 10: score += 15; factors.append(f"💣 {total_sixes} sixes — crowd pleaser!")
+        elif sixes_per_match >= 5: score += 8; factors.append(f"🏏 {total_sixes} sixes hit")
+
+        if score >= 80:   label, cls = "🏆 Legendary Tournament",  "epic"
+        elif score >= 60: label, cls = "🔥 Thrilling Tournament",  "high"
+        elif score >= 40: label, cls = "⚡ Competitive Tournament","medium"
+        elif score >= 20: label, cls = "📊 Standard Tournament",   "low"
+        else:             label, cls = "😴 Low-key Tournament",    "flat"
+
+        return {
+            'score': min(score, 100),
+            'label': label,
+            'cls': cls,
+            'factors': factors[:4],
+            'total_runs': total_runs,
+            'total_wickets': total_wickets,
+            'total_sixes': total_sixes,
+            'close_finishes': close_finishes,
+            'centuries': centuries,
+            'matches_played': n,
+        }
+    except Exception:
+        return None
+
+
 def award_man_of_the_match(match_id):
     """Award MOM for a completed match. Safe to call multiple times (idempotent)."""
     from matches.models import ManOfTheMatch

@@ -415,6 +415,63 @@
   </div>
   {% endif %}
 
+  {% if match_intensity %}
+  <div style="margin:0 0 20px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <!-- Intensity header -->
+    <div style="padding:14px 18px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">⚡ Match Intensity</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:800;color:#fff;">{{ match_intensity.label }}</div>
+      </div>
+      <!-- Score meter -->
+      <div style="text-align:center;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:36px;font-weight:800;
+          {% if match_intensity.cls == 'epic' %}color:#f59e0b;
+          {% elif match_intensity.cls == 'high' %}color:#ef4444;
+          {% elif match_intensity.cls == 'medium' %}color:#3b82f6;
+          {% else %}color:#64748b;{% endif %}
+          line-height:1;">{{ match_intensity.score }}</div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">/ 100</div>
+      </div>
+    </div>
+    <!-- Score bar -->
+    <div style="height:4px;background:rgba(255,255,255,.06);">
+      <div style="height:100%;width:{{ match_intensity.score }}%;
+        {% if match_intensity.cls == 'epic' %}background:linear-gradient(90deg,#b45309,#f59e0b);
+        {% elif match_intensity.cls == 'high' %}background:linear-gradient(90deg,#991b1b,#ef4444);
+        {% elif match_intensity.cls == 'medium' %}background:linear-gradient(90deg,#1d4ed8,#3b82f6);
+        {% else %}background:#475569;{% endif %}
+        border-radius:0 4px 4px 0;transition:width .8s;"></div>
+    </div>
+    <!-- Key factors -->
+    {% if match_intensity.factors %}
+    <div style="padding:12px 18px;display:flex;flex-wrap:wrap;gap:8px;">
+      {% for factor in match_intensity.factors %}
+      <span style="font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;
+        background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#cbd5e1;">
+        {{ factor }}
+      </span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <!-- Quick stats -->
+    <div style="padding:10px 18px 14px;display:flex;gap:20px;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#f59e0b;">{{ match_intensity.total_runs }}</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Total Runs</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#f87171;">{{ match_intensity.total_wickets }}</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Wickets</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#c084fc;">{{ match_intensity.total_sixes }}</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Sixes</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- 1ST INNINGS -->
   {% if sc1 %}
   <div class="innings-section">

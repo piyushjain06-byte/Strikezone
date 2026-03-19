@@ -166,6 +166,13 @@ def tournament_awards(request, tournament_id):
 
     is_complete = _is_tournament_complete(tournament)
 
+    # Tournament intensity analysis
+    try:
+        from .views_awards import get_tournament_intensity
+        tournament_intensity = get_tournament_intensity(tournament)
+    except Exception:
+        tournament_intensity = None
+
     return render(request, 'tournament_awards.html', {
         'tournament': tournament,
         'mot': mot,
@@ -178,6 +185,7 @@ def tournament_awards(request, tournament_id):
         'final_matches': final_matches,
         'is_complete': is_complete,
         'awards_count': awards.count(),
+        'tournament_intensity': tournament_intensity,
     })
 
 
@@ -382,6 +390,15 @@ def match_scorecard(request, match_id):
     else:
         mom = None
 
+    # Match intensity analysis
+    match_intensity = None
+    if inn2 and inn2.status == 'COMPLETED':
+        try:
+            from .views_awards import get_match_intensity
+            match_intensity = get_match_intensity(match)
+        except Exception:
+            pass
+
     return render(request, 'match_scorecard.html', {
         'match': match,
         'sc1': sc1,
@@ -389,6 +406,7 @@ def match_scorecard(request, match_id):
         'winner': winner,
         'margin': margin,
         'mom': mom,
+        'match_intensity': match_intensity,
     })
 
 
