@@ -90,6 +90,63 @@ def match_start(request):
     })
 
 
+@require_plan('pro_plus')
+@require_POST
+def swap_strike_view(request, match_id):
+    """Manually swap striker and non-striker (fix wrong strike mid-over)."""
+    striker_id     = request.session.get('striker_id')
+    non_striker_id = request.session.get('non_striker_id')
+
+    if not striker_id or not non_striker_id:
+        return JsonResponse({'error': 'No batsmen in session.'}, status=400)
+
+    # Ownership check
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
+    try:
+        match = CreateMatch.objects.get(id=match_id)
+        if not _is_privileged(request) and not _player_owns_tournament(request, match.tournament_id):
+            return JsonResponse({'error': 'Not authorised.'}, status=403)
+    except CreateMatch.DoesNotExist:
+        return JsonResponse({'error': 'Match not found.'}, status=404)
+
+    # Swap in session
+    request.session['striker_id']     = non_striker_id
+    request.session['non_striker_id'] = striker_id
+    request.session.modified = True
+
+    new_striker     = PlayerDetails.objects.filter(id=non_striker_id).first()
+    new_non_striker = PlayerDetails.objects.filter(id=striker_id).first()
+
+    # Push live update via WebSocket so live scorecard updates
+    try:
+        from strikezone.ws_push import push_ball
+        from scoring.models import Innings, Over, Ball
+        innings = Innings.objects.filter(match=match, status='IN_PROGRESS').last()
+        if innings:
+            last_ball = Ball.objects.filter(over__innings=innings).order_by('-id').first()
+            if last_ball:
+                push_ball(match, innings, last_ball,
+                          striker_id=non_striker_id,
+                          non_striker_id=striker_id)
+            else:
+                from strikezone.ws_push import _full_push
+                _full_push(match)
+        else:
+            from strikezone.ws_push import _full_push
+            _full_push(match)
+    except Exception:
+        pass
+
+    return JsonResponse({
+        'success': True,
+        'new_striker_id':     int(non_striker_id),
+        'new_non_striker_id': int(striker_id),
+        'new_striker_name':     new_striker.player_name     if new_striker     else '',
+        'new_non_striker_name': new_non_striker.player_name if new_non_striker else '',
+    })
+
+
+
 # ── STEP 1: Start Innings ──
 
 @admin_required
@@ -381,7 +438,18 @@ def record_ball_view(request, match_id):
     # Step 1: On a legal delivery, if odd runs were scored off the bat,
     # batsmen crossed — swap striker and non-striker.
     # (For wides: no bat contact, no crossing regardless of extra runs)
-    if ball.is_legal_ball and ball_type != 'WIDE' and (runs_off_bat % 2 == 1):
+    # If 'declared' is True, the scorer manually declared the run count
+    # without physically running — strike stays with current striker.
+    declared = bool(data.get('declared', False))
+
+    # Strike rotation for normal balls with odd runs off bat
+    if ball.is_legal_ball and ball_type not in ('WIDE',) and (runs_off_bat % 2 == 1) and not declared:
+        striker_id, non_striker_id = int(non_striker_id), int(striker_id)
+        request.session['striker_id']    = striker_id
+        request.session['non_striker_id'] = non_striker_id
+
+    # Strike rotation for wide/no-ball with odd extra runs (by running)
+    elif ball_type in ('WIDE', 'NO_BALL') and (runs % 2 == 1) and not declared:
         striker_id, non_striker_id = int(non_striker_id), int(striker_id)
         request.session['striker_id']    = striker_id
         request.session['non_striker_id'] = non_striker_id

@@ -72,6 +72,7 @@ urlpatterns = [
     path('match/<int:match_id>/record-ball/',            views.record_ball_view,     name='record_ball'),
     path('match/<int:match_id>/next-over/',              views.next_over_view,       name='next_over'),
     path('match/<int:match_id>/select-new-batsman/',     views.select_new_batsman,   name='select_new_batsman'),
+    path('match/<int:match_id>/swap-strike/',            views.swap_strike_view,     name='swap_strike'),
     path('match/<int:match_id>/undo-ball/',              views.undo_ball_view,       name='undo_ball'),
     path('match/<int:match_id>/update-overs/',           views.update_match_overs,   name='update_match_overs'),
     path('match/<int:match_id>/start-second-innings/',   views.start_second_innings, name='start_second_innings'),

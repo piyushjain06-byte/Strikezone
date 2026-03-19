@@ -78,6 +78,15 @@
   }
   .match-teams { font-size: 15px; font-weight: 600; color: #fff; }
   .over-info { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .btn-swap-strike {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; margin: 8px 0 0; padding: 9px 14px;
+    background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 10px; color: #a5b4fc; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: all .15s;
+  }
+  .btn-swap-strike:hover { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.5); }
+  .btn-swap-strike:active { transform: scale(0.98); }
   .btn-change-bowler {
     margin-top: 6px;
     background: transparent;
@@ -253,6 +262,42 @@
   .btn-undo:active { transform: scale(0.97); }
 
   /* ── WAGON WHEEL ── */
+  /* ── Declare / By Running modal ── */
+  .declare-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.75); z-index: 10000;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .declare-overlay.show { display: flex; }
+  .declare-box {
+    background: linear-gradient(145deg,#0f1b2d,#1a2a40);
+    border: 1px solid rgba(245,158,11,.3); border-radius: 20px;
+    padding: 28px 24px; width: 100%; max-width: 340px; text-align: center;
+  }
+  .declare-runs-badge {
+    font-family: 'Rajdhani', sans-serif; font-size: 52px; font-weight: 800;
+    color: #f59e0b; line-height: 1; margin-bottom: 6px;
+  }
+  .declare-title { font-size: 14px; font-weight: 600; color: #94a3b8; margin-bottom: 20px; }
+  .declare-btn {
+    display: block; width: 100%; padding: 14px; border-radius: 12px;
+    font-size: 15px; font-weight: 700; font-family: inherit;
+    cursor: pointer; border: none; margin-bottom: 10px; transition: all .15s;
+  }
+  .declare-btn.declared {
+    background: linear-gradient(135deg,#1e3a8a,#3b82f6);
+    color: #fff; box-shadow: 0 4px 14px rgba(59,130,246,.3);
+  }
+  .declare-btn.declared:hover { opacity: .9; transform: translateY(-1px); }
+  .declare-btn.running {
+    background: linear-gradient(135deg,#064e3b,#10b981);
+    color: #fff; box-shadow: 0 4px 14px rgba(16,185,129,.3);
+  }
+  .declare-btn.running:hover { opacity: .9; transform: translateY(-1px); }
+  .declare-cancel { font-size: 12px; color: #64748b; background: none; border: none;
+    cursor: pointer; font-family: inherit; margin-top: 4px; padding: 6px; }
+  .declare-cancel:hover { color: #94a3b8; }
+
   .wagon-overlay {
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,0.75); z-index: 1050;
@@ -552,6 +597,11 @@
     </div>
   </div>
 
+  <!-- SWAP STRIKE BUTTON -->
+  <button class="btn-swap-strike" id="btn-swap-strike" onclick="swapStrike()">
+    ⇄ Swap Strike (Give strike to Non-Striker)
+  </button>
+
   <!-- RECORD BALL -->
   <div class="card" id="record-ball-card">
     <div class="card-label">Record Ball</div>
@@ -772,6 +822,21 @@
 </div>
 
 <!-- ─── WAGON WHEEL MODAL ─── -->
+<!-- ── DECLARE / BY RUNNING MODAL ── -->
+<div class="declare-overlay" id="declareModal">
+  <div class="declare-box">
+    <div class="declare-runs-badge" id="declare-runs-badge">1</div>
+    <div class="declare-title" id="declare-title">How were these runs scored?</div>
+    <button class="declare-btn declared" onclick="confirmDeclare(false)">
+      🏏 Declared — Strike stays with striker
+    </button>
+    <button class="declare-btn running" onclick="confirmDeclare(true)">
+      🏃 By Running — Rotate strike
+    </button>
+    <button class="declare-cancel" onclick="closeDeclareModal()">Cancel</button>
+  </div>
+</div>
+
 <div class="wagon-overlay" id="wagonModal">
   <div class="wagon-box">
     <div class="wagon-title">🏏 Shot Direction</div>
@@ -935,6 +1000,65 @@
   function hideModal(id) { document.getElementById(id).classList.remove('show'); }
 
   // ── Select who is scoring ──
+  function swapStrike() {
+    const btn = document.getElementById('btn-swap-strike');
+    btn.disabled = true;
+    btn.textContent = '⇄ Swapping…';
+    fetch(`/match/{{ match.id }}/swap-strike/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // ── Update JS ID variables (critical: fixes runs going to old player) ──
+            currentStrikerId    = data.new_striker_id;
+            currentNonStrikerId = data.new_non_striker_id;
+            scoringBatsmanId    = currentStrikerId;
+
+            // ── Update displayed names from server response ──
+            document.getElementById('striker-name').textContent    = data.new_striker_name;
+            document.getElementById('nonstriker-name').textContent = data.new_non_striker_name;
+
+            // ── Swap displayed scores ──
+            const sRuns  = document.getElementById('striker-runs').textContent;
+            const sBalls = document.getElementById('striker-balls').textContent;
+            const nRuns  = document.getElementById('nonstriker-runs').textContent;
+            const nBalls = document.getElementById('nonstriker-balls').textContent;
+            document.getElementById('striker-runs').textContent     = nRuns;
+            document.getElementById('striker-balls').textContent    = nBalls;
+            document.getElementById('nonstriker-runs').textContent  = sRuns;
+            document.getElementById('nonstriker-balls').textContent = sBalls;
+
+            // ── Flash striker card ──
+            const strikerCard = document.getElementById('striker-card');
+            strikerCard.style.transition = 'background 0.3s';
+            strikerCard.style.background = 'rgba(99,102,241,0.2)';
+            setTimeout(() => { strikerCard.style.background = ''; }, 600);
+
+            btn.textContent = '✓ Strike Swapped!';
+            btn.style.background = 'rgba(16,185,129,0.15)';
+            btn.style.borderColor = 'rgba(16,185,129,0.4)';
+            btn.style.color = '#34d399';
+            setTimeout(() => {
+                btn.textContent = '⇄ Swap Strike (Give strike to Non-Striker)';
+                btn.style.background = '';
+                btn.style.borderColor = '';
+                btn.style.color = '';
+                btn.disabled = false;
+            }, 2000);
+        } else {
+            alert(data.error || 'Failed to swap strike');
+            btn.disabled = false;
+            btn.textContent = '⇄ Swap Strike (Give strike to Non-Striker)';
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.textContent = '⇄ Swap Strike (Give strike to Non-Striker)';
+    });
+  }
+
   function setScorer(who) {
     if (inningsComplete) return;
     if (who === 'nonstriker') {
@@ -952,11 +1076,22 @@
   let pendingBallRuns = 0;
   let pendingBallType = 'NORMAL';
 
+  let pendingDeclared = false;
+
   function recordBall(runs, ballType) {
     if (inningsComplete) { showToast('Innings is complete!'); return; }
     if (!scoringBatsmanId) { showToast('Please select a batsman first!'); return; }
 
-    // For balls where runs > 0 (and not wide/noball), show wagon wheel first
+    // For odd runs (1,3,5) on normal balls — ask Declare or By Running first
+    if (ballType === 'NORMAL' && (runs === 1 || runs === 3 || runs === 5)) {
+      pendingBallRuns = runs;
+      pendingBallType = ballType;
+      pendingDeclared = false;
+      showDeclareModal(runs);
+      return;
+    }
+
+    // For even runs > 0 (and not wide/noball), show wagon wheel
     if (ballType === 'NORMAL' && runs > 0) {
       pendingBallRuns = runs;
       pendingBallType = ballType;
@@ -967,6 +1102,30 @@
     submitBall(runs, ballType, null);
   }
 
+  function showDeclareModal(runs) {
+    document.getElementById('declare-runs-badge').textContent = runs;
+    document.getElementById('declare-title').textContent =
+      runs + ' run' + (runs > 1 ? 's' : '') + ' — how were they scored?';
+    document.getElementById('declareModal').classList.add('show');
+  }
+
+  function closeDeclareModal() {
+    document.getElementById('declareModal').classList.remove('show');
+  }
+
+  function confirmDeclare(byRunning) {
+    closeDeclareModal();
+    pendingDeclared = !byRunning; // declared = true means NO rotation
+    if (window._extraDeclareMode) {
+      // Wide/No ball — no wagon wheel, submit directly
+      window._extraDeclareMode = false;
+      submitBall(pendingBallRuns, pendingBallType, null);
+    } else {
+      // Normal ball — show wagon wheel for shot direction
+      showWagonWheel(pendingBallRuns);
+    }
+  }
+
   function submitBall(runs, ballType, shotDirection) {
     fetch(`/match/${MATCH_ID}/record-ball/`, {
       method: 'POST',
@@ -975,10 +1134,14 @@
         runs, ball_type: ballType,
         scoring_batsman_id: scoringBatsmanId,
         shot_direction: shotDirection,
+        declared: pendingDeclared,
       })
     })
     .then(r => r.json())
-    .then(handleBallResponse)
+    .then(data => {
+      pendingDeclared = false; // reset after every ball
+      handleBallResponse(data);
+    })
     .catch(() => showToast('Network error — please try again.'));
   }
 
@@ -1178,7 +1341,25 @@
       type === 'WIDE' ? '⚪ Wide' : '🔴 No Ball';
     showModal('extraModal');
   }
-  function confirmExtra(runs) { hideModal('extraModal'); submitBall(runs, currentExtraType, null); }
+  function confirmExtra(runs) {
+    hideModal('extraModal');
+    // For odd runs on wide/noball, ask Declare or By Running
+    if (runs === 1 || runs === 3) {
+      pendingBallRuns = runs;
+      pendingBallType = currentExtraType;
+      pendingDeclared = false;
+      // Show declare modal — but for wide/noball context
+      document.getElementById('declare-runs-badge').textContent = runs;
+      document.getElementById('declare-title').textContent =
+        runs + ' run' + (runs > 1 ? 's' : '') + ' off ' +
+        (currentExtraType === 'WIDE' ? 'Wide' : 'No Ball') + ' — did they run?';
+      // Override confirmDeclare for extras (no wagon wheel needed)
+      window._extraDeclareMode = true;
+      document.getElementById('declareModal').classList.add('show');
+    } else {
+      submitBall(runs, currentExtraType, null);
+    }
+  }
 
   // ── WICKET — multi-step ──
   let selectedWicketType    = null;
