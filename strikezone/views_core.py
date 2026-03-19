@@ -54,6 +54,12 @@ def admin_required(view_func):
 def home(request):
     from django.db.models import Sum
 
+    # ── Require login: redirect new/unauthenticated visitors to login page ──
+    is_admin  = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
+    is_player = bool(request.session.get('player_mobile'))
+    if not is_admin and not is_player:
+        return redirect('player_login')
+
     all_tournaments = TournamentDetails.objects.all().order_by('id')
 
     selected_id = request.GET.get('t')
