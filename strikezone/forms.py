@@ -37,7 +37,11 @@ class TournamentForm(forms.ModelForm):
             'venue',
             'venue_lat',
             'venue_lng',
+            'teams_editable',
         ]
+        widgets = {
+            'teams_editable': forms.CheckboxInput(attrs={'class': 'teams-editable-toggle'}),
+        }
 
 
 class TeamForm(forms.Form):

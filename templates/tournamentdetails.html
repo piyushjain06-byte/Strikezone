@@ -316,8 +316,9 @@
     </div>
     {% endif %}
 
-    {% if is_creator %}
-    <div style="margin-top:12px;">
+    {% if is_creator or page_can_manage %}
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">
+      {% if is_creator %}
       <button id="btn-hire-open"
         style="display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.12);
                border:1px solid rgba(99,102,241,.3);border-radius:10px;color:#a5b4fc;
@@ -325,6 +326,16 @@
                font-family:inherit;transition:all .15s;">
         ➕ Hire a Pro Plus User
       </button>
+      {% endif %}
+      {% if teams_editable %}
+      <a href="{% url 'edit_teams' tournament.id %}"
+        style="display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.12);
+               border:1px solid rgba(16,185,129,.3);border-radius:10px;color:#34d399;
+               font-size:12px;font-weight:700;padding:8px 16px;text-decoration:none;
+               font-family:inherit;transition:all .15s;">
+        ✏️ Edit Teams
+      </a>
+      {% endif %}
     </div>
     {% endif %}
   </div>

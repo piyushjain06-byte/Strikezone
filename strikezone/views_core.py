@@ -591,6 +591,7 @@ def tournamentdetails(request, id):
         'page_can_manage': page_can_manage,
         'hired_staff': hired_staff,
         'is_creator': is_creator,
+        'teams_editable': tournament.teams_editable,
     })
 
 

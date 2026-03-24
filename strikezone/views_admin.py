@@ -296,3 +296,96 @@ def start_tournament(request):
         messages.success(request, f"{tournament.tournament_name} has been started successfully!")
         return redirect("match_start")
     return render(request, "start_tournament.html", {"tournaments": tournaments_qs})
+
+def edit_teams_view(request, tournament_id):
+    """Show all teams and players for a tournament — allows moving players between teams."""
+    from django.shortcuts import get_object_or_404
+    from tournaments.models import TournamentDetails
+    from teams.models import TournamentTeam, TournamentRoster
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
+
+    tournament = get_object_or_404(TournamentDetails, id=tournament_id)
+
+    # Only accessible if teams_editable is True
+    if not tournament.teams_editable:
+        messages.warning(request, 'Team editing is not enabled for this tournament.')
+        return redirect('tournamentdetails', id=tournament_id)
+
+    # Permission: creator, hired staff, CEO, employee
+    if not _is_privileged(request) and not _player_owns_tournament(request, tournament_id):
+        messages.warning(request, 'You do not have permission to edit teams for this tournament.')
+        return redirect('tournamentdetails', id=tournament_id)
+
+    teams_data = []
+    for tt in TournamentTeam.objects.filter(tournament=tournament).select_related('team').order_by('team__team_name'):
+        roster = TournamentRoster.objects.filter(
+            tournament_team=tt
+        ).select_related('player').order_by('player__player_name')
+        teams_data.append({'tournament_team': tt, 'team': tt.team, 'roster': list(roster)})
+
+    return render(request, 'edit_teams.html', {
+        'tournament': tournament,
+        'teams_data': teams_data,
+    })
+
+
+def move_player_view(request, tournament_id):
+    """AJAX: Move a player from one team to another within a tournament."""
+    from django.shortcuts import get_object_or_404
+    from tournaments.models import TournamentDetails
+    from teams.models import TournamentTeam, TournamentRoster
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
+    import json
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    tournament = get_object_or_404(TournamentDetails, id=tournament_id)
+
+    if not tournament.teams_editable:
+        return JsonResponse({'error': 'Team editing is not enabled.'}, status=403)
+
+    if not _is_privileged(request) and not _player_owns_tournament(request, tournament_id):
+        return JsonResponse({'error': 'Not authorised.'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        data = request.POST
+
+    player_id   = data.get('player_id')
+    to_team_id  = data.get('to_team_id')  # TournamentTeam id
+
+    if not player_id or not to_team_id:
+        return JsonResponse({'error': 'player_id and to_team_id required'}, status=400)
+
+    try:
+        roster = TournamentRoster.objects.select_related(
+            'tournament_team__team', 'player'
+        ).get(tournament_id=tournament_id, player_id=player_id)
+    except TournamentRoster.DoesNotExist:
+        return JsonResponse({'error': 'Player not found in this tournament.'}, status=404)
+
+    try:
+        new_tt = TournamentTeam.objects.get(id=to_team_id, tournament=tournament)
+    except TournamentTeam.DoesNotExist:
+        return JsonResponse({'error': 'Target team not found.'}, status=404)
+
+    if roster.tournament_team_id == new_tt.id:
+        return JsonResponse({'error': 'Player is already in that team.'}, status=400)
+
+    old_team_name = roster.tournament_team.team.team_name
+    new_team_name = new_tt.team.team_name
+    player_name   = roster.player.player_name
+
+    # Move: update tournament_team (unique constraint allows this since we're changing teams)
+    roster.tournament_team = new_tt
+    roster.save(update_fields=['tournament_team', 'updated_at'])
+
+    return JsonResponse({
+        'success': True,
+        'message': f'{player_name} moved from {old_team_name} to {new_team_name}.',
+        'player_name': player_name,
+        'old_team': old_team_name,
+        'new_team': new_team_name,
+    })

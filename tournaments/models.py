@@ -78,6 +78,12 @@ class TournamentDetails(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Allow moving players between teams mid-tournament
+    teams_editable = models.BooleanField(
+        default=False,
+        help_text='If True, players can be moved between teams during the tournament.'
+    )
+
     # Set to True when organiser manually completes the tournament
     is_force_completed = models.BooleanField(
         default=False,

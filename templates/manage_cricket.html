@@ -384,6 +384,23 @@
               </div>
               <p class="hint-text">How many teams will participate</p>
             </div>
+          {% elif field.name == 'teams_editable' %}
+            <div style="margin-bottom:14px;">
+              <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+                            background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);
+                            border-radius:10px;padding:12px 14px;">
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:#fff;">✏️ Teams Editable</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:2px;">Allow moving players between teams during the tournament</div>
+                </div>
+                <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
+                  {{ field }}
+                  <span style="position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:12px;
+                               border:1px solid rgba(255,255,255,.15);pointer-events:none;"></span>
+                </div>
+              </label>
+              {% if field.errors %}<p style="color:#f87171;font-size:12px;margin-top:4px;">{{ field.errors.0 }}</p>{% endif %}
+            </div>
           {% else %}
             <div style="margin-bottom:14px;">
               <label>{{ field.label }}</label>

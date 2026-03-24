@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  :root{--bg:#0a0f1e;--surface:#111827;--surface2:#1a2235;--border:#1e2d45;
+        --accent:#f59e0b;--success:#10b981;--info:#3b82f6;--text:#e2e8f0;--muted:#64748b;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+  .et-wrap{max-width:1100px;margin:0 auto;padding:28px 16px 60px;}
+
+  .et-header{margin-bottom:24px;}
+  .btn-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    color:var(--muted);text-decoration:none;background:var(--surface2);
+    border:1px solid var(--border);border-radius:8px;padding:6px 14px;
+    transition:all .15s;margin-bottom:16px;}
+  .btn-back:hover{color:var(--accent);border-color:rgba(245,158,11,.3);}
+  .et-title{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:800;color:#fff;margin-bottom:4px;}
+  .et-sub{font-size:13px;color:var(--muted);}
+
+  .hint-bar{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);
+    border-radius:10px;padding:10px 16px;font-size:12px;color:#34d399;margin-bottom:20px;
+    display:flex;align-items:center;gap:8px;}
+
+  .teams-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+
+  .team-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    overflow:hidden;}
+  .team-card-header{padding:14px 16px;background:var(--surface2);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:10px;}
+  .team-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .team-name{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:#fff;}
+  .team-count{font-size:11px;color:var(--muted);margin-left:auto;background:rgba(255,255,255,.06);
+    border-radius:20px;padding:2px 10px;}
+
+  .player-list{padding:10px;min-height:60px;}
+  .player-item{display:flex;align-items:center;gap:10px;padding:8px 10px;
+    background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+    margin-bottom:6px;cursor:grab;transition:all .15s;user-select:none;}
+  .player-item:hover{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.05);}
+  .player-item.dragging{opacity:.4;cursor:grabbing;}
+  .player-item.drag-over{border-color:#10b981;background:rgba(16,185,129,.08);}
+
+  .player-av{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+  .player-av-init{width:32px;height:32px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;color:#fff;
+    background:linear-gradient(135deg,#1e3a8a,#3b82f6);}
+  .player-info{flex:1;min-width:0;}
+  .player-name{font-size:13px;font-weight:600;color:#fff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .player-role{font-size:10px;color:var(--muted);}
+  .drag-handle{color:var(--muted);font-size:16px;flex-shrink:0;cursor:grab;}
+
+  /* Drop zone highlight */
+  .player-list.drag-active{background:rgba(16,185,129,.05);
+    border:2px dashed rgba(16,185,129,.4);border-radius:10px;}
+
+  /* Toast */
+  #et-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;
+    z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s;
+    background:#1e293b;color:#e2e8f0;border:1px solid #334155;}
+  #et-toast.show{opacity:1;}
+  #et-toast.success{background:rgba(16,185,129,.15);color:#34d399;border-color:rgba(16,185,129,.3);}
+  #et-toast.error{background:rgba(239,68,68,.15);color:#f87171;border-color:rgba(239,68,68,.3);}
+
+  @media(max-width:600px){
+    .teams-grid{grid-template-columns:1fr;}
+    .player-item{padding:7px 8px;}
+  }
+</style>
+
+<div class="et-wrap">
+  <a href="{% url 'tournamentdetails' tournament.id %}" class="btn-back">← Back to {{ tournament.tournament_name }}</a>
+
+  <div class="et-header">
+    <div class="et-title">✏️ Edit Teams</div>
+    <div class="et-sub">{{ tournament.tournament_name }} — drag any player to move them to another team</div>
+  </div>
+
+  <div class="hint-bar">
+    🏏 Drag a player card and drop it onto another team's list. Stats from previous matches are unaffected — only future matches use the new team.
+  </div>
+
+  <div class="teams-grid" id="teams-grid">
+    {% for td in teams_data %}
+    {% with colors="#f59e0b,#3b82f6,#10b981,#f472b6,#a78bfa,#fb923c,#34d399,#60a5fa" %}
+    <div class="team-card">
+      <div class="team-card-header">
+        <div class="team-color-dot" style="background:{{ colors.split|slice:forloop.counter0|last|default:'#64748b' }};"></div>
+        <div class="team-name">{{ td.team.team_name }}</div>
+        <div class="team-count" id="count-{{ td.tournament_team.id }}">{{ td.roster|length }} players</div>
+      </div>
+      <div class="player-list" id="list-{{ td.tournament_team.id }}" data-team-id="{{ td.tournament_team.id }}" data-team-name="{{ td.team.team_name }}">
+        {% for roster in td.roster %}
+        <div class="player-item"
+             draggable="true"
+             data-player-id="{{ roster.player.id }}"
+             data-player-name="{{ roster.player.player_name }}"
+             data-current-team="{{ td.tournament_team.id }}"
+             id="player-{{ roster.player.id }}">
+          {% if roster.player.photo %}
+            <img src="{{ roster.player.photo.url }}" class="player-av" alt="">
+          {% else %}
+            <div class="player-av-init">{{ roster.player.player_name|first|upper }}</div>
+          {% endif %}
+          <div class="player-info">
+            <div class="player-name">
+              {{ roster.player.player_name }}
+              {% if roster.is_captain %}<span style="font-size:9px;color:#f59e0b;"> © </span>{% endif %}
+            </div>
+            <div class="player-role">{{ roster.get_role_display }}</div>
+          </div>
+          <span class="drag-handle">⠿</span>
+        </div>
+        {% empty %}
+        <div style="text-align:center;font-size:12px;color:var(--muted);padding:16px 0;" class="empty-msg">No players yet</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+  </div>
+</div>
+
+<div id="et-toast"></div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+const TOURNAMENT_ID = {{ tournament.id }};
+
+let draggedItem = null;
+let sourceList  = null;
+
+function showToast(msg, type='') {
+  const t = document.getElementById('et-toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, 3000);
+}
+
+// ── Drag events ──
+document.querySelectorAll('.player-item').forEach(item => {
+  item.addEventListener('dragstart', e => {
+    draggedItem = item;
+    sourceList  = item.closest('.player-list');
+    setTimeout(() => item.classList.add('dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  item.addEventListener('dragend', () => {
+    item.classList.remove('dragging');
+    document.querySelectorAll('.player-list').forEach(l => l.classList.remove('drag-active'));
+    draggedItem = null;
+    sourceList  = null;
+  });
+});
+
+document.querySelectorAll('.player-list').forEach(list => {
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (list !== sourceList) list.classList.add('drag-active');
+    e.dataTransfer.dropEffect = 'move';
+  });
+  list.addEventListener('dragleave', () => list.classList.remove('drag-active'));
+  list.addEventListener('drop', e => {
+    e.preventDefault();
+    list.classList.remove('drag-active');
+    if (!draggedItem || list === sourceList) return;
+
+    const playerId  = draggedItem.dataset.playerId;
+    const toTeamId  = list.dataset.teamId;
+    const toTeamName= list.dataset.teamName;
+
+    // Optimistic UI move
+    const emptyMsg = list.querySelector('.empty-msg');
+    if (emptyMsg) emptyMsg.remove();
+    list.appendChild(draggedItem);
+    draggedItem.dataset.currentTeam = toTeamId;
+
+    // Update counts
+    updateCount(sourceList);
+    updateCount(list);
+
+    // API call
+    fetch(`/tournaments/${TOURNAMENT_ID}/move-player/`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+      body: JSON.stringify({player_id: playerId, to_team_id: toTeamId})
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast(`✓ ${data.player_name} moved to ${data.new_team}`, 'success');
+        draggedItem.addEventListener('dragstart', ev => {
+          draggedItem = ev.currentTarget;
+          sourceList  = ev.currentTarget.closest('.player-list');
+        }, {once: false});
+      } else {
+        showToast('✗ ' + (data.error || 'Move failed'), 'error');
+        // Revert
+        sourceList.appendChild(draggedItem);
+        updateCount(sourceList);
+        updateCount(list);
+      }
+    })
+    .catch(() => {
+      showToast('✗ Network error', 'error');
+      sourceList.appendChild(draggedItem);
+      updateCount(sourceList);
+      updateCount(list);
+    });
+  });
+});
+
+function updateCount(list) {
+  const listId = list.id.replace('list-', '');
+  const countEl = document.getElementById('count-' + listId);
+  if (countEl) {
+    const n = list.querySelectorAll('.player-item').length;
+    countEl.textContent = n + ' player' + (n !== 1 ? 's' : '');
+  }
+  // Show/hide empty message
+  const items = list.querySelectorAll('.player-item');
+  let emptyMsg = list.querySelector('.empty-msg');
+  if (items.length === 0 && !emptyMsg) {
+    emptyMsg = document.createElement('div');
+    emptyMsg.className = 'empty-msg';
+    emptyMsg.style.cssText = 'text-align:center;font-size:12px;color:var(--muted);padding:16px 0;';
+    emptyMsg.textContent = 'No players';
+    list.appendChild(emptyMsg);
+  } else if (items.length > 0 && emptyMsg) {
+    emptyMsg.remove();
+  }
+}
+</script>
+{% endblock %}
