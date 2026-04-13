@@ -4,6 +4,7 @@ Django settings for strikezone project.
 
 from pathlib import Path
 import os
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -76,17 +77,28 @@ CHANNEL_LAYERS = {
     }
 }
 
-# ── Database — PostgreSQL (local pgAdmin) ─────────────────────────────────────
-DATABASES = {
-    'default': {
-        'ENGINE':   'django.db.backends.postgresql',
-        'NAME':     os.environ.get('DB_NAME',     'pravas_db'),
-        'USER':     os.environ.get('DB_USER',     'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST':     os.environ.get('DB_HOST',     'localhost'),
-        'PORT':     os.environ.get('DB_PORT',     '5432'),
+# ── Database — uses DATABASE_URL on Render, falls back to local PostgreSQL ────
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE':   'django.db.backends.postgresql',
+            'NAME':     os.environ.get('DB_NAME',     'pravas_db'),
+            'USER':     os.environ.get('DB_USER',     'postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST':     os.environ.get('DB_HOST',     'localhost'),
+            'PORT':     os.environ.get('DB_PORT',     '5432'),
+        }
+    }
 # ─────────────────────────────────────────────────────────────────────────────
 
 AUTH_PASSWORD_VALIDATORS = [

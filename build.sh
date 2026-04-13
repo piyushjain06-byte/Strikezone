@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 set -o errexit
 
-# Install ML libs first separately (heavy — pin to avoid re-resolving)
-pip install --no-cache-dir numpy==1.26.4 pandas==2.2.3 matplotlib==3.8.4 scikit-learn==1.4.2
-
-# Install rest of dependencies
+# Install all dependencies
 pip install --no-cache-dir -r requirements.txt
 
 python manage.py collectstatic --noinput
