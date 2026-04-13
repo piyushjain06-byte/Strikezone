@@ -12,10 +12,11 @@ channels==4.2.0
 groq==0.23.1
 razorpay==1.4.2
 twilio==9.6.3
-cloudinary==1.41.0
+cloudinary==1.44.1
 django-cloudinary-storage==0.3.0
-numpy==1.26.4
+numpy==2.2.4
 pandas==2.2.3
-matplotlib==3.8.4
-scikit-learn==1.4.2
+matplotlib==3.10.1
+scikit-learn==1.7.0
 reportlab==4.0.7
+python-dotenv==1.0.1
