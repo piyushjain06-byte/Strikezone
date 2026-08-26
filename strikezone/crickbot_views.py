@@ -16,10 +16,20 @@ from subscriptions.decorators import require_plan
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
-groq_client = OpenAI(
-    api_key=CEREBRAS_API_KEY,
-    base_url="https://api.cerebras.ai/v1"
-)
+
+_groq_client = None
+
+def get_groq_client():
+    """Lazily build the Cerebras client so a missing key never crashes app startup."""
+    global _groq_client
+    if _groq_client is None:
+        if not CEREBRAS_API_KEY:
+            raise RuntimeError("CEREBRAS_API_KEY is not set")
+        _groq_client = OpenAI(
+            api_key=CEREBRAS_API_KEY,
+            base_url="https://api.cerebras.ai/v1"
+        )
+    return _groq_client
 # Primary model + fallbacks tried in order when rate limits hit
 # Cerebras free tier: ~1M tokens/day, 60K tokens/min
 GROQ_MODEL = "llama-3.3-70b"
@@ -185,7 +195,7 @@ def classify_intent(message, last_user_msg=None):
     )
     try:
         # Use the small fast model for classification — saves main model's daily budget
-        resp = groq_client.chat.completions.create(
+        resp = get_groq_client().chat.completions.create(
             model="llama3.1-8b",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=10,
@@ -1517,7 +1527,7 @@ def crickbot_chat_api(request):
     last_error = None
     for model_name in [GROQ_MODEL] + GROQ_FALLBACK_MODELS:
         try:
-            resp = groq_client.chat.completions.create(
+            resp = get_groq_client().chat.completions.create(
                 model=model_name,
                 messages=messages,
                 max_tokens=MAX_REPLY_TOKENS,
