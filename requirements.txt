@@ -10,6 +10,7 @@ psycopg2-binary==2.9.10
 dj-database-url==2.3.0
 channels==4.2.0
 groq==0.23.1
+openai>=1.30.0
 razorpay==1.4.2
 twilio==9.6.3
 cloudinary==1.44.1
