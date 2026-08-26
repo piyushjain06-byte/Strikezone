@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  :root{
+    --bg:#0a0f1e;--surface:#111827;--surface2:#1a2235;
+    --border:#1e2d45;--accent:#f59e0b;--success:#10b981;
+    --danger:#ef4444;--info:#3b82f6;--text:#e2e8f0;--muted:#64748b;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+
+  .gp-hero{
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#050e20 0%,#091528 50%,#050e1e 100%);
+    border-bottom:1px solid var(--border);
+    padding:52px 20px 44px;
+  }
+  .gp-hero::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse 60% 70% at 65% 50%,rgba(148,163,184,.09) 0%,transparent 65%);
+    pointer-events:none;
+  }
+  .gp-hero-inner{max-width:900px;margin:0 auto;position:relative;display:flex;align-items:center;gap:30px;flex-wrap:wrap;}
+  .gp-photo{width:96px;height:96px;border-radius:50%;object-fit:cover;flex-shrink:0;border:3px solid rgba(148,163,184,.35);box-shadow:0 0 0 6px rgba(148,163,184,.08);}
+  .gp-av-init{width:96px;height:96px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#334155,#64748b);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-size:42px;font-weight:700;color:#fff;border:3px solid rgba(148,163,184,.35);box-shadow:0 0 0 6px rgba(148,163,184,.08);}
+  .gp-tag{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#cbd5e1;background:rgba(148,163,184,.1);border:1px solid rgba(148,163,184,.25);border-radius:20px;padding:3px 12px;display:inline-block;margin-bottom:10px;}
+  .gp-name{font-family:'Rajdhani',sans-serif;font-size:44px;font-weight:700;color:#fff;line-height:1;margin-bottom:10px;}
+  .gp-chips{display:flex;flex-wrap:wrap;gap:10px;}
+  .gp-chip{font-size:12px;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:5px 12px;display:flex;align-items:center;gap:5px;}
+  .gp-chip strong{color:#fff;}
+  .gp-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;transition:all .15s;position:absolute;top:0;right:0;}
+  .gp-back:hover{color:var(--accent);border-color:rgba(245,158,11,.3);}
+
+  .gp-body{max-width:900px;margin:0 auto;padding:32px 20px;}
+  .gp-note{
+    background:var(--surface);border:1px solid rgba(59,130,246,.25);border-radius:12px;
+    padding:16px 20px;display:flex;gap:12px;align-items:flex-start;
+  }
+  .gp-note .icon{font-size:22px;}
+  .gp-note .title{font-size:13px;font-weight:700;color:#60a5fa;margin-bottom:3px;}
+  .gp-note .text{font-size:13px;color:var(--muted);line-height:1.6;}
+</style>
+
+<div class="gp-hero">
+  <div class="gp-hero-inner">
+    <a href="{% url 'home' %}" class="gp-back">← Back</a>
+
+    {% if guest.photo %}
+      <img src="{{ guest.photo.url }}" alt="{{ guest.display_name }}" class="gp-photo">
+    {% else %}
+      <div class="gp-av-init">{{ guest.display_name|default:"G"|first|upper }}</div>
+    {% endif %}
+
+    <div>
+      <div class="gp-tag">Fan Account</div>
+      <div class="gp-name">{{ guest.display_name|default:"Guest" }}</div>
+      <div class="gp-chips">
+        {% if guest.mobile_number %}
+          <div class="gp-chip">📱 <strong>{{ guest.mobile_number }}</strong></div>
+        {% endif %}
+        {% if guest.is_mobile_verified %}
+          <div class="gp-chip">✅ Verified</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="gp-body">
+  <div class="gp-note">
+    <span class="icon">⏳</span>
+    <div>
+      <div class="title">Not on a team yet</div>
+      <div class="text">
+        {{ guest.display_name|default:"This person" }} has registered but hasn't been added to a team roster yet.
+        {% if guest.mobile_number %}A team manager can add them using the mobile number
+        <strong style="color:#cbd5e1;">{{ guest.mobile_number }}</strong> while loading/creating a team.{% endif %}
+        Once added, their full cricket stats and profile will appear automatically.
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -925,219 +925,240 @@ def match_analysis_api(request, match_id):
         ML_AVAILABLE = False
         ML_ERROR = str(e)
 
-    match = get_object_or_404(CreateMatch, id=match_id)
-    tournament = match.tournament
-
-    inn1 = Innings.objects.filter(match=match, innings_number=1).first()
-    inn2 = Innings.objects.filter(match=match, innings_number=2).first()
-    if not inn1:
-        return JsonResponse({'error': 'Match data not available.'}, status=400)
-
-    def get_over_data(innings):
-        overs = Over.objects.filter(innings=innings).order_by('over_number')
-        result, cumul = [], 0
-        for ov in overs:
-            cumul += ov.runs_in_over
-            result.append({'over': ov.over_number, 'runs': ov.runs_in_over,
-                            'wickets': ov.wickets_in_over, 'cumulative': cumul})
-        return result
-
-    def get_balls_detail(innings):
-        """Ball-level data for ML charts — uses real shot_direction from DB."""
-        ZONE_MAP = {
-            'FINE_LEG': 0, 'SQUARE_LEG': 1, 'MID_WICKET': 2, 'MID_ON': 3,
-            'STRAIGHT': 4, 'LONG_ON': 5, 'LONG_OFF': 6, 'MID_OFF': 7,
-            'COVER': 8, 'POINT': 9, 'THIRD_MAN': 10, 'FINE_LEG_DEEP': 11,
-        }
-        balls = Ball.objects.filter(over__innings=innings).order_by(
-            'over__over_number', 'ball_number')
-        result, cumul = [], 0
-        for b in balls:
-            cumul += b.total_runs
-            zone = ZONE_MAP.get(b.shot_direction) if b.shot_direction else None
-            result.append({
-                'runs_off_bat': b.runs_off_bat,
-                'total_runs': b.total_runs,
-                'is_wicket': b.is_wicket,
-                'is_legal': b.is_legal_ball,
-                'runs': b.runs_off_bat,
-                'zone': zone,
-                'has_direction': zone is not None,
-                'cumulative_runs': cumul,
-            })
-        return result
-
-    def get_batting(innings):
-        rows = BattingScorecard.objects.filter(innings=innings).order_by(
-            'batting_position').select_related('batsman')
-        return [{'name': r.batsman.player_name, 'runs': r.runs, 'balls': r.balls_faced,
-                 'fours': r.fours, 'sixes': r.sixes, 'sr': float(r.strike_rate),
-                 'status': r.status, 'dismissal': r.dismissal_info or ''}
-                for r in rows if r.status != 'DNB']
-
-    def get_bowling(innings):
-        rows = BowlingScorecard.objects.filter(innings=innings).select_related('bowler')
-        return [{'name': r.bowler.player_name, 'overs': float(r.overs_bowled),
-                 'runs': r.runs_given, 'wickets': r.wickets, 'wides': r.wides,
-                 'no_balls': r.no_balls, 'economy': float(r.economy)}
-                for r in rows]
-
-    def phase_stats(innings):
-        overs = Over.objects.filter(innings=innings).order_by('over_number')
-        mx = tournament.number_of_overs
-        pp, mid, death = {'runs':0,'wickets':0}, {'runs':0,'wickets':0}, {'runs':0,'wickets':0}
-        for ov in overs:
-            n = ov.over_number
-            if n <= min(6, mx): pp['runs']+=ov.runs_in_over; pp['wickets']+=ov.wickets_in_over
-            elif n <= min(int(mx*.75), mx): mid['runs']+=ov.runs_in_over; mid['wickets']+=ov.wickets_in_over
-            else: death['runs']+=ov.runs_in_over; death['wickets']+=ov.wickets_in_over
-        return {'powerplay': pp, 'middle': mid, 'death': death}
-
-    def dot_pct(innings):
-        balls = Ball.objects.filter(over__innings=innings, is_legal_ball=True)
-        t = balls.count()
-        return round((balls.filter(runs_off_bat=0, extra_runs=0).count()/t*100) if t else 0, 1)
-
-    def boundary_pct(innings):
-        balls = Ball.objects.filter(over__innings=innings, is_legal_ball=True)
-        t = balls.count()
-        return round((balls.filter(runs_off_bat__gte=4).count()/t*100) if t else 0, 1)
-
-    winner_name = result_text = ''
-    try: mr = match.result; winner_name = mr.winner.team_name if mr.winner else 'Tie'; result_text = mr.result_summary
-    except: pass
-    mom_name = ''
-    try: mom_name = match.man_of_the_match.player.player_name
-    except: pass
-
-    # ── Knockout vs League detection ──
-    is_knockout = False
-    knockout_stage_name = 'League Match'
-    knockout_label = ''
     try:
-        km = match.knockout_match
-        is_knockout = True
-        knockout_stage_name = km.stage.get_stage_display()
-        STAGE_EMOJIS = {'F': '🏆 FINAL', 'SF': '🥊 SEMI-FINAL', 'QF': '⚔️ QUARTER-FINAL', 'PQF': '🔥 PRE QUARTER-FINAL'}
-        knockout_label = STAGE_EMOJIS.get(km.stage.stage, f'🏟️ {knockout_stage_name}')
-    except Exception:
-        knockout_label = '📋 League Match'
+        match = get_object_or_404(CreateMatch, id=match_id)
+        tournament = match.tournament
 
-    data = {
-        'match': {
-            'team1': match.team1.team_name, 'team2': match.team2.team_name,
-            # These are the BATTING teams — always correct regardless of toss
-            'bat_first': inn1.batting_team.team_name,
-            'bat_second': inn2.batting_team.team_name if inn2 else '',
-            'venue': match.venue, 'date': str(match.match_date),
-            'tournament': tournament.tournament_name,
-            'format': f"{tournament.get_tournament_type_display()} {tournament.number_of_overs}ov",
-            'overs': tournament.number_of_overs,
-            'winner': winner_name, 'result': result_text, 'mom': mom_name,
-            'is_knockout': is_knockout,
-            'knockout_stage': knockout_stage_name,
-            'knockout_label': knockout_label,
-        },
-        'innings1': {
-            'team': inn1.batting_team.team_name,
-            'total': inn1.total_runs, 'wickets': inn1.total_wickets,
-            'overs': inn1.overs_completed, 'extras': inn1.extras,
-            'dot_pct': dot_pct(inn1), 'boundary_pct': boundary_pct(inn1),
-            'overs_data': get_over_data(inn1),
-            'batting': get_batting(inn1), 'bowling': get_bowling(inn1),
-            'balls_detail': get_balls_detail(inn1),
-            'phases': phase_stats(inn1),
-        },
-    }
-    if inn2:
-        data['innings2'] = {
-            'team': inn2.batting_team.team_name,
-            'total': inn2.total_runs, 'wickets': inn2.total_wickets,
-            'overs': inn2.overs_completed, 'extras': inn2.extras,
-            'target': inn2.target,
-            'dot_pct': dot_pct(inn2), 'boundary_pct': boundary_pct(inn2),
-            'overs_data': get_over_data(inn2),
-            'batting': get_batting(inn2), 'bowling': get_bowling(inn2),
-            'balls_detail': get_balls_detail(inn2),
-            'phases': phase_stats(inn2),
-        }
+        inn1 = Innings.objects.filter(match=match, innings_number=1).first()
+        inn2 = Innings.objects.filter(match=match, innings_number=2).first()
+        if not inn1:
+            return JsonResponse({'error': 'Match data not available.'}, status=400)
 
-    # ── GROQ AI insights ──
-    try:
-        # Use innings teams as authoritative labels — not match.team1/team2
-        # which may differ from who batted first
-        team_bat1 = data['innings1']['team']   # team that batted 1st
-        team_bat2 = data.get('innings2', {}).get('team', '') if inn2 else ''
+        def get_over_data(innings):
+            overs = Over.objects.filter(innings=innings).order_by('over_number')
+            result, cumul = [], 0
+            for ov in overs:
+                cumul += ov.runs_in_over
+                result.append({'over': ov.over_number, 'runs': ov.runs_in_over,
+                                'wickets': ov.wickets_in_over, 'cumulative': cumul})
+            return result
 
-        # Collect hat-tricks for this match
-        from scoring.models import HatTrick as _HT
-        _ht_inn1 = _HT.objects.filter(innings__match=match).select_related('bowler','victim1','victim2','victim3')
-        hat_trick_note = ''
-        if _ht_inn1.exists():
-            ht_lines = [f"{ht.bowler.player_name} (dismissed {ht.victims_display()})" for ht in _ht_inn1]
-            hat_trick_note = '\nHat-Tricks: ' + '; '.join(ht_lines)
+        def get_balls_detail(innings):
+            """Ball-level data for ML charts — uses real shot_direction from DB."""
+            ZONE_MAP = {
+                'FINE_LEG': 0, 'SQUARE_LEG': 1, 'MID_WICKET': 2, 'MID_ON': 3,
+                'STRAIGHT': 4, 'LONG_ON': 5, 'LONG_OFF': 6, 'MID_OFF': 7,
+                'COVER': 8, 'POINT': 9, 'THIRD_MAN': 10, 'FINE_LEG_DEEP': 11,
+            }
+            balls = Ball.objects.filter(over__innings=innings).order_by(
+                'over__over_number', 'ball_number')
+            result, cumul = [], 0
+            for b in balls:
+                cumul += b.total_runs
+                zone = ZONE_MAP.get(b.shot_direction) if b.shot_direction else None
+                result.append({
+                    'runs_off_bat': b.runs_off_bat,
+                    'total_runs': b.total_runs,
+                    'is_wicket': b.is_wicket,
+                    'is_legal': b.is_legal_ball,
+                    'runs': b.runs_off_bat,
+                    'zone': zone,
+                    'has_direction': zone is not None,
+                    'cumulative_runs': cumul,
+                })
+            return result
 
-        b1  = " | ".join([f"{b['name']} {b['runs']}({b['balls']}b)" for b in data['innings1']['batting'][:6]])
-        b2  = " | ".join([f"{b['name']} {b['runs']}({b['balls']}b)" for b in data.get('innings2',{}).get('batting',[])[:6]])
-        # bw1 = bowlers from innings1 (team_bat2 bowled at team_bat1)
-        # bw2 = bowlers from innings2 (team_bat1 bowled at team_bat2)
-        bw1 = " | ".join([f"{b['name']} {b['overs']}ov {b['runs']}R {b['wickets']}W" for b in data['innings1']['bowling'][:5]])
-        bw2 = " | ".join([f"{b['name']} {b['overs']}ov {b['runs']}R {b['wickets']}W" for b in data.get('innings2',{}).get('bowling',[])[:5]])
-        inn2_line = f"{team_bat2}: {data['innings2']['total']}/{data['innings2']['wickets']} chasing {data['innings2']['target']}" if inn2 else ""
-        knockout_ai_note = (
-            f"⚠️ THIS IS A {knockout_stage_name.upper()} — KNOCKOUT ELIMINATION MATCH. "
-            f"The loser is eliminated from the tournament. Adjust your analysis to reflect the high-stakes, do-or-die nature. "
-            f"Note pressure moments, clutch performances, and how knockout urgency shaped the game."
-            if is_knockout else
-            "This is a league match. Analyse normally within tournament standings context."
-        )
-        ai_prompt = f"""Cricket: {team_bat1} vs {team_bat2 or 'TBD'}
-Match Type: {knockout_label}
-{knockout_ai_note}
-1st Innings — {team_bat1}: {data['innings1']['total']}/{data['innings1']['wickets']} ({data['innings1']['overs']} ov)
-{inn2_line}
-Result: {result_text}
-Batting — {team_bat1}: {b1}
-Batting — {team_bat2}: {b2}
-Bowling — {team_bat2} (bowled in inn1): {bw1}
-Bowling — {team_bat1} (bowled in inn2): {bw2}
-Dot%: {data['innings1']['dot_pct']}% (inn1) vs {data.get('innings2',{}).get('dot_pct',0)}% (inn2)
-Boundary%: {data['innings1']['boundary_pct']}% (inn1) vs {data.get('innings2',{}).get('boundary_pct',0)}% (inn2)
-MOM: {mom_name}{hat_trick_note}
-IMPORTANT: In the JSON keys below, "team1" means "{team_bat1}" (batted 1st), "team2" means "{team_bat2}" (batted 2nd).
-Reply ONLY valid JSON no markdown:
-{{"headline":"punchy headline that mentions the match stage if knockout","verdict":"2 sentence verdict reflecting knockout stakes if applicable","turning_point":"1 sentence","player_of_match_reason":"why {mom_name} won","team1_batting_insight":"batting insight for {team_bat1}","team2_batting_insight":"batting insight for {team_bat2}","team1_bowling_insight":"bowling insight for {team_bat1}","team2_bowling_insight":"bowling insight for {team_bat2}","best_spell":"name+figures","top_partnership":"1 line","winner_reason":"why won","loser_reason":"why lost","knockout_pressure_note":{"was the match affected by knockout pressure? 1-2 sentences. Empty string if league match." if is_knockout else '""'},"player_ratings":[{{"name":"","score":9.0,"role":"","note":""}}]}}"""
-        _groq = GroqClient(api_key=os.environ.get("GROQ_API_KEY", ""))
-        resp = _groq.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role":"system","content":"Cricket analyst. Valid JSON only."},
-                      {"role":"user","content":ai_prompt}],
-            max_tokens=700, temperature=0.6)
-        raw = resp.choices[0].message.content.strip().replace('```json','').replace('```','').strip()
-        data['ai'] = json.loads(raw)
-    except Exception:
-        data['ai'] = {
-            'headline': f"{winner_name} win{' in ' + knockout_stage_name if is_knockout else ''}", 'verdict': result_text,
-            'turning_point': 'Key phase decided the match.',
-            'player_of_match_reason': f'{mom_name} was outstanding.',
-            'team1_batting_insight': 'Solid batting.', 'team2_batting_insight': 'Competitive innings.',
-            'team1_bowling_insight': 'Disciplined bowling.', 'team2_bowling_insight': 'Bowlers fought hard.',
-            'best_spell': 'Best spell of the match.', 'top_partnership': 'Key partnership.',
-            'winner_reason': 'Better all-round.', 'loser_reason': 'Could not match target.',
-            'knockout_pressure_note': f'This was a {knockout_stage_name} — knockout pressure was a key factor.' if is_knockout else '',
-            'player_ratings': [],
-        }
+        def get_batting(innings):
+            rows = BattingScorecard.objects.filter(innings=innings).order_by(
+                'batting_position').select_related('batsman')
+            return [{'name': r.batsman.player_name, 'runs': r.runs, 'balls': r.balls_faced,
+                     'fours': r.fours, 'sixes': r.sixes, 'sr': float(r.strike_rate),
+                     'status': r.status, 'dismissal': r.dismissal_info or ''}
+                    for r in rows if r.status != 'DNB']
 
-    # ── ML CHARTS (generated server-side with matplotlib + sklearn) ──
-    if ML_AVAILABLE:
+        def get_bowling(innings):
+            rows = BowlingScorecard.objects.filter(innings=innings).select_related('bowler')
+            return [{'name': r.bowler.player_name, 'overs': float(r.overs_bowled),
+                     'runs': r.runs_given, 'wickets': r.wickets, 'wides': r.wides,
+                     'no_balls': r.no_balls, 'economy': float(r.economy)}
+                    for r in rows]
+
+        def phase_stats(innings):
+            overs = Over.objects.filter(innings=innings).order_by('over_number')
+            mx = effective_overs
+            pp, mid, death = {'runs':0,'wickets':0}, {'runs':0,'wickets':0}, {'runs':0,'wickets':0}
+            for ov in overs:
+                n = ov.over_number
+                if n <= min(6, mx): pp['runs']+=ov.runs_in_over; pp['wickets']+=ov.wickets_in_over
+                elif n <= min(int(mx*.75), mx): mid['runs']+=ov.runs_in_over; mid['wickets']+=ov.wickets_in_over
+                else: death['runs']+=ov.runs_in_over; death['wickets']+=ov.wickets_in_over
+            return {'powerplay': pp, 'middle': mid, 'death': death}
+
+        def dot_pct(innings):
+            balls = Ball.objects.filter(over__innings=innings, is_legal_ball=True)
+            t = balls.count()
+            return round((balls.filter(runs_off_bat=0, extra_runs=0).count()/t*100) if t else 0, 1)
+
+        def boundary_pct(innings):
+            balls = Ball.objects.filter(over__innings=innings, is_legal_ball=True)
+            t = balls.count()
+            return round((balls.filter(runs_off_bat__gte=4).count()/t*100) if t else 0, 1)
+
+        winner_name = result_text = ''
+        try: mr = match.result; winner_name = mr.winner.team_name if mr.winner else 'Tie'; result_text = mr.result_summary
+        except: pass
+        mom_name = ''
+        try: mom_name = match.man_of_the_match.player.player_name
+        except: pass
+
+        # ── Knockout vs League detection ──
+        is_knockout = False
+        knockout_stage_name = 'League Match'
+        knockout_label = ''
         try:
-            data['charts'] = generate_all_charts(data)
-        except Exception as e:
-            data['charts'] = {'error': str(e), 'install_hint': 'pip install matplotlib scikit-learn numpy pandas'}
-    else:
-        data['charts'] = {
-            'error': f'ML libraries not installed: {ML_ERROR}',
-            'install_hint': 'Run: pip install matplotlib scikit-learn numpy pandas'
-        }
+            km = match.knockout_match
+            is_knockout = True
+            knockout_stage_name = km.stage.get_stage_display()
+            STAGE_EMOJIS = {'F': '🏆 FINAL', 'SF': '🥊 SEMI-FINAL', 'QF': '⚔️ QUARTER-FINAL', 'PQF': '🔥 PRE QUARTER-FINAL'}
+            knockout_label = STAGE_EMOJIS.get(km.stage.stage, f'🏟️ {knockout_stage_name}')
+        except Exception:
+            knockout_label = '📋 League Match'
 
-    return JsonResponse(data)
+        match_start = getattr(match, 'match_start', None)
+        effective_overs = (match_start.custom_overs if match_start and match_start.custom_overs else None) or tournament.number_of_overs
+
+        data = {
+            'match': {
+                'team1': match.team1.team_name, 'team2': match.team2.team_name,
+                # These are the BATTING teams — always correct regardless of toss
+                'bat_first': inn1.batting_team.team_name,
+                'bat_second': inn2.batting_team.team_name if inn2 else '',
+                'venue': match.venue, 'date': str(match.match_date),
+                'tournament': tournament.tournament_name,
+                'format': f"{tournament.get_tournament_type_display()} {effective_overs}ov",
+                'overs': effective_overs,
+                'winner': winner_name, 'result': result_text, 'mom': mom_name,
+                'is_knockout': is_knockout,
+                'knockout_stage': knockout_stage_name,
+                'knockout_label': knockout_label,
+            },
+            'innings1': {
+                'team': inn1.batting_team.team_name,
+                'total': inn1.total_runs, 'wickets': inn1.total_wickets,
+                'overs': inn1.overs_completed, 'extras': inn1.extras,
+                'dot_pct': dot_pct(inn1), 'boundary_pct': boundary_pct(inn1),
+                'overs_data': get_over_data(inn1),
+                'batting': get_batting(inn1), 'bowling': get_bowling(inn1),
+                'balls_detail': get_balls_detail(inn1),
+                'phases': phase_stats(inn1),
+            },
+        }
+        if inn2:
+            data['innings2'] = {
+                'team': inn2.batting_team.team_name,
+                'total': inn2.total_runs, 'wickets': inn2.total_wickets,
+                'overs': inn2.overs_completed, 'extras': inn2.extras,
+                'target': inn2.target,
+                'dot_pct': dot_pct(inn2), 'boundary_pct': boundary_pct(inn2),
+                'overs_data': get_over_data(inn2),
+                'batting': get_batting(inn2), 'bowling': get_bowling(inn2),
+                'balls_detail': get_balls_detail(inn2),
+                'phases': phase_stats(inn2),
+            }
+
+        # ── GROQ AI insights ──
+        try:
+            # Use innings teams as authoritative labels — not match.team1/team2
+            # which may differ from who batted first
+            team_bat1 = data['innings1']['team']   # team that batted 1st
+            team_bat2 = data.get('innings2', {}).get('team', '') if inn2 else ''
+
+            # Collect hat-tricks for this match
+            from scoring.models import HatTrick as _HT
+            _ht_inn1 = _HT.objects.filter(innings__match=match).select_related('bowler','victim1','victim2','victim3')
+            hat_trick_note = ''
+            if _ht_inn1.exists():
+                ht_lines = [f"{ht.bowler.player_name} (dismissed {ht.victims_display()})" for ht in _ht_inn1]
+                hat_trick_note = '\nHat-Tricks: ' + '; '.join(ht_lines)
+
+            b1  = " | ".join([f"{b['name']} {b['runs']}({b['balls']}b)" for b in data['innings1']['batting'][:6]])
+            b2  = " | ".join([f"{b['name']} {b['runs']}({b['balls']}b)" for b in data.get('innings2',{}).get('batting',[])[:6]])
+            # bw1 = bowlers from innings1 (team_bat2 bowled at team_bat1)
+            # bw2 = bowlers from innings2 (team_bat1 bowled at team_bat2)
+            bw1 = " | ".join([f"{b['name']} {b['overs']}ov {b['runs']}R {b['wickets']}W" for b in data['innings1']['bowling'][:5]])
+            bw2 = " | ".join([f"{b['name']} {b['overs']}ov {b['runs']}R {b['wickets']}W" for b in data.get('innings2',{}).get('bowling',[])[:5]])
+            inn2_line = f"{team_bat2}: {data['innings2']['total']}/{data['innings2']['wickets']} chasing {data['innings2']['target']}" if inn2 else ""
+            knockout_ai_note = (
+                f"⚠️ THIS IS A {knockout_stage_name.upper()} — KNOCKOUT ELIMINATION MATCH. "
+                f"The loser is eliminated from the tournament. Adjust your analysis to reflect the high-stakes, do-or-die nature. "
+                f"Note pressure moments, clutch performances, and how knockout urgency shaped the game."
+                if is_knockout else
+                "This is a league match. Analyse normally within tournament standings context."
+            )
+            ai_prompt = f"""Cricket: {team_bat1} vs {team_bat2 or 'TBD'}
+    Match Type: {knockout_label}
+    {knockout_ai_note}
+    1st Innings — {team_bat1}: {data['innings1']['total']}/{data['innings1']['wickets']} ({data['innings1']['overs']} ov)
+    {inn2_line}
+    Result: {result_text}
+    Batting — {team_bat1}: {b1}
+    Batting — {team_bat2}: {b2}
+    Bowling — {team_bat2} (bowled in inn1): {bw1}
+    Bowling — {team_bat1} (bowled in inn2): {bw2}
+    Dot%: {data['innings1']['dot_pct']}% (inn1) vs {data.get('innings2',{}).get('dot_pct',0)}% (inn2)
+    Boundary%: {data['innings1']['boundary_pct']}% (inn1) vs {data.get('innings2',{}).get('boundary_pct',0)}% (inn2)
+    MOM: {mom_name}{hat_trick_note}
+    IMPORTANT: In the JSON keys below, "team1" means "{team_bat1}" (batted 1st), "team2" means "{team_bat2}" (batted 2nd).
+    Reply ONLY valid JSON no markdown:
+    {{"headline":"punchy headline that mentions the match stage if knockout","verdict":"2 sentence verdict reflecting knockout stakes if applicable","turning_point":"1 sentence","player_of_match_reason":"why {mom_name} won","team1_batting_insight":"batting insight for {team_bat1}","team2_batting_insight":"batting insight for {team_bat2}","team1_bowling_insight":"bowling insight for {team_bat1}","team2_bowling_insight":"bowling insight for {team_bat2}","best_spell":"name+figures","top_partnership":"1 line","winner_reason":"why won","loser_reason":"why lost","knockout_pressure_note":{"was the match affected by knockout pressure? 1-2 sentences. Empty string if league match." if is_knockout else '""'},"player_ratings":[{{"name":"","score":9.0,"role":"","note":""}}]}}"""
+            import requests as _http
+            _groq_resp = _http.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {os.environ.get('GROQ_API_KEY', '')}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": "Cricket analyst. Valid JSON only."},
+                        {"role": "user", "content": ai_prompt},
+                    ],
+                    "max_tokens": 700,
+                    "temperature": 0.6,
+                },
+                timeout=20,
+            )
+            _groq_resp.raise_for_status()
+            raw = _groq_resp.json()["choices"][0]["message"]["content"].strip().replace('```json', '').replace('```', '').strip()
+            data['ai'] = json.loads(raw)
+        except Exception as _groq_err:
+            print(f"[Groq AI] Failed: {_groq_err}")
+            data['ai'] = {
+                'headline': f"{winner_name} win{' in ' + knockout_stage_name if is_knockout else ''}", 'verdict': result_text,
+                'turning_point': 'Key phase decided the match.',
+                'player_of_match_reason': f'{mom_name} was outstanding.',
+                'team1_batting_insight': 'Solid batting.', 'team2_batting_insight': 'Competitive innings.',
+                'team1_bowling_insight': 'Disciplined bowling.', 'team2_bowling_insight': 'Bowlers fought hard.',
+                'best_spell': 'Best spell of the match.', 'top_partnership': 'Key partnership.',
+                'winner_reason': 'Better all-round.', 'loser_reason': 'Could not match target.',
+                'knockout_pressure_note': f'This was a {knockout_stage_name} — knockout pressure was a key factor.' if is_knockout else '',
+                'player_ratings': [],
+            }
+
+        # ── ML CHARTS (generated server-side with matplotlib + sklearn) ──
+        if ML_AVAILABLE:
+            try:
+                data['charts'] = generate_all_charts(data)
+            except Exception as e:
+                data['charts'] = {'error': str(e), 'install_hint': 'pip install matplotlib scikit-learn numpy pandas'}
+        else:
+            data['charts'] = {
+                'error': f'ML libraries not installed: {ML_ERROR}',
+                'install_hint': 'Run: pip install matplotlib scikit-learn numpy pandas'
+            }
+
+        return JsonResponse(data)
+    except Exception as e:
+        import traceback
+        return JsonResponse({'error': f'Analysis failed: {e}', 'trace': traceback.format_exc()}, status=500)

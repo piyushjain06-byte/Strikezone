@@ -344,8 +344,11 @@
       </div>
       <div class="profile-field">
         <label>Mobile Number</label>
-        <input class="profile-input" type="tel" name="mobile_number"
-               value="{{ guest_mobile }}" placeholder="10-digit mobile" required>
+        <input class="profile-input" type="tel" value="{{ guest_mobile }}" disabled
+               style="opacity:.6;cursor:not-allowed;" title="Mobile number cannot be changed">
+        <p style="font-size:11px;color:var(--muted);margin-top:4px;">
+          🔒 Your mobile number is your login ID and can't be changed.
+        </p>
       </div>
       <button type="submit" class="profile-save-btn">Save Profile</button>
     </form>

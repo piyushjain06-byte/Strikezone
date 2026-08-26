@@ -1,5 +1,5 @@
 """
-CrickBot — AI Cricket Chatbot powered by Groq
+CrickBot — AI Cricket Chatbot powered by Cerebras
 v6: Intent classification, session caching, coach persona, graceful fallbacks.
 """
 
@@ -11,21 +11,25 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, redirect
 from django.core.cache import cache
 
-from groq import Groq
+from openai import OpenAI
 from subscriptions.decorators import require_plan
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-groq_client = Groq(api_key=GROQ_API_KEY)
+CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
+groq_client = OpenAI(
+    api_key=CEREBRAS_API_KEY,
+    base_url="https://api.cerebras.ai/v1"
+)
 # Primary model + fallbacks tried in order when rate limits hit
-GROQ_MODEL = "llama-3.3-70b-versatile"
+# Cerebras free tier: ~1M tokens/day, 60K tokens/min
+GROQ_MODEL = "llama-3.3-70b"
 GROQ_FALLBACK_MODELS = [
-    "llama-3.1-8b-instant",                        # smaller Llama, separate TPD limit
-    "meta-llama/llama-4-scout-17b-16e-instruct",   # Llama 4 Scout preview, separate limit
-    "meta-llama/llama-4-maverick-17b-128e-instruct", # Llama 4 Maverick preview
-    "qwen/qwen-3-32b",                             # Qwen 3 preview, separate limit
+    "llama3.1-8b",   # smaller/faster fallback
 ]
-CACHE_TTL = 0    # always rebuild fresh — no stale data
+# Token budget — keep prompts lean to maximise daily free usage
+MAX_SYSTEM_TOKENS = 2500   # hard cap on system prompt characters (~600 tokens)
+MAX_REPLY_TOKENS  = 400    # max tokens in model reply (was 700)
+CACHE_TTL = 300            # cache context for 5 min to avoid rebuilding on every message
 
 # ─── INTENT CATEGORIES ───────────────────────────────────────────────────────
 # Each maps to which context slice(s) to include
@@ -180,8 +184,9 @@ def classify_intent(message, last_user_msg=None):
         f"Message: {combined}\n\nCategory:"
     )
     try:
+        # Use the small fast model for classification — saves main model's daily budget
         resp = groq_client.chat.completions.create(
-            model=GROQ_MODEL,
+            model="llama3.1-8b",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=10,
             temperature=0.0,
@@ -1493,6 +1498,12 @@ def crickbot_chat_api(request):
         elif len(trimmed_history) < 2:
             trimmed_history.insert(0, h)
 
+    # Hard-cap system prompt to save tokens (~1 char ≈ 0.25 tokens)
+    if len(system_prompt) > MAX_SYSTEM_TOKENS * 4:
+        # Keep the rules header + truncate data section, never cut off mid-word
+        cutoff = MAX_SYSTEM_TOKENS * 4
+        system_prompt = system_prompt[:cutoff].rsplit('\n', 1)[0] + "\n[...data truncated to save tokens]"
+
     messages = [{"role": "system", "content": system_prompt}]
     for h in trimmed_history:
         if h.get('role') in ('user', 'assistant') and h.get('content'):
@@ -1509,7 +1520,7 @@ def crickbot_chat_api(request):
             resp = groq_client.chat.completions.create(
                 model=model_name,
                 messages=messages,
-                max_tokens=700,
+                max_tokens=MAX_REPLY_TOKENS,
                 temperature=0.6,
             )
             reply = resp.choices[0].message.content
@@ -1521,11 +1532,11 @@ def crickbot_chat_api(request):
             if any(x in err_str for x in ['429', '413', 'rate_limit', 'decommissioned', 'model_not_found', 'not supported']):
                 continue  # try next model
             else:
-                return JsonResponse({'error': f'Groq API error: {err_str}'}, status=500)
+                return JsonResponse({'error': f'AI API error: {err_str}'}, status=500)
 
     if reply is None:
         return JsonResponse({
-            'error': f'All models are currently rate-limited. Please try again in a few minutes. ({last_error})'
+            'error': f'AI is currently rate-limited. Please try again in a few minutes. ({last_error})'
         }, status=429)
 
     return JsonResponse({'reply': reply, 'intent': intent if not is_admin else 'admin'})

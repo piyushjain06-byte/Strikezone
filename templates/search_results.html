@@ -74,6 +74,18 @@ function displayResults(data) {
     html += '</div>';
   }
   
+  // Fans / Guests
+  if (data.guests && data.guests.length > 0) {
+    html += '<div class="results-section"><div class="section-title">👤 Fans (' + data.guests.length + ')</div>';
+    data.guests.forEach(g => {
+      html += `<div class="result-card" onclick="window.location.href='/guest/${g.id}/'">
+        <div class="result-name">${g.name}</div>
+        <div class="result-meta">${g.sub || 'Fan account'}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
   // Teams
   if (data.teams.length > 0) {
     html += '<div class="results-section"><div class="section-title">🏏 Teams (' + data.teams.length + ')</div>';

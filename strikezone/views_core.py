@@ -28,7 +28,7 @@ import json
 import random
 import os
 from datetime import date, datetime, timedelta
-from groq import Groq as GroqClient
+from openai import OpenAI as GroqClient
 
 def admin_required(view_func):
     @wraps(view_func)

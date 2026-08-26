@@ -47,6 +47,8 @@ urlpatterns = [
     # 3. TOURNAMENT MANAGEMENT  (admin only)
     # ─────────────────────────────────────────────────────────────
     path('manage_cricket/',                 views.manage_cricket,     name='manage_cricket'),
+    path('manage_cricket/bulk-import/template/', views.bulk_import_template, name='bulk_import_template'),
+    path('manage_cricket/bulk-import/upload/',   views.bulk_import_upload,   name='bulk_import_upload'),
     path('start_tournament/',               views.start_tournament,   name='start_tournament'),
     path('tournament/<int:tournament_id>/history/',  views.tournament_history, name='tournament_history'),
     path('tournament/<int:tournament_id>/awards/',   views.tournament_awards,  name='tournament_awards'),
@@ -114,6 +116,7 @@ urlpatterns = [
     path('team/<int:team_id>/analysis/',            views.team_analysis_view,    name='team_analysis'),
     path('api/team/<int:team_id>/analysis/',        views.team_analysis_api,     name='team_analysis_api'),
     path('player/<int:player_id>/profile/',         views.public_player_profile,  name='public_player_profile'),
+    path('guest/<int:guest_id>/',                   views.public_guest_profile,   name='public_guest_profile'),
     path('player/<int:player_id>/follow/',          views.toggle_follow,          name='toggle_follow'),
     path('player/<int:player_id>/followers/',       views.player_followers_list,  name='player_followers_list'),
     path('player/<int:player_id>/analysis/',        views.player_analysis_view,   name='player_analysis'),

@@ -18,14 +18,15 @@ ACTUAL CODE LIVES IN:
 
 from .views_core      import admin_required, home, tournaments, tournamentdetails, teamdetails, delete_tournament
 from .views_admin     import manage_cricket, create_match, load_teams, start_tournament, edit_teams_view, move_player_view
+from .views_bulk_import import bulk_import_template, bulk_import_upload
 from .views_scoring   import (match_start, start_innings_view, scoring_view, record_ball_view, swap_strike_view,
                                select_new_batsman, undo_ball_view, next_over_view, start_second_innings,
                                update_match_overs)
 from .views_match     import match_result, restart_match, tournament_awards, tournament_history, match_scorecard, delete_match
-from .views_auth      import (admin_login, admin_logout, player_login, send_otp_sms,
+from .views_auth      import (admin_login, admin_logout, player_login,
                                player_request_otp, player_verify_otp, player_register, player_logout)
 from .views_player    import (player_stats, player_stats_api, player_matches,
-                               public_player_profile, edit_player, delete_player,
+                               public_player_profile, public_guest_profile, edit_player, delete_player,
                                toggle_follow, player_followers_list)
 from .views_knockout  import (get_tournament_leaderboard, all_league_matches_completed,
                                knockout_bracket, setup_knockout_stage, start_knockout_match,

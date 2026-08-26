@@ -27,7 +27,7 @@ import json
 import random
 import os
 from datetime import date, datetime, timedelta
-from groq import Groq as GroqClient
+from openai import OpenAI as GroqClient
 
 from .views_core import admin_required
 from subscriptions.decorators import require_plan
@@ -69,7 +69,7 @@ def match_result(request, match_id):
 # ── RESTART MATCH ──
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 @require_POST
 def restart_match(request, match_id):
     match = get_object_or_404(CreateMatch, id=match_id)
@@ -417,16 +417,15 @@ def match_scorecard(request, match_id):
 @admin_required
 @require_POST
 def delete_match(request, match_id):
-    """Delete a match and all related data. Only for pro_plus users, employees and CEO."""
-    from subscriptions.decorators import _is_privileged
-    from subscriptions.decorators import _get_effective_plan
-
-    # Permission: must be privileged (employee/CEO) OR pro_plus plan
-    if not (_is_privileged(request) or _get_effective_plan(request) == 'pro_plus'):
-        return JsonResponse({'success': False, 'error': 'Permission denied.'}, status=403)
+    """Delete a match and all related data. Only for the tournament's creator, its hired staff, employees and CEO."""
+    from subscriptions.decorators import _is_privileged, _player_owns_tournament
 
     match = get_object_or_404(CreateMatch, id=match_id)
     tournament_id = match.tournament_id
+
+    # Permission: must be privileged (employee/CEO) OR own/be hired for this specific tournament
+    if not (_is_privileged(request) or _player_owns_tournament(request, tournament_id)):
+        return JsonResponse({'success': False, 'error': 'Permission denied.'}, status=403)
     match_name = f"{match.team1.team_name} vs {match.team2.team_name}"
 
     # CASCADE delete — Django handles Ball→Over→Innings, MatchStart, MatchResult,

@@ -27,7 +27,7 @@ import json
 import random
 import os
 from datetime import date, datetime, timedelta
-from groq import Groq as GroqClient
+from openai import OpenAI as GroqClient
 
 from .views_core import admin_required
 from subscriptions.decorators import require_plan
@@ -125,7 +125,7 @@ NEXT_STAGE  = {'PQF': 'QF', 'QF': 'SF', 'SF': 'F', 'F': None}
 
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def knockout_bracket(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
     from subscriptions.decorators import _is_privileged, _player_owns_tournament
@@ -162,7 +162,7 @@ def knockout_bracket(request, tournament_id):
 
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def setup_knockout_stage(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
     from subscriptions.decorators import _is_privileged, _player_owns_tournament
@@ -275,7 +275,7 @@ def setup_knockout_stage(request, tournament_id):
 
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def start_knockout_match(request, knockout_match_id):
     km = get_object_or_404(KnockoutMatch, id=knockout_match_id)
     tournament = km.stage.tournament
@@ -345,7 +345,7 @@ def auto_advance_knockout(match_id):
 
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def link_knockout_matches(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
     from subscriptions.decorators import _is_privileged, _player_owns_tournament

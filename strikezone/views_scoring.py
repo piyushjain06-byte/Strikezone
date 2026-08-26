@@ -27,7 +27,7 @@ import json
 import random
 import os
 from datetime import date, datetime, timedelta
-from groq import Groq as GroqClient
+from openai import OpenAI as GroqClient
 
 from .views_core import admin_required
 from subscriptions.decorators import require_plan
@@ -36,7 +36,7 @@ from .views_knockout import auto_advance_knockout
 from strikezone.ws_push import push_ball, push_undo, push_innings_complete, push_match_complete, push_match_started, push_new_batsman, push_new_over
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def match_start(request):
     # Only show matches that have NOT been started yet (no MatchStart record)
     started_match_ids = MatchStart.objects.values_list('match_id', flat=True)
@@ -90,7 +90,7 @@ def match_start(request):
     })
 
 
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 @require_POST
 def swap_strike_view(request, match_id):
     """Manually swap striker and non-striker (fix wrong strike mid-over)."""
@@ -150,7 +150,7 @@ def swap_strike_view(request, match_id):
 # ── STEP 1: Start Innings ──
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def start_innings_view(request, match_id):
     match = get_object_or_404(CreateMatch, id=match_id)
     match_start = get_object_or_404(MatchStart, match=match)
@@ -245,7 +245,7 @@ def start_innings_view(request, match_id):
 # ── STEP 2: Live Scoring Page ──
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def scoring_view(request, match_id):
     match = get_object_or_404(CreateMatch, id=match_id)
 
@@ -315,7 +315,7 @@ def scoring_view(request, match_id):
 
 # ── Match Settings: Update Overs ──────────────────────────────────────────────
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 @require_POST
 def update_match_overs(request, match_id):
     """Change the overs for this match — only allowed before the 1st ball is bowled."""
@@ -359,7 +359,7 @@ def update_match_overs(request, match_id):
 # ── STEP 3: AJAX - Record Ball ──
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 @require_POST
 def record_ball_view(request, match_id):
     match = get_object_or_404(CreateMatch, id=match_id)
@@ -658,7 +658,7 @@ def record_ball_view(request, match_id):
 # ── STEP 3b: AJAX - Select New Batsman after Wicket ──
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 @require_POST
 def select_new_batsman(request, match_id):
     match = get_object_or_404(CreateMatch, id=match_id)
@@ -761,7 +761,7 @@ def select_new_batsman(request, match_id):
 # ── UNDO LAST BALL ──
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 @require_POST
 def undo_ball_view(request, match_id):
     match  = get_object_or_404(CreateMatch, id=match_id)
@@ -909,7 +909,7 @@ def undo_ball_view(request, match_id):
 # ── STEP 4: AJAX - Start Next Over ──
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 @require_POST
 def next_over_view(request, match_id):
     match = get_object_or_404(CreateMatch, id=match_id)
@@ -979,7 +979,7 @@ def next_over_view(request, match_id):
 # ── STEP 5: Start 2nd Innings ──
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def start_second_innings(request, match_id):
     for key in ('innings_id', 'over_id', 'striker_id', 'non_striker_id'):
         request.session.pop(key, None)

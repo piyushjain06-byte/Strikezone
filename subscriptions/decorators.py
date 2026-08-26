@@ -105,19 +105,18 @@ def _get_tournament_id_from_kwargs(kwargs):
     return None
 
 
-def require_plan(*plans):
+def require_plan(*plans, owner_only=False):
     """
     Decorator that checks the current user's subscription plan.
 
     Employees and admins (CEO) ALWAYS bypass this check.
 
-    For pro_plus players: if the view involves a specific tournament or match,
-    the player must have CREATED that tournament to get pro_plus access.
-    For tournaments they did NOT create, they are treated as pro-level only.
+    owner_only=True  → pro_plus user must have CREATED the tournament (management views).
+    owner_only=False → any pro_plus user can access (read/analysis views). DEFAULT.
 
     Usage:
-        @require_plan('pro', 'pro_plus')   <- allows Pro AND Pro Plus
-        @require_plan('pro_plus')          <- allows Pro Plus only
+        @require_plan('pro', 'pro_plus')                 <- any pro or pro_plus user
+        @require_plan('pro_plus', owner_only=True)       <- pro_plus creator only
     """
     def decorator(view_func):
         @wraps(view_func)
@@ -134,28 +133,28 @@ def require_plan(*plans):
 
             effective = _get_effective_plan(request)
 
-            # Pro Plus player — check tournament ownership if a tournament/match is involved
+            # Pro Plus player — only enforce ownership for management/write views
             if effective == 'pro_plus' and 'pro_plus' in plans:
-                tournament_id = _get_tournament_id_from_kwargs(kwargs)
-                if tournament_id:
-                    # Must own this tournament to get pro_plus powers
-                    if not _player_owns_tournament(request, tournament_id):
-                        # Treat as pro for this tournament
-                        is_ajax = (
-                            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-                            or request.content_type == 'application/json'
-                        )
-                        if is_ajax:
-                            return JsonResponse({
-                                'error': 'You can only manage tournaments you created.',
-                                'upgrade_required': False,
-                            }, status=403)
-                        messages.warning(
-                            request,
-                            'You can only manage tournaments you have created.'
-                        )
-                        return redirect('upgrade_plan')
-                # No tournament_id in kwargs (e.g. manage_cricket listing page) — allow
+                if owner_only:
+                    tournament_id = _get_tournament_id_from_kwargs(kwargs)
+                    if tournament_id:
+                        # Must own this tournament to get pro_plus powers
+                        if not _player_owns_tournament(request, tournament_id):
+                            is_ajax = (
+                                request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+                                or request.content_type == 'application/json'
+                            )
+                            if is_ajax:
+                                return JsonResponse({
+                                    'error': 'You can only manage tournaments you created.',
+                                    'upgrade_required': False,
+                                }, status=403)
+                            messages.warning(
+                                request,
+                                'You can only manage tournaments you have created.'
+                            )
+                            return redirect('upgrade_plan')
+                # owner_only=False (default) OR no tournament found — allow any pro_plus user
                 return view_func(request, *args, **kwargs)
 
             if effective not in plans:

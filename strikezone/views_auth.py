@@ -31,6 +31,40 @@ from groq import Groq as GroqClient
 
 from .views_core import admin_required
 
+
+def ensure_player_for_mobile(mobile, guest=None):
+    """
+    Return a real PlayerDetails record for this mobile number, creating one
+    if it doesn't exist yet.
+
+    Every logged-in account needs a PlayerDetails row so that ownership
+    checks (tournament creator, hired staff, etc.) — which are keyed off
+    session['player_id'] pointing at a real PlayerDetails id — work
+    correctly. Without this, a pro_plus subscriber who creates a
+    tournament before ever being added to a team's roster would fall back
+    to the 'guest' session marker and be silently locked out of managing
+    their own tournament.
+    """
+    player = PlayerDetails.objects.filter(mobile_number=mobile).first()
+    if player:
+        return player
+
+    if guest is None:
+        guest = GuestUser.objects.filter(mobile_number=mobile).first()
+
+    player_name = (guest.display_name if guest and guest.display_name else None) or f"Player {mobile}"
+    player = PlayerDetails.objects.create(
+        player_name=player_name,
+        mobile_number=mobile,
+    )
+    if guest and guest.photo:
+        from django.core.files.base import ContentFile
+        guest.photo.open('rb')
+        player.photo.save(guest.photo.name.split('/')[-1], ContentFile(guest.photo.read()), save=True)
+        guest.photo.close()
+    return player
+
+
 def admin_login(request):
     next_param = request.GET.get("next") or request.POST.get("next") or ""
 
@@ -120,12 +154,12 @@ def player_login(request):
 
                     request.session.cycle_key()
 
-                    if player:
-                        request.session['player_id'] = player.id
-                        request.session['player_name'] = player.player_name
-                    else:
-                        request.session['player_id'] = 'guest'
-                        request.session['player_name'] = 'Guest'
+                    # Every logged-in account gets a real PlayerDetails record so
+                    # ownership checks (tournament creator, hired staff) work —
+                    # a bare 'guest' session id can never own anything.
+                    player = ensure_player_for_mobile(mobile, guest)
+                    request.session['player_id'] = player.id
+                    request.session['player_name'] = player.player_name
 
                     request.session['player_mobile'] = mobile
 
@@ -139,9 +173,10 @@ def player_login(request):
     return render(request, 'player_login.html', {'error': error, 'next': next_param})
 
 
-def send_otp_sms(mobile, otp_code):
+def start_otp_verification(mobile):
     """
-    Send OTP via Twilio SMS.
+    Start an OTP verification using Twilio Verify (works on trial accounts,
+    unlike raw custom SMS which trial accounts can no longer send).
     Returns (True, None) on success or (False, error_message) on failure.
     """
     import requests as http_requests
@@ -151,24 +186,18 @@ def send_otp_sms(mobile, otp_code):
 
     account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
     auth_token  = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
-    from_number = getattr(settings, 'TWILIO_PHONE_NUMBER', None)
+    service_sid = getattr(settings, 'TWILIO_VERIFY_SERVICE_SID', None)
 
-    if not all([account_sid, auth_token, from_number]):
-        return False, "Twilio credentials not configured"
+    if not all([account_sid, auth_token, service_sid]):
+        return False, "Twilio Verify credentials not configured"
 
     try:
-        # Make sure number has country code
         number = mobile.strip().replace(' ', '')
         if not number.startswith('+'):
             number = '+91' + number  # default to India country code
 
-        url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
-
-        payload = {
-            "To": number,
-            "From": from_number,
-            "Body": f"Your StrikeZone login OTP is {otp_code}. Valid for 5 minutes. Do not share with anyone.",
-        }
+        url = f"https://verify.twilio.com/v2/Services/{service_sid}/Verifications"
+        payload = {"To": number, "Channel": "sms"}
 
         response = http_requests.post(
             url,
@@ -177,18 +206,64 @@ def send_otp_sms(mobile, otp_code):
             timeout=10
         )
 
-        logger.info(f"[Twilio] Status: {response.status_code} | Response: {response.text}")
+        logger.info(f"[Twilio Verify] Start status: {response.status_code} | Response: {response.text}")
         data = response.json()
 
         if response.status_code == 201:
             return True, None
         else:
             error_msg = data.get('message', str(data))
-            logger.error(f"[Twilio] Failed: {data}")
+            logger.error(f"[Twilio Verify] Start failed: {data}")
             return False, error_msg
 
     except Exception as e:
-        logger.error(f"[Twilio] Exception: {e}")
+        logger.error(f"[Twilio Verify] Start exception: {e}")
+        return False, str(e)
+
+
+def check_otp_verification(mobile, code):
+    """
+    Check a submitted OTP code against Twilio Verify.
+    Returns (True, None) if approved, (False, error_message) otherwise.
+    """
+    import requests as http_requests
+    from django.conf import settings
+    import logging
+    logger = logging.getLogger(__name__)
+
+    account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
+    auth_token  = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
+    service_sid = getattr(settings, 'TWILIO_VERIFY_SERVICE_SID', None)
+
+    if not all([account_sid, auth_token, service_sid]):
+        return False, "Twilio Verify credentials not configured"
+
+    try:
+        number = mobile.strip().replace(' ', '')
+        if not number.startswith('+'):
+            number = '+91' + number
+
+        url = f"https://verify.twilio.com/v2/Services/{service_sid}/VerificationCheck"
+        payload = {"To": number, "Code": code}
+
+        response = http_requests.post(
+            url,
+            data=payload,
+            auth=(account_sid, auth_token),
+            timeout=10
+        )
+
+        logger.info(f"[Twilio Verify] Check status: {response.status_code} | Response: {response.text}")
+        data = response.json()
+
+        if response.status_code == 200 and data.get('status') == 'approved':
+            return True, None
+        else:
+            error_msg = data.get('message', data.get('status', str(data)))
+            return False, error_msg
+
+    except Exception as e:
+        logger.error(f"[Twilio Verify] Check exception: {e}")
         return False, str(e)
 
 
@@ -203,19 +278,17 @@ def player_request_otp(request):
             if not guest and not player:
                 messages.error(request, "No account found with this mobile. Please ask admin to link your profile or register.")
             else:
-                otp_code = f"{random.randint(100000, 999999):06d}"
                 request.session['otp_mobile'] = mobile
-                request.session['otp_code'] = otp_code
-                request.session['otp_expires_at'] = (timezone.now() + timedelta(minutes=5)).isoformat()
+                request.session['otp_expires_at'] = (timezone.now() + timedelta(minutes=10)).isoformat()
                 request.session['otp_attempts'] = 0
 
-                sms_sent, sms_error = send_otp_sms(mobile, otp_code)
+                sms_sent, sms_error = start_otp_verification(mobile)
 
                 if sms_sent:
-                    messages.success(request, f"OTP sent to {mobile}. Valid for 5 minutes.")
+                    messages.success(request, f"OTP sent to {mobile}. Valid for 10 minutes.")
                 else:
                     messages.error(request, f"Could not send OTP. Reason: {sms_error}")
-                    for key in ('otp_mobile', 'otp_code', 'otp_expires_at', 'otp_attempts'):
+                    for key in ('otp_mobile', 'otp_expires_at', 'otp_attempts'):
                         request.session.pop(key, None)
                     return render(request, 'player_request_otp.html')
 
@@ -226,11 +299,10 @@ def player_request_otp(request):
 
 def player_verify_otp(request):
     mobile = request.session.get('otp_mobile')
-    code = request.session.get('otp_code')
     expires_raw = request.session.get('otp_expires_at')
     attempts = request.session.get('otp_attempts', 0)
 
-    if not mobile or not code or not expires_raw:
+    if not mobile or not expires_raw:
         messages.error(request, "OTP session expired. Please request a new code.")
         return redirect('player_request_otp')
 
@@ -240,7 +312,7 @@ def player_verify_otp(request):
         expires_at = timezone.now() - timedelta(seconds=1)
 
     if timezone.now() > expires_at:
-        for key in ('otp_mobile', 'otp_code', 'otp_expires_at', 'otp_attempts'):
+        for key in ('otp_mobile', 'otp_expires_at', 'otp_attempts'):
             request.session.pop(key, None)
         messages.error(request, "OTP expired. Please request a new code.")
         return redirect('player_request_otp')
@@ -251,15 +323,17 @@ def player_verify_otp(request):
         request.session['otp_attempts'] = attempts
 
         if attempts > 5:
-            for key in ('otp_mobile', 'otp_code', 'otp_expires_at', 'otp_attempts'):
+            for key in ('otp_mobile', 'otp_expires_at', 'otp_attempts'):
                 request.session.pop(key, None)
             messages.error(request, "Too many incorrect attempts. Please request a new code.")
             return redirect('player_request_otp')
 
-        if user_code != code:
+        approved, check_error = check_otp_verification(mobile, user_code)
+
+        if not approved:
             messages.error(request, "Incorrect OTP. Please try again.")
         else:
-            for key in ('otp_mobile', 'otp_code', 'otp_expires_at', 'otp_attempts'):
+            for key in ('otp_mobile', 'otp_expires_at', 'otp_attempts'):
                 request.session.pop(key, None)
 
             guest, _ = GuestUser.objects.get_or_create(mobile_number=mobile)
@@ -273,13 +347,9 @@ def player_verify_otp(request):
 
             request.session.cycle_key()
 
-            player = PlayerDetails.objects.filter(mobile_number=mobile).first()
-            if player:
-                request.session['player_id'] = player.id
-                request.session['player_name'] = player.player_name
-            else:
-                request.session['player_id'] = 'guest'
-                request.session['player_name'] = 'Guest'
+            player = ensure_player_for_mobile(mobile, guest)
+            request.session['player_id'] = player.id
+            request.session['player_name'] = player.player_name
 
             request.session['player_mobile'] = mobile
 

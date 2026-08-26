@@ -27,7 +27,7 @@ import json
 import random
 import os
 from datetime import date, datetime, timedelta
-from groq import Groq as GroqClient
+from openai import OpenAI as GroqClient
 
 from .views_core import admin_required
 from subscriptions.decorators import require_plan
@@ -72,31 +72,18 @@ def player_stats(request):
                 messages.success(request, 'Profile photo updated!')
                 return redirect('player_stats')
 
-            # Profile fields update
+            # Profile fields update — mobile number is permanent (it's the login
+            # identity), so only the display name can be changed here regardless
+            # of what is posted.
             if request.POST.get('update_profile'):
-                new_name   = (request.POST.get('display_name') or '').strip()
-                new_mobile = (request.POST.get('mobile_number') or '').strip()
+                new_name = (request.POST.get('display_name') or '').strip()
 
                 if not new_name:
                     messages.error(request, 'Name cannot be empty.')
                     return redirect('player_stats')
 
-                if new_mobile and (len(new_mobile) < 10 or not new_mobile.replace('+', '').isdigit()):
-                    messages.error(request, 'Enter a valid mobile number (at least 10 digits).')
-                    return redirect('player_stats')
-
-                if new_mobile and new_mobile != guest.mobile_number:
-                    if GuestUser.objects.filter(mobile_number=new_mobile).exclude(id=guest.id).exists():
-                        messages.error(request, 'This mobile number is already registered.')
-                        return redirect('player_stats')
-                    if PlayerDetails.objects.filter(mobile_number=new_mobile).exists():
-                        messages.error(request, 'This mobile number is already linked to a player.')
-                        return redirect('player_stats')
-                    guest.mobile_number = new_mobile
-                    request.session['player_mobile'] = new_mobile
-
                 guest.display_name = new_name
-                guest.save(update_fields=['display_name', 'mobile_number'])
+                guest.save(update_fields=['display_name'])
                 request.session['player_name'] = new_name
                 messages.success(request, 'Profile updated successfully.')
                 return redirect('player_stats')
@@ -538,13 +525,36 @@ def public_player_profile(request, player_id):
     })
 
 
+# ─────────────────────────────────────────────────────────────────
+# PUBLIC GUEST PROFILE  –  /guest/<id>/
+# Lets anyone (e.g. a team manager) find a registered guest via search
+# and see their name/photo/mobile before they've been picked for a team.
+# ─────────────────────────────────────────────────────────────────
+def public_guest_profile(request, guest_id):
+    guest = get_object_or_404(GuestUser, id=guest_id)
+
+    # If this guest has since been picked up and turned into a real player
+    # (matched by mobile number), send visitors to the full player profile
+    # instead of the bare guest card.
+    if guest.mobile_number:
+        real_player = PlayerDetails.objects.filter(mobile_number=guest.mobile_number).first()
+        if real_player:
+            return redirect('public_player_profile', player_id=real_player.id)
+
+    is_own = (str(request.session.get('player_id')) == 'guest'
+              and request.session.get('player_mobile') == guest.mobile_number)
+
+    return render(request, 'guest_profile.html', {
+        'guest': guest,
+        'is_own': is_own,
+    })
 
 
 # ─────────────────────────────────────────────────────────────────
 # PLAYER ANALYSIS VIEW  –  /player/<id>/analysis/
 # ─────────────────────────────────────────────────────────────────
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def edit_player(request, player_id):
     """Edit a player's details via AJAX POST — returns JSON."""
     from subscriptions.decorators import _is_privileged, _player_owns_tournament
@@ -608,7 +618,7 @@ def edit_player(request, player_id):
 
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def delete_player(request, player_id):
     """Remove a player from a tournament roster (or fully delete if no roster_id)."""
     from subscriptions.decorators import _is_privileged, _player_owns_tournament

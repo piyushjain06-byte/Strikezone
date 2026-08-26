@@ -27,13 +27,13 @@ import json
 import random
 import os
 from datetime import date, datetime, timedelta
-from groq import Groq as GroqClient
+from openai import OpenAI as GroqClient
 
 from .views_awards import _is_tournament_complete, award_tournament_awards
 from .views_core import admin_required
 from subscriptions.decorators import require_plan
 
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def manage_cricket(request):
     is_admin = (
         (request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser))
@@ -54,11 +54,19 @@ def manage_cricket(request):
                 # Track who created it
                 if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
                     tournament.created_by_admin = request.user
-                elif request.session.get('player_id') and request.session['player_id'] != 'guest':
-                    try:
-                        tournament.created_by_player_id = request.session['player_id']
-                    except Exception:
-                        pass
+                elif request.session.get('player_mobile'):
+                    # Safety net for sessions created before every login guaranteed a
+                    # real PlayerDetails row (older 'guest' sessions) — without this,
+                    # the tournament's creator would be left blank and only staff/
+                    # superuser could ever manage it.
+                    from .views_auth import ensure_player_for_mobile
+                    pid = request.session.get('player_id')
+                    if not pid or pid == 'guest':
+                        player = ensure_player_for_mobile(request.session['player_mobile'])
+                        request.session['player_id'] = player.id
+                        request.session['player_name'] = player.player_name
+                        pid = player.id
+                    tournament.created_by_player_id = pid
                 tournament.save()
                 messages.success(request, "Tournament created successfully!")
                 tournament_form = TournamentForm()
@@ -130,19 +138,44 @@ def manage_cricket(request):
                     # mobile_number is always present (required by form)
                     player = PlayerDetails.objects.filter(mobile_number=mobile_number).first()
 
+                    # If this mobile belongs to a guest who has already set up their
+                    # own profile (name + photo on /player/stats/), treat that as
+                    # the source of truth instead of blanking it out with a
+                    # placeholder name or an empty photo.
+                    guest = GuestUser.objects.filter(mobile_number=mobile_number).first()
+
                     if player:
-                        # Existing player found by mobile — update name only if a new one was given
+                        # Existing player found by mobile — only overwrite the name
+                        # if the admin explicitly typed a new one in the form.
                         if player_name and player.player_name != player_name:
                             player.player_name = player_name
                             player.save(update_fields=["player_name"])
+                        # Backfill a missing photo from the guest's profile (covers
+                        # the case where the player record already existed but has
+                        # no photo yet, and the guest has since uploaded one).
+                        if not player.photo and guest and guest.photo:
+                            from django.core.files.base import ContentFile
+                            guest.photo.open('rb')
+                            player.photo.save(guest.photo.name.split('/')[-1], ContentFile(guest.photo.read()), save=True)
+                            guest.photo.close()
                     else:
-                        # New player — auto-generate name from mobile if admin left name blank
+                        # New player — prefer the guest's own chosen display name
+                        # over an auto-generated "Player <mobile>" placeholder.
                         if not player_name:
-                            player_name = f"Player {mobile_number}"
+                            player_name = (guest.display_name if guest and guest.display_name else None) or f"Player {mobile_number}"
                         player = PlayerDetails.objects.create(
                             player_name=player_name,
                             mobile_number=mobile_number,
                         )
+                        # Carry over the guest's uploaded photo so it isn't lost
+                        # when they get promoted to a full player record. We copy
+                        # the file itself (not just reference it) so the two
+                        # records stay independent afterwards.
+                        if guest and guest.photo and not photo:
+                            from django.core.files.base import ContentFile
+                            guest.photo.open('rb')
+                            player.photo.save(guest.photo.name.split('/')[-1], ContentFile(guest.photo.read()), save=True)
+                            guest.photo.close()
 
                     if photo and player:
                         player.photo = photo
@@ -232,7 +265,7 @@ def manage_cricket(request):
 
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def create_match(request):
     if request.method == "POST":
         form = MatchForm(request.POST)
@@ -270,7 +303,7 @@ def load_teams(request):
 
 
 @admin_required
-@require_plan('pro_plus')
+@require_plan('pro_plus', owner_only=True)
 def start_tournament(request):
     from subscriptions.decorators import _is_privileged, _player_owns_tournament
     # Filter tournaments list for pro_plus players
@@ -279,7 +312,14 @@ def start_tournament(request):
     else:
         pid = request.session.get('player_id')
         if pid and pid != 'guest':
-            tournaments_qs = TournamentDetails.objects.filter(created_by_player_id=pid)
+            from tournaments.models import TournamentHire
+            from django.db.models import Q
+            hired_ids = TournamentHire.objects.filter(
+                hired_player_id=pid
+            ).values_list('tournament_id', flat=True)
+            tournaments_qs = TournamentDetails.objects.filter(
+                Q(created_by_player_id=pid) | Q(id__in=hired_ids)
+            )
         else:
             tournaments_qs = TournamentDetails.objects.none()
 

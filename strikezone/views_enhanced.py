@@ -48,7 +48,7 @@ def enhanced_search_view(request):
     query = request.GET.get('q', '').strip()
 
     if len(query) < 1:
-        return JsonResponse({'tournaments': [], 'teams': [], 'players': [], 'matches': []})
+        return JsonResponse({'tournaments': [], 'teams': [], 'players': [], 'guests': [], 'matches': []})
 
     query = sanitize_input(query, max_length=100)
 
@@ -106,6 +106,40 @@ def enhanced_search_view(request):
             'sub': sub,
         })
 
+    # Guests — registered fans/guests who haven't been picked for a team yet.
+    # Search by their chosen display name OR mobile number. Once a guest is
+    # picked by a team manager, a matching PlayerDetails row is created and
+    # they show up in the Players section above instead, so we exclude any
+    # guest whose mobile number is already linked to a real player to avoid
+    # showing the same person twice.
+    from accounts.models import GuestUser
+
+    existing_player_mobiles = set(
+        PlayerDetails.objects
+        .exclude(mobile_number__isnull=True)
+        .exclude(mobile_number='')
+        .values_list('mobile_number', flat=True)
+    )
+
+    guests_qs = GuestUser.objects.filter(
+        Q(display_name__icontains=query) | Q(mobile_number__icontains=query)
+    ).order_by('display_name')[:5]
+
+    guest_results = []
+    for g in guests_qs:
+        if g.mobile_number in existing_player_mobiles:
+            continue
+        photo_url = g.photo.url if g.photo else None
+        sub = 'Fan account'
+        if g.mobile_number and query in g.mobile_number:
+            sub = g.mobile_number
+        guest_results.append({
+            'id': g.id,
+            'name': g.display_name or 'Guest',
+            'photo': photo_url,
+            'sub': sub,
+        })
+
     # Matches — search by venue or team name
     matches_qs = CreateMatch.objects.filter(
         Q(venue__icontains=query) |
@@ -128,6 +162,7 @@ def enhanced_search_view(request):
         'tournaments': t_results,
         'teams': team_results,
         'players': player_results,
+        'guests': guest_results,
         'matches': match_results,
     })
 

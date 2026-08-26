@@ -584,11 +584,19 @@
     </a>
 
     <nav class="nav-tabs" id="desktop-nav">
+      {# ── Always-visible core links (shown even if UpperCategory DB is empty) ── #}
+      <a href="{% url 'home' %}" class="nav-tab">Home</a>
+      <a href="{% url 'tournaments' %}" class="nav-tab">Tournament</a>
+
+      {# ── Dynamic links from UpperCategory DB rows (skip Home / Tournament to avoid duplicates) ── #}
       {% for i in categories %}
-        {% if i.category_name == 'Manage Cricket' or i.category_name == 'Create Match' or i.category_name == 'Start Tournament' %}
-          {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser or request.session.player_id %}
+        {% if i.category_name == 'Home' or i.category_name == 'Tournaments' %}
+          {# Already rendered above — skip #}
+        {% elif i.category_name == 'Manage Cricket' or i.category_name == 'Create Match' or i.category_name == 'Start Tournament' %}
+          {# Fixed operator-precedence: wrap the staff/superuser pair in parens via combined check #}
+          {% if request.user.is_superuser or request.session.player_id or request.user.is_staff and request.user.is_authenticated %}
             {% if can_manage %}
-              <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Create Match' %}{% url 'create_match' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
+              <a href="{% if i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Create Match' %}{% url 'create_match' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
                  class="nav-tab">{{ i.category_name }}</a>
             {% elif request.user.is_staff or request.user.is_superuser %}
               <a href="{% url 'upgrade_plan' %}" class="nav-tab-locked">
@@ -606,8 +614,7 @@
             <a href="{% url 'player_matches' %}" class="nav-tab">My Matches</a>
           {% endif %}
         {% else %}
-          <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% else %}#{% endif %}"
-             class="nav-tab">{{ i.category_name }}</a>
+          <a href="#" class="nav-tab">{{ i.category_name }}</a>
         {% endif %}
       {% endfor %}
 
@@ -730,8 +737,14 @@
       </div>
       <span class="mn-section-label">Navigation</span>
 
+      {# ── Always-visible core links ── #}
+      <a href="{% url 'home' %}" class="nav-tab" onclick="closeMobileNav()">🏠 Home</a>
+      <a href="{% url 'tournaments' %}" class="nav-tab" onclick="closeMobileNav()">🏆 Tournament</a>
+
       {% for i in categories %}
-        {% if i.category_name == 'Manage Cricket' or i.category_name == 'Create Match' or i.category_name == 'Start Tournament' %}
+        {% if i.category_name == 'Home' or i.category_name == 'Tournaments' %}
+          {# Already rendered above — skip #}
+        {% elif i.category_name == 'Manage Cricket' or i.category_name == 'Create Match' or i.category_name == 'Start Tournament' %}
           {% if can_manage %}
             <a href="{% if i.category_name == 'Manage Cricket' %}{% url 'manage_cricket' %}{% elif i.category_name == 'Create Match' %}{% url 'create_match' %}{% elif i.category_name == 'Start Tournament' %}{% url 'start_tournament' %}{% else %}#{% endif %}"
                class="nav-tab" onclick="closeMobileNav()">
@@ -742,11 +755,7 @@
         {% elif i.category_name == 'My Profile' or i.category_name == 'My Matches' %}
           {# skip — shown in footer #}
         {% else %}
-          <a href="{% if i.category_name == 'Tournaments' %}{% url 'tournaments' %}{% elif i.category_name == 'Home' %}{% url 'home' %}{% else %}#{% endif %}"
-             class="nav-tab" onclick="closeMobileNav()">
-            {% if i.category_name == 'Home' %}🏠{% elif i.category_name == 'Tournaments' %}🏆{% endif %}
-            {{ i.category_name }}
-          </a>
+          <a href="#" class="nav-tab" onclick="closeMobileNav()">{{ i.category_name }}</a>
         {% endif %}
       {% endfor %}
 
@@ -891,7 +900,7 @@
 
     function buildDropdown(data, query) {
       dropdown.innerHTML = '';
-      const total = (data.tournaments || []).length + (data.teams || []).length + (data.players || []).length + (data.matches || []).length;
+      const total = (data.tournaments || []).length + (data.teams || []).length + (data.players || []).length + (data.guests || []).length + (data.matches || []).length;
       if (total === 0) {
         dropdown.innerHTML = '<div class="sd-empty">No results for "' + query + '"</div>';
         dropdown.classList.add('open');
@@ -965,6 +974,28 @@
               <div class="sd-sub">${p.sub}</div>
             </div>
             <span class="sd-badge player">Player</span>`;
+          dropdown.appendChild(a);
+        });
+      }
+
+      // Guests / Fans (registered users not yet picked for a team)
+      if (data.guests && data.guests.length) {
+        addDivider();
+        const lbl = document.createElement('div');
+        lbl.className = 'sd-group-label';
+        lbl.textContent = '👤 Fans';
+        dropdown.appendChild(lbl);
+        data.guests.forEach(g => {
+          const a = document.createElement('a');
+          a.className = 'sd-item';
+          a.href = '/guest/' + g.id + '/';
+          a.innerHTML = `
+            <div class="sd-avatar player">${g.photo ? '<img src="' + g.photo + '" alt="">' : g.name[0].toUpperCase()}</div>
+            <div class="sd-info">
+              <div class="sd-name">${highlight(g.name, query)}</div>
+              <div class="sd-sub">${g.sub}</div>
+            </div>
+            <span class="sd-badge player">Fan</span>`;
           dropdown.appendChild(a);
         });
       }
@@ -1072,7 +1103,7 @@
 
     function buildMobileDropdown(data, query) {
       dropdown.innerHTML = '';
-      const total = (data.tournaments||[]).length + (data.teams||[]).length + (data.players||[]).length + (data.matches||[]).length;
+      const total = (data.tournaments||[]).length + (data.teams||[]).length + (data.players||[]).length + (data.guests||[]).length + (data.matches||[]).length;
       if (total === 0) {
         dropdown.innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:#64748b;">No results for "' + query + '"</div>';
         dropdown.style.display = 'block';
@@ -1110,6 +1141,9 @@
       addSection('🏏 Players', data.players,
         'linear-gradient(135deg,#14532d,#22c55e)', 'background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25);',
         p => '/player/'+p.id+'/profile/', p => p.sub||'');
+      addSection('👤 Fans', data.guests,
+        'linear-gradient(135deg,#334155,#64748b)', 'background:rgba(148,163,184,.12);color:#cbd5e1;border:1px solid rgba(148,163,184,.25);',
+        g => '/guest/'+g.id+'/', g => g.sub||'');
       addSection('🎯 Matches', data.matches,
         'linear-gradient(135deg,#1e3a5f,#0ea5e9)', 'background:rgba(100,116,139,.1);color:#94a3b8;border:1px solid rgba(100,116,139,.2);',
         m => '/match/'+m.id+'/scorecard/', m => m.sub||'');

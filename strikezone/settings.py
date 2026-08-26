@@ -4,12 +4,13 @@ Django settings for strikezone project.
 
 from pathlib import Path
 import os
-import dj_database_url
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 # ── Security ──────────────────────────────────────────────────────────────────
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-1!eazvx6jdvk(ea16)s#*6eggf6h%cfxd44^a3g#wmn(7w3644')
+SECRET_KEY = os.environ.get('SECRET_KEY', '')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['*']
 
@@ -20,6 +21,7 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -77,28 +79,17 @@ CHANNEL_LAYERS = {
     }
 }
 
-# ── Database — uses DATABASE_URL on Render, falls back to local PostgreSQL ────
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            ssl_require=True,
-        )
+# ── Database — PostgreSQL (local pgAdmin) ─────────────────────────────────────
+DATABASES = {
+    'default': {
+        'ENGINE':   'django.db.backends.postgresql',
+        'NAME':     os.environ.get('DB_NAME',     'pravas_db'),
+        'USER':     os.environ.get('DB_USER',     'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST':     os.environ.get('DB_HOST',     'localhost'),
+        'PORT':     os.environ.get('DB_PORT',     '5432'),
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE':   'django.db.backends.postgresql',
-            'NAME':     os.environ.get('DB_NAME',     'pravas_db'),
-            'USER':     os.environ.get('DB_USER',     'postgres'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'HOST':     os.environ.get('DB_HOST',     'localhost'),
-            'PORT':     os.environ.get('DB_PORT',     '5432'),
-        }
-    }
+}
 # ─────────────────────────────────────────────────────────────────────────────
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -133,11 +124,12 @@ WHITENOISE_AUTOREFRESH = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-TWILIO_ACCOUNT_SID  = os.environ.get('TWILIO_ACCOUNT_SID',  'AC2ec47c0a8089ac515cc92d7cd0a85177')
-TWILIO_AUTH_TOKEN   = os.environ.get('TWILIO_AUTH_TOKEN',   '71119eaa67aa79511e5e2e4a1644fc38')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '+15096613947')
+TWILIO_ACCOUNT_SID  = os.environ.get('TWILIO_ACCOUNT_SID',  '')
+TWILIO_AUTH_TOKEN   = os.environ.get('TWILIO_AUTH_TOKEN',   '')
+TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
+TWILIO_VERIFY_SERVICE_SID = os.environ.get('TWILIO_VERIFY_SERVICE_SID', '')
 
-os.environ.setdefault("GROQ_API_KEY", os.environ.get('GROQ_API_KEY', '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'))
+os.environ.setdefault("GROQ_API_KEY", os.environ.get('GROQ_API_KEY', ''))
 
-RAZORPAY_KEY_ID     = os.environ.get('RAZORPAY_KEY_ID',     'rzp_test_SOEWxkocanVZ8A')
-RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'H4yBYQasEElQyEfoSFxCs0cj')
+RAZORPAY_KEY_ID     = os.environ.get('RAZORPAY_KEY_ID',     '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')

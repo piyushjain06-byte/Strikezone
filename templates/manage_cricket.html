@@ -366,6 +366,39 @@
   </div>
 
   <div class="tab-panel {% if active_tab == 'tournament' %}active{% endif %}" id="tab-tournament">
+    <div class="form-card" style="margin-bottom:14px;">
+      <button type="button" id="bulkImportBtn" class="btn-submit"
+              style="background:#7c3aed;display:flex;align-items:center;justify-content:center;gap:8px;">
+        📥 Bulk Import from Excel
+      </button>
+      <p class="hint-text" style="margin-top:8px;">Upload one Excel file with the tournament, teams, players, and match fixtures — instead of entering everything one by one.</p>
+    </div>
+
+    <div id="bulkImportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;">
+      <div style="background:#161b26;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:24px;max-width:440px;width:90%;">
+        <div id="bulkImportChoices">
+          <h3 style="margin:0 0 16px;">📥 Bulk Import</h3>
+          <button type="button" id="bulkDownloadTemplateBtn" class="btn-submit-green" style="width:100%;margin-bottom:10px;">
+            ⬇️ Download Excel Template
+          </button>
+          <button type="button" id="bulkChooseFileBtn" class="btn-submit" style="width:100%;">
+            📤 Upload Excel File
+          </button>
+          <input type="file" id="bulkFileInput" accept=".xlsx" style="display:none;">
+          <button type="button" id="bulkImportCancelBtn" style="width:100%;margin-top:14px;background:transparent;border:1px solid rgba(255,255,255,.15);color:var(--muted);padding:10px;border-radius:8px;cursor:pointer;">
+            Cancel
+          </button>
+        </div>
+        <div id="bulkImportStatus" style="display:none;">
+          <h3 style="margin:0 0 12px;">Importing…</h3>
+          <div id="bulkImportStatusBody" style="font-size:13px;color:var(--muted);line-height:1.6;"></div>
+          <button type="button" id="bulkImportCloseBtn" style="display:none;width:100%;margin-top:14px;background:transparent;border:1px solid rgba(255,255,255,.15);color:#fff;padding:10px;border-radius:8px;cursor:pointer;">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="form-card">
       <h3>🏆 Create Tournament</h3>
       <form method="POST">
@@ -780,6 +813,85 @@ function getCookie(name) {
   const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
   return v ? v.pop() : '';
 }
+
+// ── Bulk Import (Excel) ─────────────────────────────────────────
+(function () {
+  const modal = document.getElementById('bulkImportModal');
+  const openBtn = document.getElementById('bulkImportBtn');
+  const cancelBtn = document.getElementById('bulkImportCancelBtn');
+  const closeBtn = document.getElementById('bulkImportCloseBtn');
+  const downloadBtn = document.getElementById('bulkDownloadTemplateBtn');
+  const chooseFileBtn = document.getElementById('bulkChooseFileBtn');
+  const fileInput = document.getElementById('bulkFileInput');
+  const choicesPanel = document.getElementById('bulkImportChoices');
+  const statusPanel = document.getElementById('bulkImportStatus');
+  const statusBody = document.getElementById('bulkImportStatusBody');
+
+  if (!openBtn) return;
+
+  function openModal() {
+    modal.style.display = 'flex';
+    choicesPanel.style.display = 'block';
+    statusPanel.style.display = 'none';
+    closeBtn.style.display = 'none';
+  }
+  function closeModal() {
+    modal.style.display = 'none';
+  }
+
+  openBtn.addEventListener('click', openModal);
+  cancelBtn.addEventListener('click', closeModal);
+  closeBtn.addEventListener('click', () => location.reload());
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  downloadBtn.addEventListener('click', () => {
+    window.location.href = "{% url 'bulk_import_template' %}";
+  });
+
+  chooseFileBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    choicesPanel.style.display = 'none';
+    statusPanel.style.display = 'block';
+    statusBody.innerHTML = '⏳ Checking and importing your file…';
+
+    const formData = new FormData();
+    formData.append('excel_file', file);
+
+    try {
+      const res = await fetch("{% url 'bulk_import_upload' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        statusBody.innerHTML = `
+          <div style="color:#34d399;font-weight:700;margin-bottom:8px;">✅ Import successful</div>
+          <div>Tournament: <strong>${data.tournament_name}</strong></div>
+          <div>${data.teams_created} teams created</div>
+          <div>${data.players_created} players added</div>
+          <div>${data.matches_created} matches scheduled</div>
+        `;
+      } else {
+        const errList = (data.errors || ['Unknown error']).map(e => `<li>${e}</li>`).join('');
+        statusBody.innerHTML = `
+          <div style="color:#f87171;font-weight:700;margin-bottom:8px;">❌ Import failed — nothing was saved</div>
+          <ul style="padding-left:18px;margin:0;">${errList}</ul>
+        `;
+      }
+    } catch (e) {
+      statusBody.innerHTML = `<div style="color:#f87171;">❌ Network error: ${e}</div>`;
+    }
+
+    closeBtn.style.display = 'block';
+    fileInput.value = '';
+  });
+})();
 </script>
 
 {% endblock %}
