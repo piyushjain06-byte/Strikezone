@@ -5,6 +5,7 @@ Django settings for strikezone project.
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
@@ -80,16 +81,28 @@ CHANNEL_LAYERS = {
 }
 
 # ── Database — PostgreSQL (local pgAdmin) ─────────────────────────────────────
-DATABASES = {
-    'default': {
-        'ENGINE':   'django.db.backends.postgresql',
-        'NAME':     os.environ.get('DB_NAME',     'pravas_db'),
-        'USER':     os.environ.get('DB_USER',     'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST':     os.environ.get('DB_HOST',     'localhost'),
-        'PORT':     os.environ.get('DB_PORT',     '5432'),
+if os.environ.get('DATABASE_URL'):
+    # Render (and most hosts) inject this automatically when a Postgres
+    # instance is linked to the service.
+    DATABASES = {
+        'default': dj_database_url.parse(
+            os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
-}
+else:
+    # Local dev fallback — uses DB_* vars from .env, or plain localhost.
+    DATABASES = {
+        'default': {
+            'ENGINE':   'django.db.backends.postgresql',
+            'NAME':     os.environ.get('DB_NAME',     'pravas_db'),
+            'USER':     os.environ.get('DB_USER',     'postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST':     os.environ.get('DB_HOST',     'localhost'),
+            'PORT':     os.environ.get('DB_PORT',     '5432'),
+        }
+    }
 # ─────────────────────────────────────────────────────────────────────────────
 
 AUTH_PASSWORD_VALIDATORS = [
