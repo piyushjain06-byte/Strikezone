@@ -130,7 +130,6 @@ def knockout_bracket(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
     from subscriptions.decorators import _is_privileged, _player_owns_tournament
     if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
-        from django.contrib import messages
         messages.warning(request, 'You can only manage tournaments you have created.')
         return redirect('upgrade_plan')
 
@@ -167,7 +166,6 @@ def setup_knockout_stage(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
     from subscriptions.decorators import _is_privileged, _player_owns_tournament
     if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
-        from django.contrib import messages
         messages.warning(request, 'You can only manage tournaments you have created.')
         return redirect('upgrade_plan')
 
@@ -281,7 +279,6 @@ def start_knockout_match(request, knockout_match_id):
     tournament = km.stage.tournament
     from subscriptions.decorators import _is_privileged, _player_owns_tournament
     if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
-        from django.contrib import messages
         messages.warning(request, 'You can only manage tournaments you have created.')
         return redirect('upgrade_plan')
 
@@ -350,7 +347,6 @@ def link_knockout_matches(request, tournament_id):
     tournament = get_object_or_404(TournamentDetails, id=tournament_id)
     from subscriptions.decorators import _is_privileged, _player_owns_tournament
     if not _is_privileged(request) and not _player_owns_tournament(request, tournament.id):
-        from django.contrib import messages
         messages.warning(request, 'You can only manage tournaments you have created.')
         return redirect('upgrade_plan')
 
